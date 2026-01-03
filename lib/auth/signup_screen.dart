@@ -9,6 +9,7 @@ class SignupScreen extends StatefulWidget {
 }
 
 class _SignupScreenState extends State<SignupScreen> {
+  final nameController = TextEditingController();
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
 
@@ -34,6 +35,10 @@ class _SignupScreenState extends State<SignupScreen> {
         padding: EdgeInsets.all(20),
         child: Column(
           children: [
+            TextField(
+              controller : nameController,
+              decoration: InputDecoration(labelText: "Name"),
+            ),
             TextField(
               controller: emailController,
               decoration: InputDecoration(labelText: "Email"),
