@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'firebase_options.dart';
-import 'auth/login_screen.dart'; // we will create this next
-import 'auth/loggedin_screen.dart';
+import 'auth/login_screen.dart'; //login
+import 'auth/loggedin_screen.dart';//nakon login
+import 'auth/prelog_screen.dart';//login ili sighn up
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
@@ -26,7 +27,7 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.blue,
       ),
       home: FirebaseAuth.instance.currentUser == null
-          ? LoginScreen()
+          ? PrelogScreen()
           : LoggedInScreen(),
     );
   }
