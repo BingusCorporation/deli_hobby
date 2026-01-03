@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "987372302004",
+    "project_id": "deli-hobby",
+    "storage_bucket": "deli-hobby.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:987372302004:android:2a77a7428b25fbd02031e1",
+        "android_client_info": {
+          "package_name": "com.example.deli_hobby"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDfGAOlAGD5iTFYqXVt9FJNlmJ891U5HVY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

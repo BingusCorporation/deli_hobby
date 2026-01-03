@@ -1,0 +1,15 @@
+/home/pablo/Desktop/poslovno/flutter/deli_hobby/build/linux/x64/debug/bundle/deli_hobby
+/home/pablo/Desktop/poslovno/flutter/deli_hobby/build/linux/x64/debug/bundle/data/icudtl.dat
+/home/pablo/Desktop/poslovno/flutter/deli_hobby/build/linux/x64/debug/bundle/lib/libflutter_linux_gtk.so
+/home/pablo/Desktop/poslovno/flutter/deli_hobby/build/linux/x64/debug/bundle/data/flutter_assets/fonts/MaterialIcons-Regular.otf
+/home/pablo/Desktop/poslovno/flutter/deli_hobby/build/linux/x64/debug/bundle/data/flutter_assets/packages/cupertino_icons/assets/CupertinoIcons.ttf
+/home/pablo/Desktop/poslovno/flutter/deli_hobby/build/linux/x64/debug/bundle/data/flutter_assets/AssetManifest.bin.json
+/home/pablo/Desktop/poslovno/flutter/deli_hobby/build/linux/x64/debug/bundle/data/flutter_assets/shaders/stretch_effect.frag
+/home/pablo/Desktop/poslovno/flutter/deli_hobby/build/linux/x64/debug/bundle/data/flutter_assets/shaders/ink_sparkle.frag
+/home/pablo/Desktop/poslovno/flutter/deli_hobby/build/linux/x64/debug/bundle/data/flutter_assets/NativeAssetsManifest.json
+/home/pablo/Desktop/poslovno/flutter/deli_hobby/build/linux/x64/debug/bundle/data/flutter_assets/AssetManifest.bin
+/home/pablo/Desktop/poslovno/flutter/deli_hobby/build/linux/x64/debug/bundle/data/flutter_assets/FontManifest.json
+/home/pablo/Desktop/poslovno/flutter/deli_hobby/build/linux/x64/debug/bundle/data/flutter_assets/NOTICES
+/home/pablo/Desktop/poslovno/flutter/deli_hobby/build/linux/x64/debug/bundle/data/flutter_assets/NOTICES.Z
+/home/pablo/Desktop/poslovno/flutter/deli_hobby/build/linux/x64/debug/bundle/data/flutter_assets/kernel_blob.bin
+/home/pablo/Desktop/poslovno/flutter/deli_hobby/build/linux/x64/debug/bundle/data/flutter_assets/version.json
