@@ -184,8 +184,6 @@ const Map<String, List<String>> hobbyCategories = {
     'Ostalo',
   ],
 
-  // NEW ADDITIONS:
-
   'Ples': [
     'Balet',
     'Savremeni ples',
