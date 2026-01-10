@@ -5,6 +5,7 @@ import 'firebase_options.dart';
 import 'auth/login_screen.dart'; //login
 import 'auth/loggedin_screen.dart';//nakon login
 import 'auth/prelog_screen.dart';//login ili sighn up
+import 'screens/main_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
@@ -28,7 +29,7 @@ class MyApp extends StatelessWidget {
       ),
       home: FirebaseAuth.instance.currentUser == null
           ? PrelogScreen()
-          : LoggedInScreen(),
+          : MainScreen(),
     );
   }
 }

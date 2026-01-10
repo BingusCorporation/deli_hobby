@@ -5,6 +5,7 @@ import '../data/hobbies.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import '../auth/login_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -310,6 +311,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           : null,
                     );
                   }).toList(),
+                ),
+                                OutlinedButton(
+                  onPressed: () async {
+                    await FirebaseAuth.instance.signOut();
+                    if (context.mounted) {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (_) => const LoginScreen()),
+                      );
+                    }
+                  },
+                  child: const Text("Logout"),
                 ),
 
                 /// ADD HOBBY UI (only when editing)
