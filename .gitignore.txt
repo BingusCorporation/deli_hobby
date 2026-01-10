@@ -1,0 +1,35 @@
+# Flutter
+.dart_tool/
+.packages
+.pub-cache/
+build/
+
+# Android
+android/.gradle/
+android/local.properties
+android/key.properties
+android/app/*.keystore
+android/app/build/
+
+# iOS
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/ephemeral/
+ios/Runner.xcworkspace/
+
+# Web
+web/.dart_tool/
+web/build/
+
+# Firebase
+.firebase/
+firebase-debug.log
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
