@@ -1,21 +1,46 @@
-# Flutter
+# Flutter & Dart
 .dart_tool/
 .packages
 .pub-cache/
+.pub-cache/
+.pub/
 build/
+.flutter-plugins
+.flutter-plugins-dependencies
+.flutter-plugins-dependencies.json
+.fvm/
+.dart_tool/
 
 # Android
 android/.gradle/
 android/local.properties
 android/key.properties
+android/key.jks
+android/*.keystore
+android/*.jks
 android/app/*.keystore
+android/app/*.jks
 android/app/build/
+android/build/
+/android/gradlew
+/android/gradlew.bat
+/android/gradle/wrapper/gradle-wrapper.jar
 
 # iOS
 ios/Pods/
 ios/.symlinks/
 ios/Flutter/ephemeral/
-ios/Runner.xcworkspace/
+ios/Runner.xcworkspace/xcuserdata/
+ios/Runner.xcodeproj/project.xcworkspace/xcuserdata/
+ios/Runner.xcodeproj/xcuserdata/
+ios/.generated/
+ios/Flutter/App.framework/
+ios/Flutter/Flutter.framework/
+ios/Flutter/Flutter.podspec
+ios/Flutter/Generated.xcconfig
+ios/Flutter/flutter_export_environment.sh
+ios/ServiceDefinitions.json
+ios/.metadata
 
 # Web
 web/.dart_tool/
@@ -24,12 +49,97 @@ web/build/
 # Firebase
 .firebase/
 firebase-debug.log
+.google/
+ServiceAccountKey.json
+*.key.json
 
 # IDE
 .idea/
 .vscode/
+*.iml
+*.swp
+*.swo
+*.code-workspace
 
 # OS
 .DS_Store
 Thumbs.db
+desktop.ini
+*.lnk
 
+# Environment variables
+.env
+.env.local
+.env.development
+.env.production
+
+# Logs
+logs/
+*.log
+
+# Temp files
+*.tmp
+*.temp
+~$*
+
+# Coverage
+coverage/
+.lcov.info
+
+# macOS
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+
+# Windows
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msm
+*.msp
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+
+# Package files
+*.7z
+*.dmg
+*.gz
+*.iso
+*.jar
+*.rar
+*.tar
+*.zip
+
+# Media files
+*.mp3
+*.mp4
+*.wav
+*.avi
+*.mov
+*.mkv
+
+# Documentation
+*.pdf
+*.doc
+*.docx
+*.xls
+*.xlsx
+*.ppt
+*.pptx
+
+# User-specific files
+pubspec_overrides.yaml
+flutter_export_environment.sh
+
+# Custom
+.user_prefs/
+.prefs/
+.settings/
+.cache/
+.temp/
