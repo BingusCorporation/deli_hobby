@@ -1,8 +1,7 @@
+import 'package:deli_hobby/screens/main_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'signup_screen.dart';
-import 'loggedin_screen.dart';
-
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -21,9 +20,12 @@ class _LoginScreenState extends State<LoginScreen> {
         email: emailController.text,
         password: passwordController.text,
       );
-      Navigator.pushReplacement(
+      
+      // ✅ Use pushAndRemoveUntil to clear navigation stack
+      Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(builder: (_) => LoggedInScreen()),
+        MaterialPageRoute(builder: (_) => const MainScreen()),
+        (route) => false, // Remove all previous routes
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -35,28 +37,34 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Login")),
+      appBar: AppBar(
+        title: const Text("Login"),
+        automaticallyImplyLeading: false, // Remove back button
+      ),
       body: Padding(
-        padding: EdgeInsets.all(20),
+        padding: const EdgeInsets.all(20),
         child: Column(
           children: [
             TextField(
               controller: emailController,
-              decoration: InputDecoration(labelText: "Email"),
+              decoration: const InputDecoration(labelText: "Email"),
             ),
             TextField(
               controller: passwordController,
-              decoration: InputDecoration(labelText: "Password"),
+              decoration: const InputDecoration(labelText: "Password"),
               obscureText: true,
             ),
-            SizedBox(height: 20),
-            ElevatedButton(onPressed: login, child: Text("Login")),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: login, 
+              child: const Text("Login")
+            ),
             TextButton(
-              child: Text("Don't have an account? Sign Up"),
+              child: const Text("Don't have an account? Sign Up"),
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => SignupScreen()),
+                  MaterialPageRoute(builder: (_) => const SignupScreen()),
                 );
               },
             ),

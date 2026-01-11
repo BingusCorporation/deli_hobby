@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'loggedin_screen.dart';
+import '../screens/main_screen.dart';
 import '../data/city.dart';
 
 class SignupScreen extends StatefulWidget {
@@ -21,55 +21,66 @@ class _SignupScreenState extends State<SignupScreen> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  Future<void> signup() async {
-    final name = nameController.text.trim();
-    final email = emailController.text.trim();
-    final password = passwordController.text.trim();
 
-    // ---- VALIDATION ----
-    if (name.isEmpty) {
-      showError("Please enter your name");
-      return;
-    }
+Future<void> signup() async {
+  final name = nameController.text.trim();
+  final email = emailController.text.trim();
+  final password = passwordController.text.trim();
 
-    if (selectedCity == null) {
-      showError("Please select your city");
-      return;
-    }
-
-    if (email.isEmpty || password.isEmpty) {
-      showError("Email and password are required");
-      return;
-    }
-
-    try {
-      // ---- CREATE AUTH USER ----
-      final userCredential = await _auth.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-
-      final uid = userCredential.user!.uid;
-
-      // ---- SAVE USER PROFILE ----
-      await _firestore.collection('users').doc(uid).set({
-        'name': name,
-        'email': email,
-        'city': selectedCity,
-        'createdAt': FieldValue.serverTimestamp(),
-      });
-
-      if (!mounted) return;
-
-      // ---- GO DIRECTLY TO LOGGED IN SCREEN ----
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const LoggedInScreen()),
-      );
-    } catch (e) {
-      showError("Signup failed: $e");
-    }
+  // ---- VALIDATION ----
+  if (name.isEmpty) {
+    showError("Please enter your name");
+    return;
   }
+
+  if (selectedCity == null) {
+    showError("Please select your city");
+    return;
+  }
+
+  if (email.isEmpty || password.isEmpty) {
+    showError("Email and password are required");
+    return;
+  }
+
+  try {
+    // ---- CREATE AUTH USER ----
+    final userCredential = await _auth.createUserWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
+
+    final uid = userCredential.user!.uid;
+
+    // ---- SAVE USER PROFILE IN BOTH COLLECTIONS ----
+    final userData = {
+      'name': name,
+      'email': email,
+      'city': selectedCity,
+      'bio': '', // Default empty bio
+      'hobbies': [], // Default empty hobbies
+      'profilePic': '', // Default empty profile pic
+      'createdAt': FieldValue.serverTimestamp(),
+    };
+
+    // Create in users_private (for secure data)
+    await _firestore.collection('users_private').doc(uid).set(userData);
+    
+    // Create in users (for public data)
+    await _firestore.collection('users').doc(uid).set(userData);
+
+    if (!mounted) return;
+
+    // ---- GO TO LOGGED IN SCREEN AND CLEAR STACK ----
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const MainScreen()),
+      (route) => false, // Clear all previous routes
+    );
+  } catch (e) {
+    showError("Signup failed: $e");
+  }
+}
 
   void showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(

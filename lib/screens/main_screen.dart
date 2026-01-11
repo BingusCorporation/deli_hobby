@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../data/hobbies.dart';
 import '../data/city.dart';
 import 'profile.dart';
+import '../auth/login_screen.dart'; // Add this import
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -14,8 +15,8 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final String _currentUserId = FirebaseAuth.instance.currentUser!.uid;
-
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  
   // Search state
   String? _selectedCity;
   final List<String> _selectedCategories = [];
@@ -31,7 +32,38 @@ class _MainScreenState extends State<MainScreen> {
   String _searchStatus = '';
 
   @override
+  void initState() {
+    super.initState();
+    _setupAuthListener();
+  }
+
+  void _setupAuthListener() {
+    // Listen for auth state changes
+    _auth.authStateChanges().listen((User? user) {
+      if (user == null && mounted) {
+        // User logged out - navigate to login
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const LoginScreen()),
+          (route) => false,
+        );
+      }
+    });
+  }
+
+  String get _currentUserId => _auth.currentUser?.uid ?? '';
+
+  @override
   Widget build(BuildContext context) {
+    // Check if user is authenticated
+    if (_auth.currentUser == null) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Deli Hobby'),
@@ -364,6 +396,24 @@ class _MainScreenState extends State<MainScreen> {
 
   /// Build a user card for search results
   Widget _buildUserCard(Map<String, dynamic> user) {
+    // ✅ FIX: Handle missing 'matchingHobbies' field
+    final List<dynamic> matchingHobbies = 
+        (user['matchingHobbies'] is List<dynamic>)
+            ? user['matchingHobbies'] as List<dynamic>
+            : [];
+    
+    // ✅ FIX: Handle missing 'bio' field
+    final String? bio = (user['bio'] is String) ? user['bio'] as String? : null;
+    
+    // ✅ FIX: Handle missing 'city' field
+    final String? city = (user['city'] is String) ? user['city'] as String? : null;
+    
+    // ✅ FIX: Handle missing 'profilePic' field
+    final String? profilePic = (user['profilePic'] is String) ? user['profilePic'] as String? : null;
+    
+    // ✅ FIX: Handle missing 'matchScore' field
+    final int matchScore = (user['matchScore'] is int) ? user['matchScore'] as int : 0;
+    
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 2,
@@ -378,8 +428,8 @@ class _MainScreenState extends State<MainScreen> {
                 // Profile picture
                 CircleAvatar(
                   radius: 25,
-                  backgroundImage: user['profilePic'] != null
-                      ? NetworkImage(user['profilePic']!)
+                  backgroundImage: profilePic != null && profilePic.isNotEmpty
+                      ? NetworkImage(profilePic)
                       : const AssetImage('assets/default_avatar.png')
                           as ImageProvider,
                 ),
@@ -399,9 +449,9 @@ class _MainScreenState extends State<MainScreen> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      if (user['city'] != null && user['city'].isNotEmpty)
+                      if (city != null && city.isNotEmpty)
                         Text(
-                          user['city'],
+                          city,
                           style: TextStyle(
                             color: Colors.grey[600],
                             fontSize: 12,
@@ -418,11 +468,11 @@ class _MainScreenState extends State<MainScreen> {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: _getMatchColor(user['matchScore']),
+                    color: _getMatchColor(matchScore),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Text(
-                    '${user['matchScore']}%',
+                    '$matchScore%',
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
@@ -436,11 +486,11 @@ class _MainScreenState extends State<MainScreen> {
             const SizedBox(height: 8),
             
             // Bio
-            if (user['bio'] != null && user['bio'].isNotEmpty)
+            if (bio != null && bio.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Text(
-                  user['bio']!,
+                  bio,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -451,11 +501,11 @@ class _MainScreenState extends State<MainScreen> {
               ),
             
             // Matching hobbies
-            if (user['matchingHobbies'] != null && (user['matchingHobbies'] as List).isNotEmpty)
+            if (matchingHobbies.isNotEmpty)
               Wrap(
                 spacing: 6,
                 runSpacing: 4,
-                children: (user['matchingHobbies'] as List<dynamic>)
+                children: matchingHobbies
                     .take(3)
                     .map<Widget>((hobby) {
                   return Chip(
@@ -469,7 +519,7 @@ class _MainScreenState extends State<MainScreen> {
                     labelPadding: const EdgeInsets.symmetric(horizontal: 4),
                   );
                 }).toList(),
-              ),
+            ),
             
             const SizedBox(height: 8),
             
@@ -505,6 +555,23 @@ class _MainScreenState extends State<MainScreen> {
 
   /// Main search algorithm
   Future<void> _searchForMatches() async {
+    // First check if user is still authenticated
+    if (_auth.currentUser == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Sesija je istekla. Molimo prijavite se ponovo.'),
+          ),
+        );
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const LoginScreen()),
+          (route) => false,
+        );
+      }
+      return;
+    }
+
     if (_selectedCategories.isEmpty && _selectedSubcategories.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -649,7 +716,12 @@ class _MainScreenState extends State<MainScreen> {
     final snapshot = await query.get();
     
     return snapshot.docs.where((doc) {
-      final userHobbies = List<String>.from(doc['hobbies'] ?? []);
+      final userData = doc.data() as Map<String, dynamic>;
+      
+      final List<String> userHobbies = 
+          (userData['hobbies'] is List<dynamic>)
+              ? List<String>.from(userData['hobbies'] as List<dynamic>)
+              : [];
       
       for (final hobby in userHobbies) {
         for (final category in categories) {
@@ -672,7 +744,11 @@ class _MainScreenState extends State<MainScreen> {
     
     for (final doc in docs) {
       final userData = doc.data() as Map<String, dynamic>;
-      final userHobbies = List<String>.from(userData['hobbies'] ?? []);
+      
+      final List<String> userHobbies = 
+          (userData['hobbies'] is List<dynamic>)
+              ? List<String>.from(userData['hobbies'] as List<dynamic>)
+              : [];
       
       final List<String> matchingHobbies = [];
       int matchCount = 0;
