@@ -143,3 +143,6 @@ flutter_export_environment.sh
 .settings/
 .cache/
 .temp/
+.dart_tool/package_config.json
+.flutter-plugins-dependencies
+.dart_tool/version
