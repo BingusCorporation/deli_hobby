@@ -55,6 +55,14 @@ Future<void> signup() async {
     // ---- SAVE USER PROFILE IN BOTH COLLECTIONS ----
     final userData = {
       'name': name,
+      'city': selectedCity,
+      'bio': '', // Default empty bio
+      'hobbies': [], // Default empty hobbies
+      'profilePic': '', // Default empty profile pic
+      'createdAt': FieldValue.serverTimestamp(),
+    };
+    final userDatapriv = {
+      'name': name,
       'email': email,
       'city': selectedCity,
       'bio': '', // Default empty bio
@@ -64,7 +72,7 @@ Future<void> signup() async {
     };
 
     // Create in users_private (for secure data)
-    await _firestore.collection('users_private').doc(uid).set(userData);
+    await _firestore.collection('users_private').doc(uid).set(userDatapriv);
     
     // Create in users (for public data)
     await _firestore.collection('users').doc(uid).set(userData);

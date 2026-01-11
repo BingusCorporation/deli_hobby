@@ -21,7 +21,7 @@ class _LoginScreenState extends State<LoginScreen> {
         password: passwordController.text,
       );
       
-      // ✅ Use pushAndRemoveUntil to clear navigation stack
+      //  Use pushAndRemoveUntil to clear navigation stack
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (_) => const MainScreen()),
