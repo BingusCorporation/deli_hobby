@@ -4,7 +4,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../data/hobbies.dart';
 import '../data/city.dart';
 import 'profile.dart';
-import '../auth/login_screen.dart'; // Add this import
+import 'messages_screen.dart'; // ADD THIS
+import 'chat_screen.dart'; // ADD THIS
+import '../auth/login_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -19,8 +21,7 @@ class _MainScreenState extends State<MainScreen> {
   
   // Search state
   String? _selectedCity;
-  final List<String> _selectedCategories = [];
-  final List<String> _selectedSubcategories = [];
+  final List<String> _selectedFilters = [];
   
   // For dropdowns
   String? _selectedCategory;
@@ -38,10 +39,8 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   void _setupAuthListener() {
-    // Listen for auth state changes
     _auth.authStateChanges().listen((User? user) {
       if (user == null && mounted) {
-        // User logged out - navigate to login
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (_) => const LoginScreen()),
@@ -55,12 +54,9 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Check if user is authenticated
     if (_auth.currentUser == null) {
       return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
+        body: Center(child: CircularProgressIndicator()),
       );
     }
 
@@ -68,6 +64,52 @@ class _MainScreenState extends State<MainScreen> {
       appBar: AppBar(
         title: const Text('Deli Hobby'),
         actions: [
+          // Messages icon button
+          StreamBuilder<int>(
+            stream: _getUnreadCountStream(),
+            builder: (context, snapshot) {
+              final unreadCount = snapshot.data ?? 0;
+              return Stack(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.message),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const MessagesScreen()),
+                      );
+                    },
+                  ),
+                  if (unreadCount > 0)
+                    Positioned(
+                      right: 8,
+                      top: 8,
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 16,
+                          minHeight: 16,
+                        ),
+                        child: Text(
+                          unreadCount > 9 ? '9+' : unreadCount.toString(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            },
+          ),
+          // Profile icon button
           IconButton(
             icon: const Icon(Icons.person),
             onPressed: () {
@@ -83,8 +125,8 @@ class _MainScreenState extends State<MainScreen> {
       ),
       body: Column(
         children: [
-          // COMPACT SEARCH FILTERS SECTION
-          _buildCompactSearchFilters(),
+          // COMPACT SEARCH SECTION
+          _buildSearchFilters(),
           
           // SEARCH BUTTON
           Padding(
@@ -122,209 +164,167 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  /// Build compact search filters section
-  Widget _buildCompactSearchFilters() {
+  /// Stream for unread messages count
+  Stream<int> _getUnreadCountStream() {
+    return _firestore
+        .collection('conversations')
+        .where('participants', arrayContains: _currentUserId)
+        .snapshots()
+        .map((snapshot) {
+          int total = 0;
+          for (final doc in snapshot.docs) {
+            final data = doc.data() as Map<String, dynamic>;
+            final unread = (data['unreadCount'] as Map<String, dynamic>?)?[_currentUserId] as int? ?? 0;
+            total += unread;
+          }
+          return total;
+        });
+  }
+
+  /// Build compact search filters
+  Widget _buildSearchFilters() {
     return Container(
       padding: const EdgeInsets.all(12),
       color: Colors.grey[50],
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // CITY DROPDOWN (similar to profile)
-          const Text(
-            'Grad:',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-          ),
-          const SizedBox(height: 4),
-          Container(
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey.shade400),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<String>(
-                isExpanded: true,
-                hint: const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 12),
-                  child: Text('Izaberi grad (opciono)'),
+          // City dropdown
+          Row(
+            children: [
+              const Icon(Icons.location_city, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    isExpanded: true,
+                    hint: const Text('Grad (opciono)'),
+                    value: _selectedCity,
+                    items: serbiaCities.map((city) {
+                      return DropdownMenuItem(
+                        value: city,
+                        child: Text(city, overflow: TextOverflow.ellipsis),
+                      );
+                    }).toList(),
+                    onChanged: (value) => setState(() => _selectedCity = value),
+                  ),
                 ),
-                value: _selectedCity,
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                items: serbiaCities.map((city) {
-                  return DropdownMenuItem(
-                    value: city,
-                    child: Text(city),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  setState(() {
-                    _selectedCity = value;
-                  });
-                },
               ),
-            ),
+              if (_selectedCity != null)
+                IconButton(
+                  icon: const Icon(Icons.close, size: 18),
+                  onPressed: () => setState(() => _selectedCity = null),
+                ),
+            ],
           ),
           
           const SizedBox(height: 12),
           
-          // CATEGORY AND SUBCATEGORY ROW
+          // Category and subcategory in a row
           Row(
             children: [
+              // Category dropdown
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Kategorija:',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                child: InputDecorator(
+                  decoration: InputDecoration(
+                    labelText: 'Kategorija',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                    const SizedBox(height: 4),
-                    Container(
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey.shade400),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
-                          isExpanded: true,
-                          hint: const Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 12),
-                            child: Text('Izaberi kategoriju'),
-                          ),
-                          value: _selectedCategory,
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          items: hobbyCategories.keys.map((category) {
-                            return DropdownMenuItem(
-                              value: category,
-                              child: Text(category),
-                            );
-                          }).toList(),
-                          onChanged: (value) {
-                            setState(() {
-                              _selectedCategory = value;
-                              _selectedSubcategory = null;
-                            });
-                          },
-                        ),
-                      ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      isExpanded: true,
+                      hint: const Text('Izaberi'),
+                      value: _selectedCategory,
+                      items: hobbyCategories.keys.map((category) {
+                        return DropdownMenuItem(
+                          value: category,
+                          child: Text(category, overflow: TextOverflow.ellipsis),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedCategory = value;
+                          _selectedSubcategory = null;
+                        });
+                      },
                     ),
-                  ],
+                  ),
                 ),
               ),
               
               const SizedBox(width: 8),
               
+              // Subcategory dropdown
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Podkategorija:',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                child: InputDecorator(
+                  decoration: InputDecoration(
+                    labelText: 'Podkategorija',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                    const SizedBox(height: 4),
-                    Container(
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey.shade400),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
-                          isExpanded: true,
-                          hint: const Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 12),
-                            child: Text('Izaberi podkategoriju'),
-                          ),
-                          value: _selectedSubcategory,
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          items: _selectedCategory != null
-                              ? hobbyCategories[_selectedCategory]!
-                                  .map((sub) => DropdownMenuItem(
-                                    value: sub,
-                                    child: Text(sub),
-                                  ))
-                                  .toList()
-                              : [],
-                          onChanged: (value) {
-                            setState(() {
-                              _selectedSubcategory = value;
-                            });
-                          },
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      isExpanded: true,
+                      hint: const Text('Izaberi (opciono)'),
+                      value: _selectedSubcategory,
+                      items: [
+                        const DropdownMenuItem(
+                          value: null,
+                          child: Text('Sva podkategorija'),
                         ),
-                      ),
+                        if (_selectedCategory != null)
+                          ...hobbyCategories[_selectedCategory]!.map((sub) {
+                            return DropdownMenuItem(
+                              value: sub,
+                              child: Text(sub, overflow: TextOverflow.ellipsis),
+                            );
+                          }).toList(),
+                      ],
+                      onChanged: (value) => setState(() => _selectedSubcategory = value),
                     ),
-                  ],
+                  ),
                 ),
               ),
             ],
           ),
           
-          // ADD BUTTON
-          Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: ElevatedButton(
-              onPressed: _selectedCategory != null && _selectedSubcategory != null
-                  ? _addSearchFilter
-                  : null,
-              style: ElevatedButton.styleFrom(
-                minimumSize: const Size(double.infinity, 36),
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-              ),
-              child: const Text('Dodaj u pretragu'),
+          const SizedBox(height: 8),
+          
+          // Add filter button
+          ElevatedButton(
+            onPressed: _selectedCategory != null ? _addSearchFilter : null,
+            style: ElevatedButton.styleFrom(
+              minimumSize: const Size(double.infinity, 36),
             ),
+            child: const Text('Dodaj filter'),
           ),
           
-          // SELECTED FILTERS CHIPS (only if any)
-          if (_selectedCategories.isNotEmpty || _selectedSubcategories.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            const Text(
-              'Tražim:',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-            ),
-            const SizedBox(height: 4),
+          const SizedBox(height: 8),
+          
+          // Selected filters chips
+          if (_selectedFilters.isNotEmpty || _selectedCity != null) ...[
             Wrap(
               spacing: 6,
-              runSpacing: 6,
+              runSpacing: 4,
               children: [
-                // City chip if selected
+                // City chip
                 if (_selectedCity != null)
                   Chip(
                     label: Text(_selectedCity!),
                     deleteIcon: const Icon(Icons.close, size: 14),
-                    onDeleted: () {
-                      setState(() {
-                        _selectedCity = null;
-                      });
-                    },
+                    onDeleted: () => setState(() => _selectedCity = null),
                   ),
                 
-                // Category chips
-                ..._selectedCategories.map((category) {
+                // Filter chips
+                ..._selectedFilters.map((filter) {
                   return Chip(
-                    label: Text(category),
+                    label: Text(filter),
                     deleteIcon: const Icon(Icons.close, size: 14),
-                    onDeleted: () {
-                      setState(() {
-                        _selectedCategories.remove(category);
-                        // Remove all subcategories from this category
-                        _selectedSubcategories.removeWhere(
-                          (sub) => hobbyCategories[category]?.contains(sub) ?? false
-                        );
-                      });
-                    },
-                  );
-                }).toList(),
-                
-                // Subcategory chips
-                ..._selectedSubcategories.map((subcategory) {
-                  return Chip(
-                    label: Text(subcategory),
-                    deleteIcon: const Icon(Icons.close, size: 14),
-                    onDeleted: () {
-                      setState(() {
-                        _selectedSubcategories.remove(subcategory);
-                      });
-                    },
+                    onDeleted: () => setState(() => _selectedFilters.remove(filter)),
                   );
                 }).toList(),
               ],
@@ -335,24 +335,27 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  /// Add current category/subcategory to search filters
+  /// Add current selection to search filters
   void _addSearchFilter() {
-    if (_selectedCategory != null && _selectedSubcategory != null) {
-      setState(() {
-        if (!_selectedCategories.contains(_selectedCategory!)) {
-          _selectedCategories.add(_selectedCategory!);
-        }
-        if (!_selectedSubcategories.contains(_selectedSubcategory!)) {
-          _selectedSubcategories.add(_selectedSubcategory!);
-        }
-        // Reset dropdowns for next selection
-        _selectedCategory = null;
-        _selectedSubcategory = null;
-      });
+    if (_selectedCategory != null) {
+      String filter;
+      if (_selectedSubcategory != null) {
+        filter = '$_selectedCategory > $_selectedSubcategory';
+      } else {
+        filter = _selectedCategory!;
+      }
+      
+      if (!_selectedFilters.contains(filter)) {
+        setState(() {
+          _selectedFilters.add(filter);
+          _selectedCategory = null;
+          _selectedSubcategory = null;
+        });
+      }
     }
   }
 
-  /// Build the search results section
+  /// Build search results
   Widget _buildSearchResults() {
     if (_isSearching) {
       return const Center(
@@ -375,7 +378,7 @@ class _MainScreenState extends State<MainScreen> {
             Icon(Icons.people, size: 60, color: Colors.grey),
             SizedBox(height: 12),
             Text(
-              'Izaberi kategorije i pritisni "Pronađi ljude"',
+              'Dodajte filtere i pritisnite "Pronađi ljude"',
               style: TextStyle(color: Colors.grey, fontSize: 14),
               textAlign: TextAlign.center,
             ),
@@ -394,26 +397,14 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  /// Build a user card for search results
+  /// Build user card
   Widget _buildUserCard(Map<String, dynamic> user) {
-    // ✅ FIX: Handle missing 'matchingHobbies' field
-    final List<dynamic> matchingHobbies = 
-        (user['matchingHobbies'] is List<dynamic>)
-            ? user['matchingHobbies'] as List<dynamic>
-            : [];
-    
-    // ✅ FIX: Handle missing 'bio' field
-    final String? bio = (user['bio'] is String) ? user['bio'] as String? : null;
-    
-    // ✅ FIX: Handle missing 'city' field
-    final String? city = (user['city'] is String) ? user['city'] as String? : null;
-    
-    // ✅ FIX: Handle missing 'profilePic' field
-    final String? profilePic = (user['profilePic'] is String) ? user['profilePic'] as String? : null;
-    
-    // ✅ FIX: Handle missing 'matchScore' field
-    final int matchScore = (user['matchScore'] is int) ? user['matchScore'] as int : 0;
-    
+    final String? profilePic = user['profilePic'] as String?;
+    final String? city = user['city'] as String?;
+    final String? bio = user['bio'] as String?;
+    final List<dynamic> matchingHobbies = user['matchingHobbies'] as List<dynamic>? ?? [];
+    final int matchScore = user['matchScore'] as int? ?? 0;
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 2,
@@ -426,12 +417,25 @@ class _MainScreenState extends State<MainScreen> {
             Row(
               children: [
                 // Profile picture
-                CircleAvatar(
-                  radius: 25,
-                  backgroundImage: profilePic != null && profilePic.isNotEmpty
-                      ? NetworkImage(profilePic)
-                      : const AssetImage('assets/default_avatar.png')
-                          as ImageProvider,
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => OtherUserProfileScreen(
+                          userId: user['id'] as String,
+                          userName: user['name'] as String? ?? 'Nepoznato',
+                        ),
+                      ),
+                    );
+                  },
+                  child: CircleAvatar(
+                    radius: 20,
+                    backgroundImage: profilePic != null && profilePic.isNotEmpty
+                        ? NetworkImage(profilePic)
+                        : const AssetImage('assets/default_avatar.png')
+                            as ImageProvider,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 
@@ -440,14 +444,27 @@ class _MainScreenState extends State<MainScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        user['name'] ?? 'Nepoznato',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => OtherUserProfileScreen(
+                                userId: user['id'] as String,
+                                userName: user['name'] as String? ?? 'Nepoznato',
+                              ),
+                            ),
+                          );
+                        },
+                        child: Text(
+                          user['name'] as String? ?? 'Nepoznato',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                       ),
                       if (city != null && city.isNotEmpty)
                         Text(
@@ -485,7 +502,7 @@ class _MainScreenState extends State<MainScreen> {
             
             const SizedBox(height: 8),
             
-            // Bio
+            // Bio preview
             if (bio != null && bio.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(bottom: 8),
@@ -508,44 +525,58 @@ class _MainScreenState extends State<MainScreen> {
                 children: matchingHobbies
                     .take(3)
                     .map<Widget>((hobby) {
-                  return Chip(
-                    label: Text(
-                      hobby.toString().replaceAll(' > ', ' >\n'),
-                      style: const TextStyle(fontSize: 10),
-                    ),
-                    backgroundColor: Colors.green[50],
-                    side: BorderSide(color: Colors.green.shade200),
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    labelPadding: const EdgeInsets.symmetric(horizontal: 4),
-                  );
-                }).toList(),
-            ),
+                      return Chip(
+                        label: Text(
+                          hobby.toString(),
+                          style: const TextStyle(fontSize: 10),
+                        ),
+                        backgroundColor: Colors.green[50],
+                        side: BorderSide(color: Colors.green.shade200),
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        labelPadding: const EdgeInsets.symmetric(horizontal: 4),
+                      );
+                    }).toList(),
+              ),
             
             const SizedBox(height: 8),
             
-            // View profile button
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton(
-                onPressed: () {
-                  // Navigate to user profile
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ProfileScreen(),
-                    ),
-                  );
-                },
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            // Action buttons
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ChatScreen(
+                          otherUserId: user['id'] as String,
+                          otherUserName: user['name'] as String? ?? 'Nepoznato',
+                        ),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.message, size: 14),
+                  label: const Text('Poruka', style: TextStyle(fontSize: 12)),
                 ),
-                child: const Text(
-                  'Pogledaj profil',
-                  style: TextStyle(fontSize: 12),
+                const SizedBox(width: 8),
+                TextButton.icon(
+                  onPressed: () {
+                    // Navigate to user profile
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => OtherUserProfileScreen(
+                          userId: user['id'] as String,
+                          userName: user['name'] as String? ?? 'Nepoznato',
+                        ),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.person, size: 14),
+                  label: const Text('Profil', style: TextStyle(fontSize: 12)),
                 ),
-              ),
+              ],
             ),
           ],
         ),
@@ -555,28 +586,21 @@ class _MainScreenState extends State<MainScreen> {
 
   /// Main search algorithm
   Future<void> _searchForMatches() async {
-    // First check if user is still authenticated
     if (_auth.currentUser == null) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Sesija je istekla. Molimo prijavite se ponovo.'),
-          ),
-        );
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (_) => const LoginScreen()),
-          (route) => false,
-        );
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Sesija je istekla. Molimo prijavite se ponovo.')),
+      );
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+        (route) => false,
+      );
       return;
     }
 
-    if (_selectedCategories.isEmpty && _selectedSubcategories.isEmpty) {
+    if (_selectedFilters.isEmpty && _selectedCity == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Izaberi bar jednu kategoriju ili podkategoriju'),
-        ),
+        const SnackBar(content: Text('Izaberi bar jedan filter za pretragu')),
       );
       return;
     }
@@ -588,203 +612,101 @@ class _MainScreenState extends State<MainScreen> {
     });
 
     try {
-      // Build full search strings (Category > Subcategory)
-      final List<String> fullSearchStrings = [];
+      // Build query
+      Query query = _firestore.collection('users');
+      query = query.where(FieldPath.documentId, isNotEqualTo: _currentUserId);
       
-      for (final category in _selectedCategories) {
-        for (final subcategory in _selectedSubcategories) {
-          if (hobbyCategories[category]?.contains(subcategory) ?? false) {
-            fullSearchStrings.add('$category > $subcategory');
+      if (_selectedCity != null && _selectedCity!.isNotEmpty) {
+        query = query.where('city', isEqualTo: _selectedCity);
+      }
+      
+      // Prepare search patterns
+      final List<String> exactPatterns = [];
+      final List<String> categoryPatterns = [];
+      
+      for (final filter in _selectedFilters) {
+        if (filter.contains('>')) {
+          exactPatterns.add(filter);
+        } else {
+          categoryPatterns.add(filter);
+        }
+      }
+      
+      // Execute query
+      final snapshot = await query.get();
+      
+      // Filter and score results
+      final List<Map<String, dynamic>> results = [];
+      
+      for (final doc in snapshot.docs) {
+        final userData = doc.data() as Map<String, dynamic>;
+        final List<dynamic> userHobbies = userData['hobbies'] as List<dynamic>? ?? [];
+        
+        // Calculate matches
+        final List<String> matchingHobbies = [];
+        int matchScore = 0;
+        
+        // Check exact matches
+        for (final pattern in exactPatterns) {
+          if (userHobbies.contains(pattern)) {
+            matchingHobbies.add(pattern);
+            matchScore += 30;
           }
         }
-      }
-
-      // Build category-only search strings
-      final List<String> categoryOnlyStrings = [];
-      for (final category in _selectedCategories) {
-        categoryOnlyStrings.add(category);
-      }
-
-      // QUERY 1: Exact match on all selected categories AND subcategories
-      if (fullSearchStrings.isNotEmpty) {
-        _searchStatus = 'Tražim tačno poklapanje...';
-        setState(() {});
         
-        final exactMatches = await _searchUsers(
-          searchStrings: fullSearchStrings,
-          requireAll: true,
-          city: _selectedCity,
-        );
+        // Check category matches
+        for (final category in categoryPatterns) {
+          bool hasCategoryMatch = false;
+          for (final hobby in userHobbies) {
+            final hobbyStr = hobby.toString();
+            if (hobbyStr.startsWith('$category >')) {
+              matchingHobbies.add(hobbyStr);
+              hasCategoryMatch = true;
+            }
+          }
+          if (hasCategoryMatch) {
+            matchScore += 15;
+          }
+        }
         
-        if (exactMatches.isNotEmpty) {
-          _processAndDisplayResults(exactMatches, fullSearchStrings, 100);
-          return;
+        // Apply city bonus
+        if (_selectedCity != null && userData['city'] == _selectedCity) {
+          matchScore += 10;
+        }
+        
+        // Cap score at 100
+        matchScore = matchScore.clamp(0, 100);
+        
+        if (matchScore > 0 || _selectedFilters.isEmpty) {
+          results.add({
+            'id': doc.id,
+            ...userData,
+            'matchScore': matchScore,
+            'matchingHobbies': matchingHobbies,
+          });
         }
       }
-
-      // QUERY 2: Match at least one category AND subcategory
-      if (fullSearchStrings.isNotEmpty) {
-        _searchStatus = 'Tražim delimično poklapanje...';
-        setState(() {});
-        
-        final partialMatches = await _searchUsers(
-          searchStrings: fullSearchStrings,
-          requireAll: false,
-          city: _selectedCity,
-        );
-        
-        if (partialMatches.isNotEmpty) {
-          _processAndDisplayResults(partialMatches, fullSearchStrings, 70);
-          return;
-        }
-      }
-
-      // QUERY 3: Match at least one category (ignoring subcategories)
-      if (categoryOnlyStrings.isNotEmpty) {
-        _searchStatus = 'Tražim po kategorijama...';
-        setState(() {});
-        
-        final categoryMatches = await _searchUsersByCategory(
-          categories: categoryOnlyStrings,
-          city: _selectedCity,
-        );
-        
-        if (categoryMatches.isNotEmpty) {
-          _processAndDisplayResults(categoryMatches, categoryOnlyStrings, 50);
-          return;
-        }
-      }
-
-      // No matches found
+      
+      // Sort by match score
+      results.sort((a, b) => b['matchScore'].compareTo(a['matchScore']));
+      
       setState(() {
-        _searchStatus = 'Nema pronađenih ljudi sa traženim kriterijumima';
-        _searchResults = [];
+        _searchResults = results;
+        _searchStatus = results.isEmpty 
+            ? 'Nema pronađenih ljudi sa traženim kriterijumima'
+            : 'Pronađeno ${results.length} ljudi';
       });
     } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Greška pri pretrazi: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Greška pri pretrazi: $e')),
+        );
+      }
     } finally {
       if (mounted) {
-        setState(() {
-          _isSearching = false;
-        });
+        setState(() => _isSearching = false);
       }
     }
-  }
-
-  /// Search users with specific criteria
-  Future<List<QueryDocumentSnapshot>> _searchUsers({
-    required List<String> searchStrings,
-    required bool requireAll,
-    String? city,
-  }) async {
-    Query query = _firestore.collection('users');
-    
-    query = query.where(FieldPath.documentId, isNotEqualTo: _currentUserId);
-    
-    if (city != null && city.isNotEmpty) {
-      query = query.where('city', isEqualTo: city);
-    }
-    
-    if (requireAll) {
-      for (final searchString in searchStrings) {
-        query = query.where('hobbies', arrayContains: searchString);
-      }
-    } else {
-      query = query.where('hobbies', arrayContainsAny: searchStrings);
-    }
-    
-    final snapshot = await query.get();
-    return snapshot.docs;
-  }
-
-  /// Search users by category only
-  Future<List<QueryDocumentSnapshot>> _searchUsersByCategory({
-    required List<String> categories,
-    String? city,
-  }) async {
-    Query query = _firestore.collection('users');
-    
-    query = query.where(FieldPath.documentId, isNotEqualTo: _currentUserId);
-    
-    if (city != null && city.isNotEmpty) {
-      query = query.where('city', isEqualTo: city);
-    }
-    
-    final snapshot = await query.get();
-    
-    return snapshot.docs.where((doc) {
-      final userData = doc.data() as Map<String, dynamic>;
-      
-      final List<String> userHobbies = 
-          (userData['hobbies'] is List<dynamic>)
-              ? List<String>.from(userData['hobbies'] as List<dynamic>)
-              : [];
-      
-      for (final hobby in userHobbies) {
-        for (final category in categories) {
-          if (hobby.startsWith('$category >')) {
-            return true;
-          }
-        }
-      }
-      return false;
-    }).toList();
-  }
-
-  /// Process and display search results with match scoring
-  void _processAndDisplayResults(
-    List<QueryDocumentSnapshot> docs,
-    List<String> searchStrings,
-    int baseScore,
-  ) {
-    final List<Map<String, dynamic>> results = [];
-    
-    for (final doc in docs) {
-      final userData = doc.data() as Map<String, dynamic>;
-      
-      final List<String> userHobbies = 
-          (userData['hobbies'] is List<dynamic>)
-              ? List<String>.from(userData['hobbies'] as List<dynamic>)
-              : [];
-      
-      final List<String> matchingHobbies = [];
-      int matchCount = 0;
-      
-      for (final hobby in userHobbies) {
-        for (final searchString in searchStrings) {
-          if (searchString.contains('>')) {
-            if (hobby == searchString) {
-              matchingHobbies.add(hobby);
-              matchCount++;
-            }
-          } else {
-            if (hobby.startsWith('$searchString >')) {
-              matchingHobbies.add(hobby);
-              matchCount++;
-            }
-          }
-        }
-      }
-      
-      final matchScore = (baseScore + (matchCount * 5)).clamp(0, 100);
-      
-      results.add({
-        'id': doc.id,
-        ...userData,
-        'matchScore': matchScore,
-        'matchingHobbies': matchingHobbies,
-      });
-    }
-    
-    results.sort((a, b) => b['matchScore'].compareTo(a['matchScore']));
-    
-    setState(() {
-      _searchResults = results;
-      _searchStatus = 'Pronađeno ${results.length} ljudi';
-    });
   }
 
   /// Get color based on match score
@@ -793,5 +715,49 @@ class _MainScreenState extends State<MainScreen> {
     if (score >= 60) return Colors.blue;
     if (score >= 40) return Colors.orange;
     return Colors.red;
+  }
+}
+
+/// OtherUserProfileScreen widget - ADD THIS CLASS IF NOT ALREADY IN FILE
+class OtherUserProfileScreen extends StatelessWidget {
+  final String userId;
+  final String userName;
+  
+  const OtherUserProfileScreen({
+    super.key,
+    required this.userId,
+    required this.userName,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(userName),
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text('Profil korisnika: $userName'),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ChatScreen(
+                      otherUserId: userId,
+                      otherUserName: userName,
+                    ),
+                  ),
+                );
+              },
+              child: const Text('Pošalji poruku'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

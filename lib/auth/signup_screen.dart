@@ -58,6 +58,7 @@ Future<void> signup() async {
       'city': selectedCity,
       'bio': '', // Default empty bio
       'hobbies': [], // Default empty hobbies
+      'friends':[],
       'profilePic': '', // Default empty profile pic
       'createdAt': FieldValue.serverTimestamp(),
     };
@@ -67,6 +68,9 @@ Future<void> signup() async {
       'city': selectedCity,
       'bio': '', // Default empty bio
       'hobbies': [], // Default empty hobbies
+      'friends':[],
+      'friendRequests':[],
+      'sentFriendRequests':[],
       'profilePic': '', // Default empty profile pic
       'createdAt': FieldValue.serverTimestamp(),
     };

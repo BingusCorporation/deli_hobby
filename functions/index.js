@@ -17,15 +17,16 @@ exports.syncPublicUser = functions.firestore
     const privateData = change.after.data();
     
     // Extract ALL public fields including email
-    const publicData = {
-      name: privateData.name || '',
-      city: privateData.city || '',
-      bio: privateData.bio || '',
-      profilePic: privateData.profilePic || '',
-      hobbies: privateData.hobbies || [],
-      createdAt: privateData.createdAt || admin.firestore.FieldValue.serverTimestamp(),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(), // Add update timestamp
-    };
+const publicData = {
+  name: privateData.name || '',
+  city: privateData.city || '',
+  bio: privateData.bio || '',
+  profilePic: privateData.profilePic || '',
+  hobbies: privateData.hobbies || [],
+  friends: privateData.friends || [], // Add friends to public data
+  createdAt: privateData.createdAt || admin.firestore.FieldValue.serverTimestamp(),
+  updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+};
     
     // Update public user document
     await admin.firestore().collection('users').doc(userId).set(publicData, { merge: true });

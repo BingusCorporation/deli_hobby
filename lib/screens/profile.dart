@@ -6,6 +6,10 @@ import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import '../auth/login_screen.dart';
+import '../services/friends_service.dart';
+import '../screens/other_user_profile.dart';
+import 'messages_screen.dart';
+
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -59,7 +63,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
       print('Error loading initial data: $e');
     }
   }
-
+Stream<int> _getUnreadCountStream() {
+  final FirebaseFirestore firestore = FirebaseFirestore.instance;
+  final String uid = FirebaseAuth.instance.currentUser!.uid;
+  
+  return firestore
+      .collection('conversations')
+      .where('participants', arrayContains: uid)
+      .snapshots()
+      .map((snapshot) {
+        int total = 0;
+        for (final doc in snapshot.docs) {
+          final data = doc.data() as Map<String, dynamic>;
+          final unread = (data['unreadCount'] as Map<String, dynamic>?)?[uid] as int? ?? 0;
+          total += unread;
+        }
+        return total;
+      });
+}
   /// Pick image from gallery or camera
   Future<void> _pickImage(ImageSource source) async {
     try {
@@ -82,43 +103,37 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   /// Upload image to Firebase Storage
-/// Upload image to Firebase Storage
-Future<void> _uploadImage() async {
-  if (_pickedImage == null) return;
+  Future<void> _uploadImage() async {
+    if (_pickedImage == null) return;
 
-  setState(() {
-    _isUploading = true;
-  });
-
-  try {
-    final storageRef = storage.ref().child('profile_pictures/$uid.jpg');
-    await storageRef.putFile(_pickedImage!);
-    final imageUrl = await storageRef.getDownloadURL();
-    
-    // Update both collections
-    await firestore.collection('users_private').doc(uid).update({
-      'profilePic': imageUrl,
-    });
-    
-    await firestore.collection('users').doc(uid).update({
-      'profilePic': imageUrl,
-    });
-
-    _showSnackBar('Profilna slika uspešno ažurirana!');
-    
     setState(() {
-      _pickedImage = null;
+      _isUploading = true;
     });
-  } catch (e) {
-    _showSnackBar('Greška pri upload-u slike: $e');
-  } finally {
-    if (mounted) {
-      setState(() {
-        _isUploading = false;
+
+    try {
+      final storageRef = storage.ref().child('profile_pictures/$uid.jpg');
+      await storageRef.putFile(_pickedImage!);
+      final imageUrl = await storageRef.getDownloadURL();
+      
+      await firestore.collection('users_private').doc(uid).update({
+        'profilePic': imageUrl,
       });
+
+      _showSnackBar('Profilna slika uspešno ažurirana!');
+      
+      setState(() {
+        _pickedImage = null;
+      });
+    } catch (e) {
+      _showSnackBar('Greška pri upload-u slike: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isUploading = false;
+        });
+      }
     }
   }
-}
 
   /// Show snackbar
   void _showSnackBar(String message) {
@@ -158,26 +173,91 @@ Future<void> _uploadImage() async {
     );
   }
 
+  /// Accept friend request
+  Future<void> _acceptFriendRequest(String requesterId) async {
+    try {
+      await FriendsService.acceptFriendRequest(requesterId);
+      _showSnackBar('Prijateljstvo prihvaćeno!');
+    } catch (e) {
+      _showSnackBar('Greška pri prihvatanju zahteva: $e');
+    }
+  }
+
+  /// Reject friend request
+  Future<void> _rejectFriendRequest(String requesterId) async {
+    try {
+      await FriendsService.cancelFriendRequest(requesterId);
+      _showSnackBar('Zahtev za prijateljstvo odbijen');
+    } catch (e) {
+      _showSnackBar('Greška pri odbijanju zahteva: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Profil"),
-        actions: [
-          IconButton(
-            icon: Icon(isEditing ? Icons.check : Icons.edit),
-            onPressed: () {
-              if (isEditing) {
-                saveProfile();
-              } else {
-                setState(() {
-                  isEditing = true;
-                });
-              }
-            },
-          )
-        ],
-      ),
+  title: const Text("Profil"),
+  actions: [
+    // Message notification badge
+    StreamBuilder<int>(
+      stream: _getUnreadCountStream(),
+      builder: (context, snapshot) {
+        final unreadCount = snapshot.data ?? 0;
+        return Stack(
+          children: [
+            IconButton(
+              icon: const Icon(Icons.message),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const MessagesScreen()),
+                );
+              },
+            ),
+            if (unreadCount > 0)
+              Positioned(
+                right: 8,
+                top: 8,
+                child: Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: BoxDecoration(
+                    color: Colors.red,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  constraints: const BoxConstraints(
+                    minWidth: 16,
+                    minHeight: 16,
+                  ),
+                  child: Text(
+                    unreadCount > 9 ? '9+' : unreadCount.toString(),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
+    ),
+    IconButton(
+      icon: Icon(isEditing ? Icons.check : Icons.edit),
+      onPressed: () {
+        if (isEditing) {
+          saveProfile();
+        } else {
+          setState(() {
+            isEditing = true;
+          });
+        }
+      },
+    )
+  ],
+),
       body: SingleChildScrollView(
         child: StreamBuilder<DocumentSnapshot>(
           stream: firestore.collection('users_private').doc(uid).snapshots(),
@@ -390,6 +470,119 @@ Future<void> _uploadImage() async {
                     ),
                   ],
 
+                  /// FRIENDS SECTION
+                  const SizedBox(height: 24),
+                  const Text('Prijatelji', style: TextStyle(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  StreamBuilder<List<Map<String, dynamic>>>(
+                    stream: FriendsService.getFriendsStream(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      
+                      final friends = snapshot.data ?? [];
+                      
+                      if (friends.isEmpty) {
+                        return const Text('Nemate prijatelja', style: TextStyle(color: Colors.grey));
+                      }
+                      
+                      return SizedBox(
+                        height: 100,
+                        child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: friends.length,
+                          itemBuilder: (context, index) {
+                            final friend = friends[index];
+                            return GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => OtherUserProfileScreen(
+                                      userId: friend['id'],
+                                      userName: friend['name'],
+                                    ),
+                                  ),
+                                );
+                              },
+                              child: Container(
+                                width: 80,
+                                margin: const EdgeInsets.only(right: 12),
+                                child: Column(
+                                  children: [
+                                    CircleAvatar(
+                                      radius: 30,
+                                      backgroundImage: friend['profilePic'] != null && friend['profilePic'].isNotEmpty
+                                          ? NetworkImage(friend['profilePic'])
+                                          : const AssetImage('assets/default_avatar.png')
+                                              as ImageProvider,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      friend['name'],
+                                      textAlign: TextAlign.center,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(fontSize: 12),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      );
+                    },
+                  ),
+
+                  /// FRIEND REQUESTS SECTION
+                  const SizedBox(height: 24),
+                  const Text('Zahtevi za prijateljstvo', style: TextStyle(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  StreamBuilder<List<Map<String, dynamic>>>(
+                    stream: FriendsService.getFriendRequestsStream(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      
+                      final requests = snapshot.data ?? [];
+                      
+                      if (requests.isEmpty) {
+                        return const Text('Nemate zahteva za prijateljstvo', style: TextStyle(color: Colors.grey));
+                      }
+                      
+                      return Column(
+                        children: requests.map((request) {
+                          return ListTile(
+                            leading: CircleAvatar(
+                              backgroundImage: request['profilePic'] != null && request['profilePic'].isNotEmpty
+                                  ? NetworkImage(request['profilePic'])
+                                  : const AssetImage('assets/default_avatar.png')
+                                      as ImageProvider,
+                            ),
+                            title: Text(request['name']),
+                            subtitle: Text(request['city'] ?? ''),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.check, color: Colors.green),
+                                  onPressed: () => _acceptFriendRequest(request['id']),
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.close, color: Colors.red),
+                                  onPressed: () => _rejectFriendRequest(request['id']),
+                                ),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                      );
+                    },
+                  ),
+
                   const SizedBox(height: 20),
 
                   /// ✅ UPDATED: SECURE LOGOUT BUTTON
@@ -456,68 +649,49 @@ Future<void> _uploadImage() async {
   }
 
   /// Save profile
-Future<void> saveProfile() async {
-  try {
-    final updates = {
-      'bio': bioController.text.trim(),
-      'city': cityController.text.trim(),
-    };
-    
-    // Update both collections
-    await firestore.collection('users_private').doc(uid).update(updates);
-    await firestore.collection('users').doc(uid).update(updates);
+  Future<void> saveProfile() async {
+    try {
+      await firestore.collection('users_private').doc(uid).update({
+        'bio': bioController.text.trim(),
+        'city': cityController.text.trim(),
+      });
 
-    setState(() {
-      isEditing = false;
-      selectedCategory = null;
-      selectedSubcategory = null;
-    });
-    
-    _showSnackBar('Profil uspešno ažuriran!');
-  } catch (e) {
-    _showSnackBar('Greška pri čuvanju profila: $e');
+      setState(() {
+        isEditing = false;
+        selectedCategory = null;
+        selectedSubcategory = null;
+      });
+    } catch (e) {
+      _showSnackBar('Greška pri čuvanju profila: $e');
+    }
   }
-}
 
-Future<void> addHobby() async {
-  final hobby = "$selectedCategory > $selectedSubcategory";
+  Future<void> addHobby() async {
+    final hobby = "$selectedCategory > $selectedSubcategory";
 
-  try {
-    // Update both collections
-    await firestore.collection('users_private').doc(uid).update({
-      'hobbies': FieldValue.arrayUnion([hobby]),
-    });
-    
-    await firestore.collection('users').doc(uid).update({
-      'hobbies': FieldValue.arrayUnion([hobby]),
-    });
+    try {
+      await firestore.collection('users_private').doc(uid).update({
+        'hobbies': FieldValue.arrayUnion([hobby]),
+      });
 
-    setState(() {
-      selectedSubcategory = null;
-    });
-    
-    _showSnackBar('Hobi uspešno dodat!');
-  } catch (e) {
-    _showSnackBar('Greška pri dodavanju hobija: $e');
+      setState(() {
+        selectedSubcategory = null;
+      });
+    } catch (e) {
+      _showSnackBar('Greška pri dodavanju hobija: $e');
+    }
   }
-}
 
-Future<void> removeHobby(String hobby) async {
-  try {
-    // Update both collections
-    await firestore.collection('users_private').doc(uid).update({
-      'hobbies': FieldValue.arrayRemove([hobby]),
-    });
-    
-    await firestore.collection('users').doc(uid).update({
-      'hobbies': FieldValue.arrayRemove([hobby]),
-    });
-    
-    _showSnackBar('Hobi uspešno uklonjen!');
-  } catch (e) {
-    _showSnackBar('Greška pri uklanjanju hobija: $e');
+  Future<void> removeHobby(String hobby) async {
+    try {
+      await firestore.collection('users_private').doc(uid).update({
+        'hobbies': FieldValue.arrayRemove([hobby]),
+      });
+    } catch (e) {
+      _showSnackBar('Greška pri uklanjanju hobija: $e');
+    }
   }
-}
+
   @override
   void dispose() {
     bioController.dispose();
