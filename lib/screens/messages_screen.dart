@@ -59,26 +59,35 @@ class _MessagesScreenState extends State<MessagesScreen> {
         
         final conversations = snapshot.data?.docs ?? [];
         
-        if (conversations.isEmpty) {
-          return const Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.chat_bubble_outline, size: 80, color: Colors.grey),
-                SizedBox(height: 16),
-                Text(
-                  'Nema razgovora',
-                  style: TextStyle(color: Colors.grey, fontSize: 16),
-                ),
-                SizedBox(height: 8),
-                Text(
-                  'Pokrenite razgovor sa prijateljem',
-                  style: TextStyle(color: Colors.grey),
-                ),
-              ],
-            ),
-          );
-        }
+      // In _buildConversationsTab method, update the empty state check:
+if (conversations.isEmpty) {
+  return Center(
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(Icons.chat_bubble_outline, size: 80, color: Colors.grey),
+        SizedBox(height: 16),
+        Text(
+          'Nema razgovora',
+          style: TextStyle(color: Colors.grey, fontSize: 16),
+        ),
+        SizedBox(height: 8),
+        Text(
+          'Pokrenite razgovor sa prijateljem',
+          style: TextStyle(color: Colors.grey),
+        ),
+        SizedBox(height: 20),
+        ElevatedButton(
+          onPressed: () {
+            // Navigate to contacts tab or friends list
+            DefaultTabController.of(context)?.animateTo(1);
+          },
+          child: Text('Pronađi prijatelje'),
+        ),
+      ],
+    ),
+  );
+}
         
         return ListView.builder(
           padding: const EdgeInsets.only(top: 8),

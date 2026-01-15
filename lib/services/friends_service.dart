@@ -8,24 +8,45 @@ class FriendsService {
 
   static String get currentUserId => _auth.currentUser?.uid ?? '';
 
-  /// Send friend request to another user
-  static Future<void> sendFriendRequest(String targetUserId) async {
+// Update sendFriendRequest method in friends_service.dart
+static Future<void> sendFriendRequest(String targetUserId) async {
+  try {
     final batch = _firestore.batch();
     
-    // Add to target user's friendRequests
+    // Get references
     final targetPrivateRef = _firestore.collection('users_private').doc(targetUserId);
+    final currentPrivateRef = _firestore.collection('users_private').doc(currentUserId);
+    
+    // Add to target user's friendRequests
     batch.update(targetPrivateRef, {
       'friendRequests': FieldValue.arrayUnion([currentUserId])
     });
     
     // Add to current user's sentFriendRequests
-    final currentPrivateRef = _firestore.collection('users_private').doc(currentUserId);
     batch.update(currentPrivateRef, {
       'sentFriendRequests': FieldValue.arrayUnion([targetUserId])
     });
     
     await batch.commit();
+    print('Friend request sent successfully');
+  } catch (e) {
+    print('Error sending friend request: $e');
+    
+    // Fallback: Try individual updates if batch fails
+    try {
+      await _firestore.collection('users_private').doc(targetUserId).update({
+        'friendRequests': FieldValue.arrayUnion([currentUserId])
+      });
+      
+      await _firestore.collection('users_private').doc(currentUserId).update({
+        'sentFriendRequests': FieldValue.arrayUnion([targetUserId])
+      });
+    } catch (fallbackError) {
+      print('Fallback also failed: $fallbackError');
+      rethrow;
+    }
   }
+}
 
   /// Accept friend request
   static Future<void> acceptFriendRequest(String requesterId) async {

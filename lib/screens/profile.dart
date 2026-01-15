@@ -10,6 +10,110 @@ import '../services/friends_service.dart';
 import '../screens/other_user_profile.dart';
 import 'messages_screen.dart';
 
+// Add this helper function at the top (or create a separate file)
+class UserDataHelper {
+  static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  /// Update user data in both collections
+  static Future<void> updateUserData(String userId, Map<String, dynamic> data) async {
+    try {
+      final batch = _firestore.batch();
+      
+      // Add updatedAt timestamp
+      final updates = {
+        ...data,
+        'updatedAt': FieldValue.serverTimestamp(),
+      };
+      
+      // Update private collection
+      final privateRef = _firestore.collection('users_private').doc(userId);
+      batch.update(privateRef, updates);
+      
+      // Update public collection - only with public fields
+      final publicRef = _firestore.collection('users').doc(userId);
+      
+      // Filter out private fields (email, friendRequests, sentFriendRequests)
+      final publicUpdates = Map<String, dynamic>.from(updates)
+        ..removeWhere((key, value) => 
+          key == 'email' || 
+          key == 'friendRequests' || 
+          key == 'sentFriendRequests'
+        );
+      
+      batch.update(publicRef, publicUpdates);
+      
+      await batch.commit();
+    } catch (e) {
+      print('Error updating user data: $e');
+      rethrow;
+    }
+  }
+
+  /// Add item to array in both collections
+  static Future<void> addToArray(String userId, String field, dynamic value) async {
+    try {
+      final batch = _firestore.batch();
+      
+      final privateRef = _firestore.collection('users_private').doc(userId);
+      batch.update(privateRef, {
+        field: FieldValue.arrayUnion([value]),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+      
+      // Only update public collection if field is public
+      if (_isPublicField(field)) {
+        final publicRef = _firestore.collection('users').doc(userId);
+        batch.update(publicRef, {
+          field: FieldValue.arrayUnion([value]),
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      }
+      
+      await batch.commit();
+    } catch (e) {
+      print('Error adding to array: $e');
+      rethrow;
+    }
+  }
+
+  /// Remove item from array in both collections
+  static Future<void> removeFromArray(String userId, String field, dynamic value) async {
+    try {
+      final batch = _firestore.batch();
+      
+      final privateRef = _firestore.collection('users_private').doc(userId);
+      batch.update(privateRef, {
+        field: FieldValue.arrayRemove([value]),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+      
+      // Only update public collection if field is public
+      if (_isPublicField(field)) {
+        final publicRef = _firestore.collection('users').doc(userId);
+        batch.update(publicRef, {
+          field: FieldValue.arrayRemove([value]),
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      }
+      
+      await batch.commit();
+    } catch (e) {
+      print('Error removing from array: $e');
+      rethrow;
+    }
+  }
+
+  /// Check if a field should be in public collection
+  static bool _isPublicField(String field) {
+    const publicFields = [
+      'name', 'city', 'bio', 'hobbies', 'profilePic', 'friends',
+      'createdAt', 'updatedAt'
+    ];
+    const privateFields = ['email', 'friendRequests', 'sentFriendRequests'];
+    
+    return publicFields.contains(field) && !privateFields.contains(field);
+  }
+}
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -63,24 +167,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
       print('Error loading initial data: $e');
     }
   }
-Stream<int> _getUnreadCountStream() {
-  final FirebaseFirestore firestore = FirebaseFirestore.instance;
-  final String uid = FirebaseAuth.instance.currentUser!.uid;
-  
-  return firestore
-      .collection('conversations')
-      .where('participants', arrayContains: uid)
-      .snapshots()
-      .map((snapshot) {
-        int total = 0;
-        for (final doc in snapshot.docs) {
-          final data = doc.data() as Map<String, dynamic>;
-          final unread = (data['unreadCount'] as Map<String, dynamic>?)?[uid] as int? ?? 0;
-          total += unread;
-        }
-        return total;
-      });
-}
+
+  Stream<int> _getUnreadCountStream() {
+    final FirebaseFirestore firestore = FirebaseFirestore.instance;
+    final String uid = FirebaseAuth.instance.currentUser!.uid;
+    
+    return firestore
+        .collection('conversations')
+        .where('participants', arrayContains: uid)
+        .snapshots()
+        .map((snapshot) {
+          int total = 0;
+          for (final doc in snapshot.docs) {
+            final data = doc.data() as Map<String, dynamic>;
+            final unread = (data['unreadCount'] as Map<String, dynamic>?)?[uid] as int? ?? 0;
+            total += unread;
+          }
+          return total;
+        });
+  }
+
   /// Pick image from gallery or camera
   Future<void> _pickImage(ImageSource source) async {
     try {
@@ -102,7 +208,7 @@ Stream<int> _getUnreadCountStream() {
     }
   }
 
-  /// Upload image to Firebase Storage
+  /// Upload image to Firebase Storage - UPDATED
   Future<void> _uploadImage() async {
     if (_pickedImage == null) return;
 
@@ -115,7 +221,8 @@ Stream<int> _getUnreadCountStream() {
       await storageRef.putFile(_pickedImage!);
       final imageUrl = await storageRef.getDownloadURL();
       
-      await firestore.collection('users_private').doc(uid).update({
+      // Use helper to update both collections
+      await UserDataHelper.updateUserData(uid, {
         'profilePic': imageUrl,
       });
 
@@ -197,67 +304,67 @@ Stream<int> _getUnreadCountStream() {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-  title: const Text("Profil"),
-  actions: [
-    // Message notification badge
-    StreamBuilder<int>(
-      stream: _getUnreadCountStream(),
-      builder: (context, snapshot) {
-        final unreadCount = snapshot.data ?? 0;
-        return Stack(
-          children: [
-            IconButton(
-              icon: const Icon(Icons.message),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const MessagesScreen()),
-                );
-              },
-            ),
-            if (unreadCount > 0)
-              Positioned(
-                right: 8,
-                top: 8,
-                child: Container(
-                  padding: const EdgeInsets.all(2),
-                  decoration: BoxDecoration(
-                    color: Colors.red,
-                    borderRadius: BorderRadius.circular(10),
+        title: const Text("Profil"),
+        actions: [
+          // Message notification badge
+          StreamBuilder<int>(
+            stream: _getUnreadCountStream(),
+            builder: (context, snapshot) {
+              final unreadCount = snapshot.data ?? 0;
+              return Stack(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.message),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const MessagesScreen()),
+                      );
+                    },
                   ),
-                  constraints: const BoxConstraints(
-                    minWidth: 16,
-                    minHeight: 16,
-                  ),
-                  child: Text(
-                    unreadCount > 9 ? '9+' : unreadCount.toString(),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
+                  if (unreadCount > 0)
+                    Positioned(
+                      right: 8,
+                      top: 8,
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 16,
+                          minHeight: 16,
+                        ),
+                        child: Text(
+                          unreadCount > 9 ? '9+' : unreadCount.toString(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
                     ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ),
-          ],
-        );
-      },
-    ),
-    IconButton(
-      icon: Icon(isEditing ? Icons.check : Icons.edit),
-      onPressed: () {
-        if (isEditing) {
-          saveProfile();
-        } else {
-          setState(() {
-            isEditing = true;
-          });
-        }
-      },
-    )
-  ],
-),
+                ],
+              );
+            },
+          ),
+          IconButton(
+            icon: Icon(isEditing ? Icons.check : Icons.edit),
+            onPressed: () {
+              if (isEditing) {
+                saveProfile();
+              } else {
+                setState(() {
+                  isEditing = true;
+                });
+              }
+            },
+          )
+        ],
+      ),
       body: SingleChildScrollView(
         child: StreamBuilder<DocumentSnapshot>(
           stream: firestore.collection('users_private').doc(uid).snapshots(),
@@ -648,10 +755,10 @@ Stream<int> _getUnreadCountStream() {
     }
   }
 
-  /// Save profile
+  /// Save profile - UPDATED
   Future<void> saveProfile() async {
     try {
-      await firestore.collection('users_private').doc(uid).update({
+      await UserDataHelper.updateUserData(uid, {
         'bio': bioController.text.trim(),
         'city': cityController.text.trim(),
       });
@@ -661,32 +768,35 @@ Stream<int> _getUnreadCountStream() {
         selectedCategory = null;
         selectedSubcategory = null;
       });
+      
+      _showSnackBar('Profil uspešno ažuriran!');
     } catch (e) {
       _showSnackBar('Greška pri čuvanju profila: $e');
     }
   }
 
+  /// Add hobby - UPDATED
   Future<void> addHobby() async {
     final hobby = "$selectedCategory > $selectedSubcategory";
 
     try {
-      await firestore.collection('users_private').doc(uid).update({
-        'hobbies': FieldValue.arrayUnion([hobby]),
-      });
+      await UserDataHelper.addToArray(uid, 'hobbies', hobby);
 
       setState(() {
         selectedSubcategory = null;
       });
+      
+      _showSnackBar('Hobi uspešno dodat!');
     } catch (e) {
       _showSnackBar('Greška pri dodavanju hobija: $e');
     }
   }
 
+  /// Remove hobby - UPDATED
   Future<void> removeHobby(String hobby) async {
     try {
-      await firestore.collection('users_private').doc(uid).update({
-        'hobbies': FieldValue.arrayRemove([hobby]),
-      });
+      await UserDataHelper.removeFromArray(uid, 'hobbies', hobby);
+      _showSnackBar('Hobi uspešno uklonjen!');
     } catch (e) {
       _showSnackBar('Greška pri uklanjanju hobija: $e');
     }

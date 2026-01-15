@@ -1,1 +1,42 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"deli-hobby","appId":"1:987372302004:android:2a77a7428b25fbd02031e1","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"deli-hobby","configurations":{"android":"1:987372302004:android:2a77a7428b25fbd02031e1","ios":"1:987372302004:ios:28068baea3020ee22031e1","macos":"1:987372302004:ios:28068baea3020ee22031e1","web":"1:987372302004:web:e92146bec69558682031e1","windows":"1:987372302004:web:6bfbddb1483885912031e1"}}}}}}
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "deli-hobby",
+          "appId": "1:987372302004:android:2a77a7428b25fbd02031e1",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "deli-hobby",
+          "configurations": {
+            "android": "1:987372302004:android:2a77a7428b25fbd02031e1",
+            "ios": "1:987372302004:ios:28068baea3020ee22031e1",
+            "macos": "1:987372302004:ios:28068baea3020ee22031e1",
+            "web": "1:987372302004:web:e92146bec69558682031e1",
+            "windows": "1:987372302004:web:6bfbddb1483885912031e1"
+          }
+        }
+      }
+    }
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "disallowLegacyRuntimeConfig": true,
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "*.local"
+      ],
+      "predeploy": [
+        "npm --prefix \"$RESOURCE_DIR\" run lint"
+      ]
+    }
+  ]
+}

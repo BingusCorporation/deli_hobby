@@ -15,12 +15,24 @@ class MessagingService {
   }
 
   /// Send a message to another user
-  static Future<void> sendMessage(String receiverId, String message) async {
-    if (message.trim().isEmpty) return;
-    
-    final conversationId = getConversationId(currentUserId, receiverId); // CHANGE: Use private method
-    
+// Update the sendMessage method in messaging_service.dart
+static Future<void> sendMessage(String receiverId, String message) async {
+  if (message.trim().isEmpty) return;
+  
+  try {
+    final conversationId = getConversationId(currentUserId, receiverId);
     final now = FieldValue.serverTimestamp();
+    
+    // Create conversation document first if it doesn't exist
+    final conversationRef = _firestore.collection('conversations').doc(conversationId);
+    final conversationDoc = await conversationRef.get();
+    
+    if (!conversationDoc.exists) {
+      await conversationRef.set({
+        'participants': [currentUserId, receiverId],
+        'createdAt': now,
+      });
+    }
     
     // Add message to messages subcollection
     await _firestore
@@ -36,16 +48,19 @@ class MessagingService {
     });
     
     // Update conversation metadata
-    await _firestore.collection('conversations').doc(conversationId).set({
-      'participants': [currentUserId, receiverId],
+    await conversationRef.update({
       'lastMessage': message.trim(),
       'lastMessageTime': now,
       'lastMessageSender': currentUserId,
       'unreadCount': {
         receiverId: FieldValue.increment(1),
       },
-    }, SetOptions(merge: true));
+    });
+  } catch (e) {
+    print('Error sending message: $e');
+    rethrow;
   }
+}
 
   /// Get conversation stream
   static Stream<QuerySnapshot> getConversationStream(String otherUserId) {
@@ -66,6 +81,7 @@ class MessagingService {
         .where('participants', arrayContains: currentUserId)
         .orderBy('lastMessageTime', descending: true)
         .snapshots();
+        
   }
 
   /// Mark messages as read
@@ -115,4 +131,5 @@ class MessagingService {
   static String getConversationIdForUsers(String userId1, String userId2) {
     return getConversationId(userId1, userId2);
   }
+  
 }

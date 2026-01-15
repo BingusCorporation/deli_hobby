@@ -7,6 +7,8 @@ import 'profile.dart';
 import 'messages_screen.dart'; // ADD THIS
 import 'chat_screen.dart'; // ADD THIS
 import '../auth/login_screen.dart';
+import 'other_user_profile.dart';
+import '../services/init.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -36,6 +38,7 @@ class _MainScreenState extends State<MainScreen> {
   void initState() {
     super.initState();
     _setupAuthListener();
+    initializeFirestoreStructure();
   }
 
   void _setupAuthListener() {
@@ -718,46 +721,3 @@ class _MainScreenState extends State<MainScreen> {
   }
 }
 
-/// OtherUserProfileScreen widget - ADD THIS CLASS IF NOT ALREADY IN FILE
-class OtherUserProfileScreen extends StatelessWidget {
-  final String userId;
-  final String userName;
-  
-  const OtherUserProfileScreen({
-    super.key,
-    required this.userId,
-    required this.userName,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(userName),
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text('Profil korisnika: $userName'),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ChatScreen(
-                      otherUserId: userId,
-                      otherUserName: userName,
-                    ),
-                  ),
-                );
-              },
-              child: const Text('Pošalji poruku'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
