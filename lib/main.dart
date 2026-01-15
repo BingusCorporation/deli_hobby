@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'firebase_options.dart';
-import 'auth/login_screen.dart'; //login
-import 'auth/prelog_screen.dart'; //login ili sighn up
-import 'screens/main_screen.dart';
+import 'auth/prelog_screen.dart';
+import 'screens/app_shell.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await initializeDateFormatting('sr', null);
 
-  runApp(MyApp());
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -18,13 +19,12 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Check if user is already logged in
     return MaterialApp(
       title: 'Deli Hobby',
       theme: ThemeData(primarySwatch: Colors.blue),
       home: FirebaseAuth.instance.currentUser == null
-          ? PrelogScreen()
-          : MainScreen(),
+          ? const PrelogScreen()
+          : const AppShell(),
     );
   }
 }

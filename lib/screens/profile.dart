@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../data/hobbies.dart';
+import '../data/skill_levels.dart';
+import '../widgets/skill_badge.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -35,6 +37,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   /// Currently selected subcategory in dropdown
   String? selectedSubcategory;
+
+  /// Currently selected skill level
+  String selectedSkillLevel = 'beginner';
 
   /// For picking a new image
   File? _pickedImage;
@@ -190,6 +195,10 @@ Future<void> _uploadImage() async {
             final String name = data['name'] ?? 'No name';
             final String? profilePicUrl = data['profilePic'];
             final List hobbies = data['hobbies'] ?? [];
+            final Map<String, dynamic> hobbySkills =
+                data['hobbySkills'] != null
+                    ? Map<String, dynamic>.from(data['hobbySkills'])
+                    : {};
             final email = FirebaseAuth.instance.currentUser!.email ?? '';
 
             return Padding(
@@ -334,13 +343,14 @@ Future<void> _uploadImage() async {
                   const SizedBox(height: 8),
                   Wrap(
                     spacing: 8,
+                    runSpacing: 8,
                     children: hobbies.map<Widget>((hobby) {
-                      return Chip(
-                        label: Text(hobby),
-                        deleteIcon: isEditing ? const Icon(Icons.close) : null,
-                        onDeleted: isEditing
-                            ? () => removeHobby(hobby)
-                            : null,
+                      final skillLevel = hobbySkills[hobby] as String?;
+                      return HobbyChipWithSkill(
+                        hobby: hobby,
+                        skillLevel: skillLevel,
+                        isEditing: isEditing,
+                        onDeleted: () => removeHobby(hobby),
                       );
                     }).toList(),
                   ),
@@ -382,6 +392,36 @@ Future<void> _uploadImage() async {
                           });
                         },
                       ),
+                    if (selectedSubcategory != null) ...[
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Nivo vestine:',
+                        style: TextStyle(fontWeight: FontWeight.w500),
+                      ),
+                      const SizedBox(height: 4),
+                      DropdownButton<String>(
+                        value: selectedSkillLevel,
+                        isExpanded: true,
+                        items: skillLevels.entries.map((entry) {
+                          return DropdownMenuItem(
+                            value: entry.key,
+                            child: Row(
+                              children: [
+                                SkillBadge(skillLevel: entry.key, size: 20),
+                                const SizedBox(width: 8),
+                                Text(entry.value),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          setState(() {
+                            selectedSkillLevel = value!;
+                          });
+                        },
+                      ),
+                    ],
+                    const SizedBox(height: 8),
                     ElevatedButton(
                       onPressed: selectedCategory != null && selectedSubcategory != null
                           ? addHobby
@@ -483,39 +523,44 @@ Future<void> addHobby() async {
   final hobby = "$selectedCategory > $selectedSubcategory";
 
   try {
-    // Update both collections
+    // Update both collections with hobby
     await firestore.collection('users_private').doc(uid).update({
       'hobbies': FieldValue.arrayUnion([hobby]),
+      'hobbySkills.$hobby': selectedSkillLevel,
     });
-    
+
     await firestore.collection('users').doc(uid).update({
       'hobbies': FieldValue.arrayUnion([hobby]),
+      'hobbySkills.$hobby': selectedSkillLevel,
     });
 
     setState(() {
       selectedSubcategory = null;
+      selectedSkillLevel = 'beginner';
     });
-    
-    _showSnackBar('Hobi uspešno dodat!');
+
+    _showSnackBar('Hobi uspesno dodat!');
   } catch (e) {
-    _showSnackBar('Greška pri dodavanju hobija: $e');
+    _showSnackBar('Greska pri dodavanju hobija: $e');
   }
 }
 
 Future<void> removeHobby(String hobby) async {
   try {
-    // Update both collections
+    // Update both collections - remove hobby and its skill level
     await firestore.collection('users_private').doc(uid).update({
       'hobbies': FieldValue.arrayRemove([hobby]),
+      'hobbySkills.$hobby': FieldValue.delete(),
     });
-    
+
     await firestore.collection('users').doc(uid).update({
       'hobbies': FieldValue.arrayRemove([hobby]),
+      'hobbySkills.$hobby': FieldValue.delete(),
     });
-    
-    _showSnackBar('Hobi uspešno uklonjen!');
+
+    _showSnackBar('Hobi uspesno uklonjen!');
   } catch (e) {
-    _showSnackBar('Greška pri uklanjanju hobija: $e');
+    _showSnackBar('Greska pri uklanjanju hobija: $e');
   }
 }
   @override
