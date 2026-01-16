@@ -25,13 +25,28 @@ class _ChatScreenState extends State<ChatScreen> {
   bool _isSending = false;
 
   @override
+  @override
   void initState() {
     super.initState();
+    // Don't call async functions directly in initState
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollToBottom();
       // Mark messages as read when opening chat
       _markMessagesAsRead();
     });
+  }
+
+  Future<void> _markMessagesAsRead() async {
+    try {
+      final conversationId = MessagingService.getConversationId(
+        _auth.currentUser!.uid,
+        widget.otherUserId,
+      );
+      await MessagingService.markAsRead(conversationId, widget.otherUserId);
+    } catch (e) {
+      print('Could not mark messages as read: $e');
+      // Non-critical error
+    }
   }
 
   void _scrollToBottom() {
@@ -40,14 +55,6 @@ class _ChatScreenState extends State<ChatScreen> {
         _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
       });
     }
-  }
-
-  Future<void> _markMessagesAsRead() async {
-    final conversationId = MessagingService.getConversationId(
-      _auth.currentUser!.uid,
-      widget.otherUserId,
-    );
-    await MessagingService.markAsRead(conversationId, widget.otherUserId);
   }
 
   Future<void> _sendMessage() async {

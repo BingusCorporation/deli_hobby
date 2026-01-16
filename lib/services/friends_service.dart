@@ -48,29 +48,44 @@ static Future<void> acceptFriendRequest(String requestId) async {
     
     final batch = _firestore.batch();
     
-    // 1. Update request status to accepted
-    batch.update(requestRef, {
-      'status': 'accepted',
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
+    // 1. DELETE the friend request after acceptance (not just update)
+    batch.delete(requestRef);
     
-    // 2. Create friendship document (sorted IDs)
-    final List<String> userIds = [senderId, receiverId]..sort();
-    final friendshipId = '${userIds[0]}_${userIds[1]}';
-    final friendshipRef = _firestore.collection('friendships').doc(friendshipId);
+    // 2. Create TWO friendship documents (one for each user)
+    // This makes querying easier for both users
     
-    // Check if friendship already exists
-    final existingFriendship = await friendshipRef.get();
-    if (!existingFriendship.exists) {
-      batch.set(friendshipRef, {
-        'userId1': userIds[0],
-        'userId2': userIds[1],
+    // Friendship document for user1 -> user2
+    final friendshipId1 = '${senderId}_${receiverId}';
+    final friendshipRef1 = _firestore.collection('friendships').doc(friendshipId1);
+    
+    // Friendship document for user2 -> user1 (reverse)
+    final friendshipId2 = '${receiverId}_${senderId}';
+    final friendshipRef2 = _firestore.collection('friendships').doc(friendshipId2);
+    
+    // Check if friendships already exist
+    final existing1 = await friendshipRef1.get();
+    final existing2 = await friendshipRef2.get();
+    
+    if (!existing1.exists) {
+      batch.set(friendshipRef1, {
+        'userId': senderId,
+        'friendId': receiverId,
         'createdAt': FieldValue.serverTimestamp(),
+        'direction': 'sender_to_receiver', // Helps with queries
+      });
+    }
+    
+    if (!existing2.exists) {
+      batch.set(friendshipRef2, {
+        'userId': receiverId,
+        'friendId': senderId,
+        'createdAt': FieldValue.serverTimestamp(),
+        'direction': 'receiver_to_sender', // Helps with queries
       });
     }
     
     await batch.commit();
-    print('Friend request accepted successfully');
+    print('Friend request accepted and friendships created successfully');
   } catch (e) {
     print('Error accepting friend request: $e');
     rethrow;
@@ -83,19 +98,26 @@ static Future<void> acceptFriendRequest(String requestId) async {
   }
 
   /// Remove friend
-  static Future<void> removeFriend(String friendId) async {
-    try {
-      // Find and delete the friendship document
-      final List<String> userIds = [currentUserId, friendId];
-      userIds.sort();
-      final friendshipId = '${userIds[0]}_${userIds[1]}';
-      
-      await _firestore.collection('friendships').doc(friendshipId).delete();
-    } catch (e) {
-      print('Error removing friend: $e');
-      rethrow;
-    }
+/// Remove friend - updated to remove both friendship documents
+/// Remove friend - Updated to delete both friendship documents
+static Future<void> removeFriend(String friendId) async {
+  try {
+    // Delete BOTH friendship documents (bidirectional)
+    final batch = _firestore.batch();
+    
+    // First direction: currentUserId -> friendId
+    batch.delete(_firestore.collection('friendships').doc('${currentUserId}_${friendId}'));
+    
+    // Second direction: friendId -> currentUserId (reverse)
+    batch.delete(_firestore.collection('friendships').doc('${friendId}_${currentUserId}'));
+    
+    await batch.commit();
+    print('Both friendship documents deleted successfully');
+  } catch (e) {
+    print('Error removing friend: $e');
+    rethrow;
   }
+}
 
   /// Cancel friend request
   static Future<void> cancelFriendRequest(String requestId) async {
@@ -137,28 +159,31 @@ static Future<void> acceptFriendRequest(String requestId) async {
   }
 
   /// Get friends stream
-  static Stream<List<Map<String, dynamic>>> getFriendsStream() {
-    return _firestore
-        .collection('friendships')
-        .where('userId1', isEqualTo: currentUserId)
-        .snapshots()
-        .asyncMap((snapshot) async {
-          final friends = <Map<String, dynamic>>[];
-          
-          for (final doc in snapshot.docs) {
-            final friendId = doc.data()['userId2'];
-            final userDoc = await _firestore.collection('users').doc(friendId).get();
-            if (userDoc.exists) {
-              friends.add({
-                'id': friendId,
-                ...userDoc.data()!,
-              });
-            }
+/// Get friends stream - updated to check both directions
+static Stream<List<Map<String, dynamic>>> getFriendsStream() {
+  // Get friends where current user is userId OR friendId
+  return _firestore
+      .collection('friendships')
+      .where('userId', isEqualTo: currentUserId)
+      .snapshots()
+      .asyncMap((snapshot) async {
+        final friends = <Map<String, dynamic>>[];
+        
+        for (final doc in snapshot.docs) {
+          final friendId = doc.data()['friendId'];
+          final userDoc = await _firestore.collection('users').doc(friendId).get();
+          if (userDoc.exists) {
+            friends.add({
+              'id': friendId,
+              ...userDoc.data()!,
+              'friendshipId': doc.id, // Store for unfriending
+            });
           }
-          
-          return friends;
-        });
-  }
+        }
+        
+        return friends;
+      });
+}
 
   /// Get friend requests stream
   static Stream<List<Map<String, dynamic>>> getFriendRequestsStream() {
