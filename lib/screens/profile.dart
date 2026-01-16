@@ -281,24 +281,61 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   /// Accept friend request
-  Future<void> _acceptFriendRequest(String requesterId) async {
-    try {
-      await FriendsService.acceptFriendRequest(requesterId);
-      _showSnackBar('Prijateljstvo prihvaćeno!');
-    } catch (e) {
-      _showSnackBar('Greška pri prihvatanju zahteva: $e');
+  // In profile.dart - Update these methods
+
+/// Accept friend request
+Future<void> _acceptFriendRequest(String requesterId) async {
+  try {
+    // Get the request ID from the list
+    final requestId = await _getRequestIdFromRequester(requesterId);
+    if (requestId.isEmpty) {
+      _showSnackBar('Friend request not found!');
+      return;
     }
+    
+    await FriendsService.acceptFriendRequest(requestId);
+    _showSnackBar('Prijateljstvo prihvaćeno!');
+  } catch (e) {
+    _showSnackBar('Greška pri prihvatanju zahteva: $e');
   }
+}
+
+/// Reject friend request
+Future<void> _rejectFriendRequest(String requesterId) async {
+  try {
+    // Get the request ID from the list
+    final requestId = await _getRequestIdFromRequester(requesterId);
+    if (requestId.isEmpty) {
+      _showSnackBar('Friend request not found!');
+      return;
+    }
+    
+    await FriendsService.cancelFriendRequest(requestId);
+    _showSnackBar('Zahtev za prijateljstvo odbijen');
+  } catch (e) {
+    _showSnackBar('Greška pri odbijanju zahteva: $e');
+  }
+}
+
+/// Helper to get request ID from requester ID
+Future<String> _getRequestIdFromRequester(String requesterId) async {
+  try {
+    final query = await firestore
+        .collection('friend_requests')
+        .where('senderId', isEqualTo: requesterId)
+        .where('receiverId', isEqualTo: uid)
+        .where('status', isEqualTo: 'pending')
+        .limit(1)
+        .get();
+    
+    return query.docs.isNotEmpty ? query.docs.first.id : '';
+  } catch (e) {
+    print('Error getting request ID: $e');
+    return '';
+  }
+}
 
   /// Reject friend request
-  Future<void> _rejectFriendRequest(String requesterId) async {
-    try {
-      await FriendsService.cancelFriendRequest(requesterId);
-      _showSnackBar('Zahtev za prijateljstvo odbijen');
-    } catch (e) {
-      _showSnackBar('Greška pri odbijanju zahteva: $e');
-    }
-  }
 
   @override
   Widget build(BuildContext context) {

@@ -17,6 +17,13 @@ class OtherUserProfileScreen extends StatefulWidget {
   @override
   State<OtherUserProfileScreen> createState() => _OtherUserProfileScreenState();
 }
+enum FriendshipStatus {
+  self,
+  friends,
+  pendingIncoming,
+  pendingOutgoing,
+  none,
+}
 
 class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -68,20 +75,91 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
     }
   }
 
-  Future<void> _acceptFriendRequest() async {
-    try {
-      await FriendsService.acceptFriendRequest(widget.userId);
-      await _loadFriendshipStatus();
-      
+  // In other_user_profile.dart - Update these methods
+
+Future<void> _acceptFriendRequest() async {
+  try {
+    // First, get the friend request ID
+    final requestId = await _getFriendRequestId(widget.userId);
+    if (requestId.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sada ste prijatelji!')),
+        const SnackBar(content: Text('Friend request not found!')),
       );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Greška: $e')),
-      );
+      return;
     }
+    
+    await FriendsService.acceptFriendRequest(requestId); // Pass the requestId, not userId
+    await _loadFriendshipStatus();
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Sada ste prijatelji!')),
+    );
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Greška: $e')),
+    );
   }
+}
+
+Future<void> _cancelFriendRequest() async {
+  try {
+    // First, get the friend request ID
+    final requestId = await _getFriendRequestId(widget.userId);
+    if (requestId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Friend request not found!')),
+      );
+      return;
+    }
+    
+    await FriendsService.cancelFriendRequest(requestId); // Pass the requestId
+    await _loadFriendshipStatus();
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Zahtev za prijateljstvo otkazan')),
+    );
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Greška: $e')),
+    );
+  }
+}
+
+// Helper method to get the request ID
+Future<String> _getFriendRequestId(String otherUserId) async {
+  try {
+    // For incoming request (other user sent to current user)
+    final incomingQuery = await _firestore
+        .collection('friend_requests')
+        .where('senderId', isEqualTo: otherUserId)
+        .where('receiverId', isEqualTo: _auth.currentUser!.uid)
+        .where('status', isEqualTo: 'pending')
+        .limit(1)
+        .get();
+    
+    if (incomingQuery.docs.isNotEmpty) {
+      return incomingQuery.docs.first.id;
+    }
+    
+    // For outgoing request (current user sent to other user)
+    final outgoingQuery = await _firestore
+        .collection('friend_requests')
+        .where('senderId', isEqualTo: _auth.currentUser!.uid)
+        .where('receiverId', isEqualTo: otherUserId)
+        .where('status', isEqualTo: 'pending')
+        .limit(1)
+        .get();
+    
+    if (outgoingQuery.docs.isNotEmpty) {
+      return outgoingQuery.docs.first.id;
+    }
+    
+    return '';
+  } catch (e) {
+    print('Error getting request ID: $e');
+    return '';
+  }
+}
 
   Future<void> _removeFriend() async {
     final confirmed = await showDialog<bool>(
@@ -118,20 +196,6 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
     }
   }
 
-  Future<void> _cancelFriendRequest() async {
-    try {
-      await FriendsService.cancelFriendRequest(widget.userId);
-      await _loadFriendshipStatus();
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Zahtev za prijateljstvo otkazan')),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Greška: $e')),
-      );
-    }
-  }
 
   void _showSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(

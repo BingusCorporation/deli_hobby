@@ -9,13 +9,14 @@ class MessagingService {
   static String get currentUserId => _auth.currentUser?.uid ?? '';
 
   /// Create or get conversation ID between two users
-  static String getConversationId(String userId1, String userId2) { // CHANGE: Added underscore
+  static String getConversationId(String userId1, String userId2) {
     final sortedIds = [userId1, userId2]..sort();
     return '${sortedIds[0]}_${sortedIds[1]}';
   }
 
   /// Send a message to another user
 // Update the sendMessage method in messaging_service.dart
+// services/messaging_service.dart - Keep as is but ensure it matches rules
 static Future<void> sendMessage(String receiverId, String message) async {
   if (message.trim().isEmpty) return;
   
@@ -23,7 +24,7 @@ static Future<void> sendMessage(String receiverId, String message) async {
     final conversationId = getConversationId(currentUserId, receiverId);
     final now = FieldValue.serverTimestamp();
     
-    // Create conversation document first if it doesn't exist
+    // Create conversation document if it doesn't exist
     final conversationRef = _firestore.collection('conversations').doc(conversationId);
     final conversationDoc = await conversationRef.get();
     
@@ -31,10 +32,12 @@ static Future<void> sendMessage(String receiverId, String message) async {
       await conversationRef.set({
         'participants': [currentUserId, receiverId],
         'createdAt': now,
+        'lastMessage': '',
+        'lastMessageTime': now,
       });
     }
     
-    // Add message to messages subcollection
+    // Add message
     await _firestore
         .collection('conversations')
         .doc(conversationId)
@@ -47,14 +50,11 @@ static Future<void> sendMessage(String receiverId, String message) async {
       'read': false,
     });
     
-    // Update conversation metadata
+    // Update conversation
     await conversationRef.update({
       'lastMessage': message.trim(),
       'lastMessageTime': now,
       'lastMessageSender': currentUserId,
-      'unreadCount': {
-        receiverId: FieldValue.increment(1),
-      },
     });
   } catch (e) {
     print('Error sending message: $e');
@@ -127,7 +127,6 @@ static Future<void> sendMessage(String receiverId, String message) async {
         });
   }
 
-  // ADD THIS HELPER METHOD FOR EXTERNAL ACCESS
   static String getConversationIdForUsers(String userId1, String userId2) {
     return getConversationId(userId1, userId2);
   }
