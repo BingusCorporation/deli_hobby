@@ -4,11 +4,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../data/hobbies.dart';
 import '../data/city.dart';
 import 'profile.dart';
-import 'messages_screen.dart'; // ADD THIS
-import 'chat_screen.dart'; // ADD THIS
+import 'messages_screen.dart';
+import 'chat_screen.dart';
 import '../auth/login_screen.dart';
 import 'other_user_profile.dart';
 import '../services/init.dart';
+import 'oglasi_screen.dart'; // ADD THIS IMPORT
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -67,6 +68,17 @@ class _MainScreenState extends State<MainScreen> {
       appBar: AppBar(
         title: const Text('Deli Hobby'),
         actions: [
+          // ADD OGLASI BUTTON HERE
+          IconButton(
+            icon: const Icon(Icons.list_alt),
+            tooltip: 'Oglasi',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const OglasiScreen()),
+              );
+            },
+          ),
           // Messages icon button
           StreamBuilder<int>(
             stream: _getUnreadCountStream(),
@@ -176,7 +188,7 @@ class _MainScreenState extends State<MainScreen> {
         .map((snapshot) {
           int total = 0;
           for (final doc in snapshot.docs) {
-            final data = doc.data() as Map<String, dynamic>;
+            final data = doc.data();
             final unread = (data['unreadCount'] as Map<String, dynamic>?)?[_currentUserId] as int? ?? 0;
             total += unread;
           }
@@ -285,7 +297,7 @@ class _MainScreenState extends State<MainScreen> {
                               value: sub,
                               child: Text(sub, overflow: TextOverflow.ellipsis),
                             );
-                          }).toList(),
+                          }),
                       ],
                       onChanged: (value) => setState(() => _selectedSubcategory = value),
                     ),
@@ -329,7 +341,7 @@ class _MainScreenState extends State<MainScreen> {
                     deleteIcon: const Icon(Icons.close, size: 14),
                     onDeleted: () => setState(() => _selectedFilters.remove(filter)),
                   );
-                }).toList(),
+                }),
               ],
             ),
           ],
@@ -400,13 +412,12 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  /// Build user card
+  /// Build user card (UPDATED - removed match score percentage)
   Widget _buildUserCard(Map<String, dynamic> user) {
     final String? profilePic = user['profilePic'] as String?;
     final String? city = user['city'] as String?;
     final String? bio = user['bio'] as String?;
     final List<dynamic> matchingHobbies = user['matchingHobbies'] as List<dynamic>? ?? [];
-    final int matchScore = user['matchScore'] as int? ?? 0;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -481,25 +492,7 @@ class _MainScreenState extends State<MainScreen> {
                   ),
                 ),
                 
-                // Match score
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: _getMatchColor(matchScore),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Text(
-                    '$matchScore%',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
+                // REMOVED: Match score percentage display
               ],
             ),
             
@@ -587,7 +580,7 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  /// Main search algorithm
+  /// Main search algorithm (UPDATED - removed match score from results)
   Future<void> _searchForMatches() async {
     if (_auth.currentUser == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -638,7 +631,7 @@ class _MainScreenState extends State<MainScreen> {
       // Execute query
       final snapshot = await query.get();
       
-      // Filter and score results
+      // Filter results
       final List<Map<String, dynamic>> results = [];
       
       for (final doc in snapshot.docs) {
@@ -647,51 +640,33 @@ class _MainScreenState extends State<MainScreen> {
         
         // Calculate matches
         final List<String> matchingHobbies = [];
-        int matchScore = 0;
         
         // Check exact matches
         for (final pattern in exactPatterns) {
           if (userHobbies.contains(pattern)) {
             matchingHobbies.add(pattern);
-            matchScore += 30;
           }
         }
         
         // Check category matches
         for (final category in categoryPatterns) {
-          bool hasCategoryMatch = false;
           for (final hobby in userHobbies) {
             final hobbyStr = hobby.toString();
             if (hobbyStr.startsWith('$category >')) {
               matchingHobbies.add(hobbyStr);
-              hasCategoryMatch = true;
             }
           }
-          if (hasCategoryMatch) {
-            matchScore += 15;
-          }
         }
         
-        // Apply city bonus
-        if (_selectedCity != null && userData['city'] == _selectedCity) {
-          matchScore += 10;
-        }
-        
-        // Cap score at 100
-        matchScore = matchScore.clamp(0, 100);
-        
-        if (matchScore > 0 || _selectedFilters.isEmpty) {
+        // Add user if they have matching hobbies
+        if (matchingHobbies.isNotEmpty || _selectedFilters.isEmpty) {
           results.add({
             'id': doc.id,
             ...userData,
-            'matchScore': matchScore,
             'matchingHobbies': matchingHobbies,
           });
         }
       }
-      
-      // Sort by match score
-      results.sort((a, b) => b['matchScore'].compareTo(a['matchScore']));
       
       setState(() {
         _searchResults = results;
@@ -712,12 +687,5 @@ class _MainScreenState extends State<MainScreen> {
     }
   }
 
-  /// Get color based on match score
-  Color _getMatchColor(int score) {
-    if (score >= 80) return Colors.green;
-    if (score >= 60) return Colors.blue;
-    if (score >= 40) return Colors.orange;
-    return Colors.red;
-  }
+  /// REMOVED: _getMatchColor function as it's no longer needed
 }
-
