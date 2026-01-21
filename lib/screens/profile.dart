@@ -202,7 +202,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         .map((snapshot) {
           int total = 0;
           for (final doc in snapshot.docs) {
-            final data = doc.data() as Map<String, dynamic>;
+            final data = doc.data();
             final unread = (data['unreadCount'] as Map<String, dynamic>?)?[uid] as int? ?? 0;
             total += unread;
           }

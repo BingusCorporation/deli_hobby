@@ -111,7 +111,7 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
       // Check for outgoing request
       final outgoingQuery = await _firestore
           .collection('friend_requests')
-          .where('senderId', isEqualTo: _currentUser!.uid)
+          .where('senderId', isEqualTo: _currentUser.uid)
           .where('receiverId', isEqualTo: widget.userId)
           .where('status', isEqualTo: 'pending')
           .limit(1)
