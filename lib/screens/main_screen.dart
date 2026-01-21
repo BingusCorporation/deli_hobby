@@ -9,7 +9,7 @@ import 'chat_screen.dart';
 import '../auth/login_screen.dart';
 import 'other_user_profile.dart';
 import '../services/init.dart';
-import 'oglasi_screen.dart'; // ADD THIS IMPORT
+import 'oglasi_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -24,9 +24,6 @@ class _MainScreenState extends State<MainScreen> {
   
   // Search state
   String? _selectedCity;
-  final List<String> _selectedFilters = [];
-  
-  // For dropdowns
   String? _selectedCategory;
   String? _selectedSubcategory;
   
@@ -67,10 +64,12 @@ class _MainScreenState extends State<MainScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Deli Hobby'),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.orange.shade700,
+        elevation: 1,
         actions: [
-          // ADD OGLASI BUTTON HERE
           IconButton(
-            icon: const Icon(Icons.list_alt),
+            icon: Icon(Icons.list_alt, color: Colors.orange.shade700),
             tooltip: 'Oglasi',
             onPressed: () {
               Navigator.push(
@@ -87,7 +86,7 @@ class _MainScreenState extends State<MainScreen> {
               return Stack(
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.message),
+                    icon: Icon(Icons.message, color: Colors.orange.shade700),
                     onPressed: () {
                       Navigator.push(
                         context,
@@ -124,9 +123,8 @@ class _MainScreenState extends State<MainScreen> {
               );
             },
           ),
-          // Profile icon button
           IconButton(
-            icon: const Icon(Icons.person),
+            icon: Icon(Icons.person, color: Colors.orange.shade700),
             onPressed: () {
               Navigator.push(
                 context,
@@ -141,32 +139,238 @@ class _MainScreenState extends State<MainScreen> {
       body: Column(
         children: [
           // COMPACT SEARCH SECTION
-          _buildSearchFilters(),
-          
-          // SEARCH BUTTON
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: ElevatedButton.icon(
-              onPressed: _searchForMatches,
-              icon: const Icon(Icons.search),
-              label: const Text('Pronađi ljude'),
-              style: ElevatedButton.styleFrom(
-                minimumSize: const Size(double.infinity, 45),
-              ),
+          Container(
+            padding: const EdgeInsets.all(16),
+            color: Colors.grey[50],
+            child: Column(
+              children: [
+                // Hobby and City in one row
+                Row(
+                  children: [
+                    // Hobby dropdown
+                    Expanded(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            isExpanded: true,
+                            hint: const Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 12),
+                              child: Text('Hobi'),
+                            ),
+                            value: _selectedCategory,
+                            items: [
+                              const DropdownMenuItem(
+                                value: null,
+                                child: Padding(
+                                  padding: EdgeInsets.symmetric(horizontal: 12),
+                                  child: Text('Svi hobiji'),
+                                ),
+                              ),
+                              ...hobbyCategories.keys.map((category) {
+                                return DropdownMenuItem(
+                                  value: category,
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                                    child: Text(category),
+                                  ),
+                                );
+                              }),
+                            ],
+                            onChanged: (value) {
+                              setState(() {
+                                _selectedCategory = value;
+                                _selectedSubcategory = null;
+                              });
+                            },
+                          ),
+                        ),
+                      ),
+                    ),
+                    
+                    const SizedBox(width: 12),
+                    
+                    // City dropdown
+                    Expanded(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            isExpanded: true,
+                            hint: const Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 12),
+                              child: Text('Grad'),
+                            ),
+                            value: _selectedCity,
+                            items: [
+                              const DropdownMenuItem(
+                                value: null,
+                                child: Padding(
+                                  padding: EdgeInsets.symmetric(horizontal: 12),
+                                  child: Text('Svi gradovi'),
+                                ),
+                              ),
+                              ...serbiaCities.map((city) {
+                                return DropdownMenuItem(
+                                  value: city,
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                                    child: Text(city),
+                                  ),
+                                );
+                              }),
+                            ],
+                            onChanged: (value) => setState(() => _selectedCity = value),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                
+                // Subcategory dropdown (only shows when category is selected)
+                if (_selectedCategory != null && hobbyCategories[_selectedCategory]!.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.grey.shade300),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        isExpanded: true,
+                        hint: const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 12),
+                          child: Text('Podkategorija (opciono)'),
+                        ),
+                        value: _selectedSubcategory,
+                        items: [
+                          const DropdownMenuItem(
+                            value: null,
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 12),
+                              child: Text('Sve podkategorije'),
+                            ),
+                          ),
+                          ...hobbyCategories[_selectedCategory]!.map((sub) {
+                            return DropdownMenuItem(
+                              value: sub,
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 12),
+                                child: Text(sub),
+                              ),
+                            );
+                          }),
+                        ],
+                        onChanged: (value) => setState(() => _selectedSubcategory = value),
+                      ),
+                    ),
+                  ),
+                ],
+                
+                // Search button
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: _searchForMatches,
+                    icon: const Icon(Icons.search),
+                    label: const Text('Pronađi ljude'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orange.shade700,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                  ),
+                ),
+                
+                // Selected filters chips
+                if (_selectedCategory != null || _selectedCity != null) ...[
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
+                    alignment: WrapAlignment.start,
+                    children: [
+                      if (_selectedCategory != null)
+                        Chip(
+                          label: Text(
+                            _selectedSubcategory != null 
+                                ? '$_selectedCategory > $_selectedSubcategory'
+                                : _selectedCategory!,
+                          ),
+                          deleteIcon: const Icon(Icons.close, size: 16),
+                          onDeleted: () => setState(() {
+                            _selectedCategory = null;
+                            _selectedSubcategory = null;
+                          }),
+                          backgroundColor: Colors.orange.shade50,
+                        ),
+                      if (_selectedCity != null)
+                        Chip(
+                          label: Text(_selectedCity!),
+                          deleteIcon: const Icon(Icons.close, size: 16),
+                          onDeleted: () => setState(() => _selectedCity = null),
+                          backgroundColor: Colors.blue.shade50,
+                        ),
+                    ],
+                  ),
+                ],
+              ],
             ),
           ),
           
           // SEARCH STATUS
           if (_searchStatus.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              child: Text(
-                _searchStatus,
-                style: TextStyle(
-                  color: Theme.of(context).primaryColor,
-                  fontStyle: FontStyle.italic,
-                  fontSize: 14,
-                ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              color: Colors.grey[50],
+              child: Row(
+                children: [
+                  Icon(
+                    _searchResults.isEmpty ? Icons.info_outline : Icons.check_circle,
+                    color: _searchResults.isEmpty ? Colors.orange : Colors.green,
+                    size: 16,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      _searchStatus,
+                      style: TextStyle(
+                        color: _searchResults.isEmpty ? Colors.orange.shade700 : Colors.green.shade700,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                  if (_searchResults.isNotEmpty && _selectedCategory != null)
+                    TextButton(
+                      onPressed: () {
+                        setState(() {
+                          _selectedCategory = null;
+                          _selectedSubcategory = null;
+                          _selectedCity = null;
+                          _searchResults = [];
+                          _searchStatus = '';
+                        });
+                      },
+                      child: const Text(
+                        'Obriši filtere',
+                        style: TextStyle(fontSize: 13),
+                      ),
+                    ),
+                ],
               ),
             ),
           
@@ -196,180 +400,6 @@ class _MainScreenState extends State<MainScreen> {
         });
   }
 
-  /// Build compact search filters
-  Widget _buildSearchFilters() {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      color: Colors.grey[50],
-      child: Column(
-        children: [
-          // City dropdown
-          Row(
-            children: [
-              const Icon(Icons.location_city, size: 20),
-              const SizedBox(width: 8),
-              Expanded(
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    isExpanded: true,
-                    hint: const Text('Grad (opciono)'),
-                    value: _selectedCity,
-                    items: serbiaCities.map((city) {
-                      return DropdownMenuItem(
-                        value: city,
-                        child: Text(city, overflow: TextOverflow.ellipsis),
-                      );
-                    }).toList(),
-                    onChanged: (value) => setState(() => _selectedCity = value),
-                  ),
-                ),
-              ),
-              if (_selectedCity != null)
-                IconButton(
-                  icon: const Icon(Icons.close, size: 18),
-                  onPressed: () => setState(() => _selectedCity = null),
-                ),
-            ],
-          ),
-          
-          const SizedBox(height: 12),
-          
-          // Category and subcategory in a row
-          Row(
-            children: [
-              // Category dropdown
-              Expanded(
-                child: InputDecorator(
-                  decoration: InputDecoration(
-                    labelText: 'Kategorija',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12),
-                  ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      isExpanded: true,
-                      hint: const Text('Izaberi'),
-                      value: _selectedCategory,
-                      items: hobbyCategories.keys.map((category) {
-                        return DropdownMenuItem(
-                          value: category,
-                          child: Text(category, overflow: TextOverflow.ellipsis),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedCategory = value;
-                          _selectedSubcategory = null;
-                        });
-                      },
-                    ),
-                  ),
-                ),
-              ),
-              
-              const SizedBox(width: 8),
-              
-              // Subcategory dropdown
-              Expanded(
-                child: InputDecorator(
-                  decoration: InputDecoration(
-                    labelText: 'Podkategorija',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12),
-                  ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      isExpanded: true,
-                      hint: const Text('Izaberi (opciono)'),
-                      value: _selectedSubcategory,
-                      items: [
-                        const DropdownMenuItem(
-                          value: null,
-                          child: Text('Sva podkategorija'),
-                        ),
-                        if (_selectedCategory != null)
-                          ...hobbyCategories[_selectedCategory]!.map((sub) {
-                            return DropdownMenuItem(
-                              value: sub,
-                              child: Text(sub, overflow: TextOverflow.ellipsis),
-                            );
-                          }),
-                      ],
-                      onChanged: (value) => setState(() => _selectedSubcategory = value),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          
-          const SizedBox(height: 8),
-          
-          // Add filter button
-          ElevatedButton(
-            onPressed: _selectedCategory != null ? _addSearchFilter : null,
-            style: ElevatedButton.styleFrom(
-              minimumSize: const Size(double.infinity, 36),
-            ),
-            child: const Text('Dodaj filter'),
-          ),
-          
-          const SizedBox(height: 8),
-          
-          // Selected filters chips
-          if (_selectedFilters.isNotEmpty || _selectedCity != null) ...[
-            Wrap(
-              spacing: 6,
-              runSpacing: 4,
-              children: [
-                // City chip
-                if (_selectedCity != null)
-                  Chip(
-                    label: Text(_selectedCity!),
-                    deleteIcon: const Icon(Icons.close, size: 14),
-                    onDeleted: () => setState(() => _selectedCity = null),
-                  ),
-                
-                // Filter chips
-                ..._selectedFilters.map((filter) {
-                  return Chip(
-                    label: Text(filter),
-                    deleteIcon: const Icon(Icons.close, size: 14),
-                    onDeleted: () => setState(() => _selectedFilters.remove(filter)),
-                  );
-                }),
-              ],
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  /// Add current selection to search filters
-  void _addSearchFilter() {
-    if (_selectedCategory != null) {
-      String filter;
-      if (_selectedSubcategory != null) {
-        filter = '$_selectedCategory > $_selectedSubcategory';
-      } else {
-        filter = _selectedCategory!;
-      }
-      
-      if (!_selectedFilters.contains(filter)) {
-        setState(() {
-          _selectedFilters.add(filter);
-          _selectedCategory = null;
-          _selectedSubcategory = null;
-        });
-      }
-    }
-  }
-
   /// Build search results
   Widget _buildSearchResults() {
     if (_isSearching) {
@@ -377,7 +407,9 @@ class _MainScreenState extends State<MainScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            CircularProgressIndicator(),
+            CircularProgressIndicator(
+              color: Colors.orange,
+            ),
             SizedBox(height: 16),
             Text('Tražim ljude sa sličnim hobijima...'),
           ],
@@ -385,17 +417,69 @@ class _MainScreenState extends State<MainScreen> {
       );
     }
 
-    if (_searchResults.isEmpty) {
-      return const Center(
+    if (_searchResults.isEmpty && _searchStatus.isEmpty) {
+      return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.people, size: 60, color: Colors.grey),
-            SizedBox(height: 12),
+            Icon(
+              Icons.people_outline,
+              size: 80,
+              color: Colors.grey.shade300,
+            ),
+            const SizedBox(height: 16),
             Text(
-              'Dodajte filtere i pritisnite "Pronađi ljude"',
-              style: TextStyle(color: Colors.grey, fontSize: 14),
+              'Izaberite hobi i grad\nza pretragu',
               textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.grey,
+                fontSize: 15,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Pronađite ljude sa sličnim interesovanjima',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.grey.shade400,
+                fontSize: 13,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_searchResults.isEmpty && _searchStatus.isNotEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.search_off,
+              size: 80,
+              color: Colors.grey.shade300,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Nema rezultata',
+              style: TextStyle(
+                color: Colors.grey.shade600,
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 40),
+              child: Text(
+                'Promenite filtere i pokušajte ponovo',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.grey.shade400,
+                  fontSize: 14,
+                ),
+              ),
             ),
           ],
         ),
@@ -412,7 +496,7 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  /// Build user card (UPDATED - removed match score percentage)
+  /// Build user card
   Widget _buildUserCard(Map<String, dynamic> user) {
     final String? profilePic = user['profilePic'] as String?;
     final String? city = user['city'] as String?;
@@ -421,9 +505,12 @@ class _MainScreenState extends State<MainScreen> {
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      elevation: 2,
+      elevation: 1,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -444,7 +531,7 @@ class _MainScreenState extends State<MainScreen> {
                     );
                   },
                   child: CircleAvatar(
-                    radius: 20,
+                    radius: 24,
                     backgroundImage: profilePic != null && profilePic.isNotEmpty
                         ? NetworkImage(profilePic)
                         : const AssetImage('assets/default_avatar.png')
@@ -474,73 +561,36 @@ class _MainScreenState extends State<MainScreen> {
                           user['name'] as String? ?? 'Nepoznato',
                           style: const TextStyle(
                             fontSize: 16,
-                            fontWeight: FontWeight.bold,
+                            fontWeight: FontWeight.w600,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       if (city != null && city.isNotEmpty)
-                        Text(
-                          city,
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 12,
-                          ),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.location_on,
+                              size: 14,
+                              color: Colors.grey.shade500,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              city,
+                              style: TextStyle(
+                                color: Colors.grey.shade600,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
                         ),
                     ],
                   ),
                 ),
                 
-                // REMOVED: Match score percentage display
-              ],
-            ),
-            
-            const SizedBox(height: 8),
-            
-            // Bio preview
-            if (bio != null && bio.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Text(
-                  bio,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: Colors.grey[700],
-                    fontSize: 12,
-                  ),
-                ),
-              ),
-            
-            // Matching hobbies
-            if (matchingHobbies.isNotEmpty)
-              Wrap(
-                spacing: 6,
-                runSpacing: 4,
-                children: matchingHobbies
-                    .take(3)
-                    .map<Widget>((hobby) {
-                      return Chip(
-                        label: Text(
-                          hobby.toString(),
-                          style: const TextStyle(fontSize: 10),
-                        ),
-                        backgroundColor: Colors.green[50],
-                        side: BorderSide(color: Colors.green.shade200),
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        labelPadding: const EdgeInsets.symmetric(horizontal: 4),
-                      );
-                    }).toList(),
-              ),
-            
-            const SizedBox(height: 8),
-            
-            // Action buttons
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                TextButton.icon(
+                // Message button
+                IconButton(
                   onPressed: () {
                     Navigator.push(
                       context,
@@ -552,27 +602,86 @@ class _MainScreenState extends State<MainScreen> {
                       ),
                     );
                   },
-                  icon: const Icon(Icons.message, size: 14),
-                  label: const Text('Poruka', style: TextStyle(fontSize: 12)),
-                ),
-                const SizedBox(width: 8),
-                TextButton.icon(
-                  onPressed: () {
-                    // Navigate to user profile
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => OtherUserProfileScreen(
-                          userId: user['id'] as String,
-                          userName: user['name'] as String? ?? 'Nepoznato',
-                        ),
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.person, size: 14),
-                  label: const Text('Profil', style: TextStyle(fontSize: 12)),
+                  icon: Icon(
+                    Icons.message,
+                    color: Colors.orange.shade700,
+                    size: 20,
+                  ),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  tooltip: 'Pošalji poruku',
                 ),
               ],
+            ),
+            
+            const SizedBox(height: 12),
+            
+            // Bio preview
+            if (bio != null && bio.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Text(
+                  bio,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Colors.grey.shade700,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+            
+            // Matching hobbies
+            if (matchingHobbies.isNotEmpty)
+              Wrap(
+                spacing: 6,
+                runSpacing: 4,
+                children: matchingHobbies
+                    .take(4)
+                    .map<Widget>((hobby) {
+                      return Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.shade50,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          hobby.toString().split(' > ').last,
+                          style: TextStyle(
+                            color: Colors.orange.shade800,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      );
+                    }).toList(),
+              ),
+            
+            const SizedBox(height: 8),
+            
+            // View profile button
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => OtherUserProfileScreen(
+                        userId: user['id'] as String,
+                        userName: user['name'] as String? ?? 'Nepoznato',
+                      ),
+                    ),
+                  );
+                },
+                child: const Text(
+                  'Pogledaj profil',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
             ),
           ],
         ),
@@ -580,7 +689,7 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  /// Main search algorithm (UPDATED - removed match score from results)
+  /// Main search algorithm
   Future<void> _searchForMatches() async {
     if (_auth.currentUser == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -594,9 +703,9 @@ class _MainScreenState extends State<MainScreen> {
       return;
     }
 
-    if (_selectedFilters.isEmpty && _selectedCity == null) {
+    if (_selectedCategory == null && _selectedCity == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Izaberi bar jedan filter za pretragu')),
+        const SnackBar(content: Text('Izaberite bar jedan filter za pretragu')),
       );
       return;
     }
@@ -616,18 +725,6 @@ class _MainScreenState extends State<MainScreen> {
         query = query.where('city', isEqualTo: _selectedCity);
       }
       
-      // Prepare search patterns
-      final List<String> exactPatterns = [];
-      final List<String> categoryPatterns = [];
-      
-      for (final filter in _selectedFilters) {
-        if (filter.contains('>')) {
-          exactPatterns.add(filter);
-        } else {
-          categoryPatterns.add(filter);
-        }
-      }
-      
       // Execute query
       final snapshot = await query.get();
       
@@ -638,28 +735,34 @@ class _MainScreenState extends State<MainScreen> {
         final userData = doc.data() as Map<String, dynamic>;
         final List<dynamic> userHobbies = userData['hobbies'] as List<dynamic>? ?? [];
         
-        // Calculate matches
-        final List<String> matchingHobbies = [];
+        // Check if we have hobby filter
+        bool hasMatchingHobby = false;
+        List<String> matchingHobbies = [];
         
-        // Check exact matches
-        for (final pattern in exactPatterns) {
-          if (userHobbies.contains(pattern)) {
-            matchingHobbies.add(pattern);
-          }
-        }
-        
-        // Check category matches
-        for (final category in categoryPatterns) {
+        if (_selectedCategory != null) {
           for (final hobby in userHobbies) {
             final hobbyStr = hobby.toString();
-            if (hobbyStr.startsWith('$category >')) {
-              matchingHobbies.add(hobbyStr);
+            if (_selectedSubcategory != null) {
+              // Looking for specific subcategory
+              if (hobbyStr == '$_selectedCategory > $_selectedSubcategory') {
+                hasMatchingHobby = true;
+                matchingHobbies.add(hobbyStr);
+              }
+            } else {
+              // Looking for any subcategory in this category
+              if (hobbyStr.startsWith('$_selectedCategory >')) {
+                hasMatchingHobby = true;
+                matchingHobbies.add(hobbyStr);
+              }
             }
           }
+        } else {
+          // No hobby filter, show all users (only filtered by city if selected)
+          hasMatchingHobby = true;
         }
         
-        // Add user if they have matching hobbies
-        if (matchingHobbies.isNotEmpty || _selectedFilters.isEmpty) {
+        // Add user if they match criteria
+        if (hasMatchingHobby) {
           results.add({
             'id': doc.id,
             ...userData,
@@ -686,6 +789,4 @@ class _MainScreenState extends State<MainScreen> {
       }
     }
   }
-
-  /// REMOVED: _getMatchColor function as it's no longer needed
 }
