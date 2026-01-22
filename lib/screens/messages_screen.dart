@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart'; // ADD THIS IMPORT
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/friends_service.dart';
 import '../services/messaging_service.dart';
 import 'chat_screen.dart';
+import 'group_chat_screen.dart'; // ADD THIS IMPORT
 import 'other_user_profile.dart';
+import 'create_group_screen.dart'; // ADD THIS IMPORT
 
 class MessagesScreen extends StatefulWidget {
   const MessagesScreen({super.key});
@@ -19,35 +21,41 @@ class _MessagesScreenState extends State<MessagesScreen> {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 3,
+      length: 2, // Changed to 2 tabs: Conversations and Contacts
       child: Scaffold(
         appBar: AppBar(
+          backgroundColor: Colors.orange.shade700,
+          foregroundColor: Colors.white,
           title: const Text('Poruke'),
-          bottom: TabBar(
-            tabs: [
-              const Tab(icon: Icon(Icons.chat), text: 'RAZGOVORI'),
-              const Tab(icon: Icon(Icons.people), text: 'KONTAKTI'),
-              Tab(
-                icon: Badge(
-                  label: StreamBuilder<List<Map<String, dynamic>>>(
-                    stream: FriendsService.getFriendRequestsStream(),
-                    builder: (context, snapshot) {
-                      final count = snapshot.data?.length ?? 0;
-                      return Text(count > 0 ? count.toString() : '');
-                    },
+          actions: [
+            // Add group creation button
+            IconButton(
+              icon: const Icon(Icons.group_add),
+              tooltip: 'Kreiraj grupu',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const CreateGroupScreen(),
                   ),
-                  child: const Icon(Icons.notifications),
-                ),
-                text: 'ZAHTEVI',
-              ),
+                );
+              },
+            ),
+          ],
+          bottom: TabBar(
+            indicatorColor: Colors.white,
+            labelColor: Colors.white,
+            unselectedLabelColor: Colors.white.withOpacity(0.7),
+            tabs: const [
+              Tab(text: 'RAZGOVORI'),
+              Tab(text: 'KONTAKTI'),
             ],
           ),
         ),
         body: TabBarView(
           children: [
-            _ConversationsTab(),
-            _ContactsTab(),
-            _FriendRequestsTab(),
+            _CombinedConversationsTab(), // NEW: Combined tab
+            _ContactsAndRequestsTab(), // Contacts + Requests in one tab
           ],
         ),
       ),
@@ -55,31 +63,44 @@ class _MessagesScreenState extends State<MessagesScreen> {
   }
 }
 
-/// CONVERSATIONS TAB
-class _ConversationsTab extends StatelessWidget {
+/// COMBINED CONVERSATIONS TAB (Private + Groups)
+class _CombinedConversationsTab extends StatelessWidget {
   final User? _currentUser = FirebaseAuth.instance.currentUser;
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<QuerySnapshot>(
-      stream: MessagingService.getConversationsStream(),
+    return StreamBuilder<List<Map<String, dynamic>>>(
+      stream: MessagingService.getCombinedConversationsStream(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return const Center(
+            child: CircularProgressIndicator(
+              color: Colors.orange,
+            ),
+          );
         }
 
         if (snapshot.hasError) {
-          return Center(child: Text('Error: ${snapshot.error}'));
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error, color: Colors.orange, size: 60),
+                const SizedBox(height: 16),
+                Text(
+                  'Greška: ${snapshot.error}',
+                  style: const TextStyle(color: Colors.grey),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          );
         }
 
-        final conversations = snapshot.data?.docs ?? [];
+        final conversations = snapshot.data ?? [];
 
         if (conversations.isEmpty) {
-          return _buildEmptyState(
-            icon: Icons.chat_bubble_outline,
-            title: 'Nema razgovora',
-            subtitle: 'Pokrenite razgovor sa prijateljem',
-          );
+          return _buildEmptyConversationsState();
         }
 
         return ListView.builder(
@@ -93,26 +114,43 @@ class _ConversationsTab extends StatelessWidget {
     );
   }
 
-  Widget _buildEmptyState({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-  }) {
+  Widget _buildEmptyConversationsState() {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, size: 80, color: Colors.grey),
-          const SizedBox(height: 16),
-          Text(title, style: const TextStyle(color: Colors.grey, fontSize: 16)),
-          const SizedBox(height: 8),
-          Text(subtitle, style: const TextStyle(color: Colors.grey)),
+          Icon(Icons.chat_bubble_outline, size: 80, color: Colors.orange.shade300),
           const SizedBox(height: 20),
-          ElevatedButton(
-            onPressed: () {
-              
-            },
-            child: const Text('Pronađi prijatelje'),
+          Text(
+            'Nema razgovora',
+            style: TextStyle(
+              fontSize: 18,
+              color: Colors.grey.shade700,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 40),
+            child: Text(
+              'Pokrenite razgovor sa prijateljem ili kreirajte grupu',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.grey.shade500,
+                fontSize: 14,
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton.icon(
+            onPressed: () {},
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.orange.shade700,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            ),
+            icon: const Icon(Icons.group_add),
+            label: const Text('Kreiraj grupu'),
           ),
         ],
       ),
@@ -120,28 +158,106 @@ class _ConversationsTab extends StatelessWidget {
   }
 }
 
-/// CONTACTS TAB
-class _ContactsTab extends StatelessWidget {
+/// COMBINED CONTACTS AND REQUESTS TAB
+class _ContactsAndRequestsTab extends StatefulWidget {
+  @override
+  State<_ContactsAndRequestsTab> createState() => _ContactsAndRequestsTabState();
+}
+
+class _ContactsAndRequestsTabState extends State<_ContactsAndRequestsTab> {
+  @override
+  Widget build(BuildContext context) {
+    return DefaultTabController(
+      length: 2,
+      child: Column(
+        children: [
+          Container(
+            color: Colors.grey.shade50,
+            child: TabBar(
+              indicatorColor: Colors.orange.shade700,
+              labelColor: Colors.orange.shade700,
+              unselectedLabelColor: Colors.grey.shade600,
+              tabs: const [
+                Tab(text: 'PRIJATELJI'),
+                Tab(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.notifications, size: 16),
+                      SizedBox(width: 4),
+                      Text('ZAHTEVI'),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: TabBarView(
+              children: [
+                _ContactsList(),
+                _FriendRequestsList(),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// CONTACTS LIST
+class _ContactsList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<Map<String, dynamic>>>(
       stream: FriendsService.getFriendsStream(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return const Center(
+            child: CircularProgressIndicator(
+              color: Colors.orange,
+            ),
+          );
         }
 
         if (snapshot.hasError) {
-          return Center(child: Text('Error: ${snapshot.error}'));
+          return Center(
+            child: Text('Greška: ${snapshot.error}'),
+          );
         }
 
         final friends = snapshot.data ?? [];
 
         if (friends.isEmpty) {
-          return _buildEmptyState(
-            icon: Icons.people_outline,
-            title: 'Nema prijatelja',
-            subtitle: 'Dodajte prijatelje da biste započeli razgovor',
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.people_outline, size: 80, color: Colors.orange.shade300),
+                const SizedBox(height: 20),
+                Text(
+                  'Nema prijatelja',
+                  style: TextStyle(
+                    fontSize: 18,
+                    color: Colors.grey.shade700,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 40),
+                  child: Text(
+                    'Dodajte prijatelje da biste započeli razgovor',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.grey.shade500,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           );
         }
 
@@ -155,50 +271,34 @@ class _ContactsTab extends StatelessWidget {
       },
     );
   }
-
-  Widget _buildEmptyState({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-  }) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 80, color: Colors.grey),
-          const SizedBox(height: 16),
-          Text(title, style: const TextStyle(color: Colors.grey, fontSize: 16)),
-          const SizedBox(height: 8),
-          Text(subtitle, style: const TextStyle(color: Colors.grey)),
-        ],
-      ),
-    );
-  }
 }
 
-/// FRIEND REQUESTS TAB
-class _FriendRequestsTab extends StatelessWidget {
+/// FRIEND REQUESTS LIST
+class _FriendRequestsList extends StatelessWidget {
   void _handleAcceptRequest(BuildContext context, String requestId) async {
     try {
       await FriendsService.acceptFriendRequest(requestId);
-      _showSnackBar(context, 'Zahtev prihvaćen!');
+      _showSnackBar(context, 'Zahtev prihvaćen!', Colors.green);
     } catch (e) {
-      _showSnackBar(context, 'Greška: $e');
+      _showSnackBar(context, 'Greška: $e', Colors.red);
     }
   }
 
   void _handleDeclineRequest(BuildContext context, String requestId) async {
     try {
       await FriendsService.cancelFriendRequest(requestId);
-      _showSnackBar(context, 'Zahtev odbijen');
+      _showSnackBar(context, 'Zahtev odbijen', Colors.orange);
     } catch (e) {
-      _showSnackBar(context, 'Greška: $e');
+      _showSnackBar(context, 'Greška: $e', Colors.red);
     }
   }
 
-  void _showSnackBar(BuildContext context, String message) {
+  void _showSnackBar(BuildContext context, String message, Color color) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
+      SnackBar(
+        content: Text(message),
+        backgroundColor: color,
+      ),
     );
   }
 
@@ -208,11 +308,17 @@ class _FriendRequestsTab extends StatelessWidget {
       stream: FriendsService.getFriendRequestsStream(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return const Center(
+            child: CircularProgressIndicator(
+              color: Colors.orange,
+            ),
+          );
         }
 
         if (snapshot.hasError) {
-          return Center(child: Text('Error: ${snapshot.error}'));
+          return Center(
+            child: Text('Greška: ${snapshot.error}'),
+          );
         }
 
         final requests = snapshot.data ?? [];
@@ -222,13 +328,27 @@ class _FriendRequestsTab extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.notifications_none, size: 80, color: Colors.grey),
-                const SizedBox(height: 16),
-                Text('Nema zahteva', style: const TextStyle(color: Colors.grey, fontSize: 16)),
-                const SizedBox(height: 8),
+                Icon(Icons.notifications_none, size: 80, color: Colors.orange.shade300),
+                const SizedBox(height: 20),
                 Text(
-                  'Kada neko pošalje zahtev, pojaviće se ovde',
-                  style: const TextStyle(color: Colors.grey),
+                  'Nema zahteva',
+                  style: TextStyle(
+                    fontSize: 18,
+                    color: Colors.grey.shade700,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 40),
+                  child: Text(
+                    'Kada neko pošalje zahtev, pojaviće se ovde',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.grey.shade500,
+                      fontSize: 14,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -252,126 +372,154 @@ class _FriendRequestsTab extends StatelessWidget {
   }
 }
 
-/// CONVERSATION TILE WIDGET
+/// CONVERSATION TILE WIDGET (Supports both private and group)
 class _ConversationTile extends StatelessWidget {
-  final QueryDocumentSnapshot conversation;
+  final Map<String, dynamic> conversation;
   final User? _currentUser = FirebaseAuth.instance.currentUser;
 
-_ConversationTile({required this.conversation});
+  _ConversationTile({required this.conversation});
 
   @override
   Widget build(BuildContext context) {
-    final data = conversation.data() as Map<String, dynamic>;
-    final participants = List<String>.from(data['participants'] ?? []);
-    final otherUserId = participants.firstWhere(
-      (id) => id != _currentUser!.uid,
-      orElse: () => '',
-    );
+    final type = conversation['type']; // 'private' or 'group'
+    final isGroup = type == 'group';
+    final unreadCount = conversation['unreadCount'] ?? 0;
+    final lastMessage = conversation['lastMessage'] ?? '';
+    final lastMessageTime = conversation['lastMessageTime'];
 
-    return FutureBuilder<DocumentSnapshot>(
-      future: FirebaseFirestore.instance.collection('users').doc(otherUserId).get(),
-      builder: (context, userSnapshot) {
-        if (!userSnapshot.hasData) {
-          return const ListTile(title: Text('Učitavanje...'));
+    return ListTile(
+      onTap: () {
+        if (isGroup) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => GroupChatScreen(
+                groupId: conversation['id'],
+                groupName: conversation['name'],
+              ),
+            ),
+          );
+        } else {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ChatScreen(
+                otherUserId: conversation['otherUserId'],
+                otherUserName: conversation['name'],
+              ),
+            ),
+          );
         }
-
-        final userData = userSnapshot.data!.data() as Map<String, dynamic>? ?? {};
-        final userName = userData['name'] ?? 'Nepoznato';
-        final userProfilePic = userData['profilePic'] ?? '';
-        final lastMessage = data['lastMessage'] ?? '';
-        final lastMessageTime = data['lastMessageTime'] as Timestamp?;
-        final unreadCount = (data['unreadCount'] as Map<String, dynamic>?)?[_currentUser!.uid] as int? ?? 0;
-
-        return ListTile(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => ChatScreen(
-                  otherUserId: otherUserId,
-                  otherUserName: userName,
-                ),
-              ),
-            );
-          },
-          leading: Stack(
-            children: [
-              CircleAvatar(
-                radius: 25,
-                backgroundImage: userProfilePic.isNotEmpty
-                    ? NetworkImage(userProfilePic)
-                    : const AssetImage('assets/default_avatar.png') as ImageProvider,
-              ),
-              if (unreadCount > 0)
-                Positioned(
-                  right: 0,
-                  bottom: 0,
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: Colors.red,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 2),
-                    ),
-                    child: Text(
-                      unreadCount > 9 ? '9+' : unreadCount.toString(),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          title: Text(
-            userName,
-            style: TextStyle(
-              fontWeight: unreadCount > 0 ? FontWeight.bold : FontWeight.normal,
-            ),
-          ),
-          subtitle: Text(
-            lastMessage,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontWeight: unreadCount > 0 ? FontWeight.w500 : FontWeight.normal,
-            ),
-          ),
-          trailing: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              if (lastMessageTime != null)
-                Text(
-                  _formatTime(lastMessageTime),
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[600],
-                  ),
-                ),
-              const SizedBox(height: 4),
-              if (unreadCount > 0)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: Colors.red,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Text(
-                    'NOVO',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        );
       },
+      leading: Stack(
+        children: [
+          Container(
+            width: 50,
+            height: 50,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: isGroup ? Colors.orange.shade100 : Colors.blue.shade100,
+            ),
+            child: Icon(
+              isGroup ? Icons.group : Icons.person,
+              color: isGroup ? Colors.orange.shade700 : Colors.blue.shade700,
+              size: 30,
+            ),
+          ),
+          if (unreadCount > 0)
+            Positioned(
+              right: 0,
+              bottom: 0,
+              child: Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: Colors.red,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 2),
+                ),
+                child: Text(
+                  unreadCount > 9 ? '9+' : unreadCount.toString(),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+      title: Row(
+        children: [
+          Expanded(
+            child: Text(
+              conversation['name'],
+              style: TextStyle(
+                fontWeight: unreadCount > 0 ? FontWeight.bold : FontWeight.normal,
+                color: Colors.grey.shade800,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          if (isGroup)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade50,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                'Grupa',
+                style: TextStyle(
+                  color: Colors.orange.shade700,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+        ],
+      ),
+      subtitle: Text(
+        lastMessage,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          color: Colors.grey.shade600,
+          fontWeight: unreadCount > 0 ? FontWeight.w500 : FontWeight.normal,
+        ),
+      ),
+      trailing: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          if (lastMessageTime != null)
+            Text(
+              _formatTime(lastMessageTime),
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey.shade500,
+              ),
+            ),
+          const SizedBox(height: 4),
+          if (unreadCount > 0)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: Colors.red,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Text(
+                'NOVO',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 
@@ -428,18 +576,43 @@ class _ContactTile extends StatelessWidget {
       onTap: () => _showProfile(context),
       leading: CircleAvatar(
         radius: 25,
-        backgroundImage: friend['profilePic'] != null && friend['profilePic'].isNotEmpty
-            ? NetworkImage(friend['profilePic'])
-            : const AssetImage('assets/default_avatar.png') as ImageProvider,
+        backgroundColor: Colors.orange.shade100,
+        child: friend['profilePic'] != null && friend['profilePic'].isNotEmpty
+            ? ClipOval(
+                child: Image.network(
+                  friend['profilePic'],
+                  width: 50,
+                  height: 50,
+                  fit: BoxFit.cover,
+                ),
+              )
+            : Icon(
+                Icons.person,
+                color: Colors.orange.shade700,
+                size: 30,
+              ),
       ),
-      title: Text(friend['name']),
-      subtitle: Text(friend['city']?.isNotEmpty == true ? friend['city'] : 'Nije naveden grad'),
+      title: Text(
+        friend['name'],
+        style: const TextStyle(fontWeight: FontWeight.w500),
+      ),
+      subtitle: Text(
+        friend['city']?.isNotEmpty == true ? friend['city'] : 'Nije naveden grad',
+        style: TextStyle(color: Colors.grey.shade600),
+      ),
       trailing: IconButton(
         icon: Container(
-          padding: const EdgeInsets.all(8),
+          padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: Colors.blue,
-            borderRadius: BorderRadius.circular(20),
+            color: Colors.orange.shade700,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.orange.withOpacity(0.3),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           child: const Icon(Icons.message, color: Colors.white, size: 20),
         ),
@@ -465,72 +638,102 @@ class _FriendRequestTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      child: ListTile(
-        contentPadding: const EdgeInsets.all(16),
-        leading: CircleAvatar(
-          radius: 30,
-          backgroundImage: request['profilePic'] != null && request['profilePic'].isNotEmpty
-              ? NetworkImage(request['profilePic'])
-              : const AssetImage('assets/default_avatar.png') as ImageProvider,
-        ),
-        title: Text(request['name'], style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Column(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 4),
-            Text(request['city'] ?? ''),
-            const SizedBox(height: 8),
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 25,
+                  backgroundColor: Colors.orange.shade100,
+                  child: request['profilePic'] != null && request['profilePic'].isNotEmpty
+                      ? ClipOval(
+                          child: Image.network(
+                            request['profilePic'],
+                            width: 50,
+                            height: 50,
+                            fit: BoxFit.cover,
+                          ),
+                        )
+                      : Icon(
+                          Icons.person,
+                          color: Colors.orange.shade700,
+                          size: 30,
+                        ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        request['name'],
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      if (request['city'] != null && request['city'].isNotEmpty)
+                        Text(
+                          request['city'],
+                          style: TextStyle(color: Colors.grey.shade600),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
             Text(
               'Želi da vas doda za prijatelja',
-              style: TextStyle(color: Colors.grey[600]),
+              style: TextStyle(color: Colors.grey.shade700),
             ),
-          ],
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _ActionButton(
-              icon: Icons.check,
-              color: Colors.green,
-              onPressed: onAccept,
-            ),
-            const SizedBox(width: 8),
-            _ActionButton(
-              icon: Icons.close,
-              color: Colors.red,
-              onPressed: onDecline,
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: onAccept,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    icon: const Icon(Icons.check, size: 20),
+                    label: const Text('Prihvati'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: onDecline,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.red,
+                      side: const BorderSide(color: Colors.red),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    icon: const Icon(Icons.close, size: 20),
+                    label: const Text('Odbij'),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
       ),
-    );
-  }
-}
-
-/// REUSABLE ACTION BUTTON
-class _ActionButton extends StatelessWidget {
-  final IconData icon;
-  final Color color;
-  final VoidCallback onPressed;
-
-  const _ActionButton({
-    required this.icon,
-    required this.color,
-    required this.onPressed,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return IconButton(
-      icon: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Icon(icon, color: Colors.white, size: 20),
-      ),
-      onPressed: onPressed,
     );
   }
 }

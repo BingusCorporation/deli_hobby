@@ -1,3 +1,4 @@
+import 'package:deli_hobby/auth/prelog_screen.dart';
 import 'package:deli_hobby/screens/main_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -89,7 +90,12 @@ class _LoginScreenState extends State<LoginScreen> {
                         color: Colors.white,
                         size: 28,
                       ),
-                      onPressed: () => Navigator.pop(context),
+                      onPressed: () {
+  Navigator.push(
+    context,
+    MaterialPageRoute(builder: (context) => PrelogScreen()),
+  );
+},
                     ),
                   ),
                 ),

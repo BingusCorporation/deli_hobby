@@ -55,11 +55,11 @@ static Future<void> acceptFriendRequest(String requestId) async {
     // This makes querying easier for both users
     
     // Friendship document for user1 -> user2
-    final friendshipId1 = '${senderId}_${receiverId}';
+    final friendshipId1 = '${senderId}_$receiverId';
     final friendshipRef1 = _firestore.collection('friendships').doc(friendshipId1);
     
     // Friendship document for user2 -> user1 (reverse)
-    final friendshipId2 = '${receiverId}_${senderId}';
+    final friendshipId2 = '${receiverId}_$senderId';
     final friendshipRef2 = _firestore.collection('friendships').doc(friendshipId2);
     
     // Check if friendships already exist
@@ -106,10 +106,10 @@ static Future<void> removeFriend(String friendId) async {
     final batch = _firestore.batch();
     
     // First direction: currentUserId -> friendId
-    batch.delete(_firestore.collection('friendships').doc('${currentUserId}_${friendId}'));
+    batch.delete(_firestore.collection('friendships').doc('${currentUserId}_$friendId'));
     
     // Second direction: friendId -> currentUserId (reverse)
-    batch.delete(_firestore.collection('friendships').doc('${friendId}_${currentUserId}'));
+    batch.delete(_firestore.collection('friendships').doc('${friendId}_$currentUserId'));
     
     await batch.commit();
     print('Both friendship documents deleted successfully');
