@@ -17,8 +17,6 @@ class MessagesScreen extends StatefulWidget {
 }
 
 class _MessagesScreenState extends State<MessagesScreen> {
-  final User? _currentUser = FirebaseAuth.instance.currentUser;
-
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
@@ -65,8 +63,6 @@ class _MessagesScreenState extends State<MessagesScreen> {
 
 /// COMBINED CONVERSATIONS TAB (Private + Groups)
 class _CombinedConversationsTab extends StatelessWidget {
-  final User? _currentUser = FirebaseAuth.instance.currentUser;
-
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<Map<String, dynamic>>>(
@@ -915,9 +911,8 @@ class _FriendRequestsList extends StatelessWidget {
 /// CONVERSATION TILE WIDGET (Supports both private and group)
 class _ConversationTile extends StatelessWidget {
   final Map<String, dynamic> conversation;
-  final User? _currentUser = FirebaseAuth.instance.currentUser;
 
-  _ConversationTile({required this.conversation});
+  const _ConversationTile({required this.conversation});
 
   @override
   Widget build(BuildContext context) {

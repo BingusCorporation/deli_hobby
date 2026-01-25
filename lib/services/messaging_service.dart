@@ -326,7 +326,7 @@ class MessagingService {
               .doc(otherUserId)
               .get();
           
-          final userData = userDoc.data() as Map<String, dynamic>? ?? {};
+          final userData = userDoc.data() ?? <String, dynamic>{};
           
           privateConversations.add({
             'type': 'private',
@@ -355,7 +355,7 @@ class MessagingService {
           final groupConversations = <Map<String, dynamic>>[];
           
           for (final doc in snapshot.docs) {
-            final data = doc.data() as Map<String, dynamic>;
+            final data = doc.data();
             final groupId = data['groupId'] as String? ?? '';
             final unreadCount = data['unreadCount'] as int? ?? 0;
             

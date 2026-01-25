@@ -52,7 +52,7 @@ class PosterService {
       
       // Get current user data
       final userDoc = await _firestore.collection('users').doc(currentUserId).get();
-      final userData = userDoc.data() as Map<String, dynamic>? ?? {};
+      final userData = userDoc.data() ?? <String, dynamic>{};
       
       // Create poster document
       final posterRef = await _firestore.collection('posters').add({
@@ -125,7 +125,7 @@ class PosterService {
       final userDoc = await _firestore.collection('users_private').doc(userId).get();
       if (!userDoc.exists) return false;
       
-      final userData = userDoc.data() as Map<String, dynamic>? ?? {};
+      final userData = userDoc.data() ?? <String, dynamic>{};
       final userHobbies = List<String>.from(userData['hobbies'] ?? []);
       
       // Check if any of poster's required hobbies match user's hobbies

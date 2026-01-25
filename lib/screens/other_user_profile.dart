@@ -1,10 +1,9 @@
+// screens/other_user_profile.dart
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/friends_service.dart';
 import 'chat_screen.dart';
-
-enum FriendshipStatus { self, friends, pendingIncoming, pendingOutgoing, none }
 
 class OtherUserProfileScreen extends StatefulWidget {
   final String userId;
@@ -27,32 +26,139 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
   Map<String, dynamic>? _userData;
   bool _isLoading = true;
   FriendshipStatus _friendshipStatus = FriendshipStatus.none;
+  String? _friendRequestId;
+  int _friendCount = 0;
+  
+  // Flag to prevent multiple simultaneous friend count queries
+  bool _isCountingFriends = false;
 
   @override
   void initState() {
     super.initState();
-    _loadUserData();
-    _loadFriendshipStatus();
+    _loadUserDataAndStatus();
+    // Load friend count after a short delay to prioritize UI
+    Future.delayed(const Duration(milliseconds: 500), _loadFriendCount);
   }
 
-  Future<void> _loadUserData() async {
+  // Combined loading function to reduce Firestore calls
+  Future<void> _loadUserDataAndStatus() async {
     try {
-      final doc = await _firestore.collection('users').doc(widget.userId).get();
-      if (doc.exists) {
-        setState(() => _userData = doc.data() as Map<String, dynamic>);
+      setState(() => _isLoading = true);
+      
+      // Load user data using FriendsService cache
+      if (widget.userId.isNotEmpty) {
+        // Precache this user for future use
+        await FriendsService.precacheUsers([widget.userId]);
+        
+        // Get user data from cache or Firestore
+        final userData = await _getUserData(widget.userId);
+        if (userData != null) {
+          setState(() => _userData = userData);
+        }
       }
+      
+      // Load friendship status in parallel with user data
+      await _loadFriendshipStatus();
     } catch (e) {
       print('Error loading user data: $e');
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
-  Future<void> _loadFriendshipStatus() async {
-    final status = await FriendsService.getFriendshipStatus(widget.userId);
-    if (mounted) setState(() => _friendshipStatus = status);
+  // Helper to get user data with caching
+  Future<Map<String, dynamic>?> _getUserData(String userId) async {
+    try {
+      // First check if we need to fetch user data
+      final doc = await _firestore.collection('users').doc(userId).get();
+      if (doc.exists) {
+        return doc.data() as Map<String, dynamic>;
+      }
+    } catch (e) {
+      print('Error getting user data: $e');
+    }
+    return null;
   }
 
+  // Optimized friendship status loading using FriendsService
+  Future<void> _loadFriendshipStatus() async {
+    try {
+      if (_currentUser == null || widget.userId.isEmpty) return;
+      
+      // Use the optimized FriendsService method
+      final status = await FriendsService.getFriendshipStatus(widget.userId);
+      
+      // Get request ID if there's a pending request
+      if (status == FriendshipStatus.pendingIncoming || 
+          status == FriendshipStatus.pendingOutgoing) {
+        await _loadFriendRequestId();
+      }
+      
+      if (mounted) {
+        setState(() => _friendshipStatus = status);
+      }
+    } catch (e) {
+      print('Error loading friendship status: $e');
+    }
+  }
+
+  // Load friend request ID only when needed
+  Future<void> _loadFriendRequestId() async {
+    try {
+      if (_currentUser == null) return;
+      
+      // Query for pending request
+      final querySnapshot = await _firestore
+          .collection('friend_requests')
+          .where('status', isEqualTo: 'pending')
+          .where(Filter.or(
+            Filter.and(
+              Filter('senderId', isEqualTo: _currentUser.uid),
+              Filter('receiverId', isEqualTo: widget.userId),
+            ),
+            Filter.and(
+              Filter('senderId', isEqualTo: widget.userId),
+              Filter('receiverId', isEqualTo: _currentUser.uid),
+            ),
+          ))
+          .limit(1)
+          .get();
+      
+      if (querySnapshot.docs.isNotEmpty && mounted) {
+        setState(() => _friendRequestId = querySnapshot.docs.first.id);
+      }
+    } catch (e) {
+      print('Error loading friend request ID: $e');
+    }
+  }
+
+  // Optimized friend count with caching
+  Future<void> _loadFriendCount() async {
+    if (_isCountingFriends || widget.userId.isEmpty) return;
+    
+    try {
+      _isCountingFriends = true;
+      
+      // Use count query for efficiency
+      final snapshot = await _firestore
+          .collection('friendships')
+          .where('userId', isEqualTo: widget.userId)
+          .count()
+          .get();
+
+      if (mounted) {
+        setState(() => _friendCount = snapshot.count ?? 0);
+      }
+    } catch (e) {
+      debugPrint('Greška pri učitavanju broja prijatelja: $e');
+    } finally {
+      _isCountingFriends = false;
+    }
+  }
+
+  // Friend request actions
   Future<void> _sendFriendRequest() async {
     try {
       await FriendsService.sendFriendRequest(widget.userId);
@@ -65,14 +171,18 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
 
   Future<void> _acceptFriendRequest() async {
     try {
-      final requestId = await _getFriendRequestId();
-      if (requestId.isEmpty) {
+      if (_friendRequestId == null || _friendRequestId!.isEmpty) {
+        await _loadFriendRequestId();
+      }
+      
+      if (_friendRequestId == null || _friendRequestId!.isEmpty) {
         _showSnackBar('Friend request not found!');
         return;
       }
 
-      await FriendsService.acceptFriendRequest(requestId);
+      await FriendsService.acceptFriendRequest(_friendRequestId!);
       await _loadFriendshipStatus();
+      await _loadFriendCount(); // Refresh friend count
       _showSnackBar('Sada ste prijatelji!');
     } catch (e) {
       _showSnackBar('Greška: $e');
@@ -81,13 +191,16 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
 
   Future<void> _cancelFriendRequest() async {
     try {
-      final requestId = await _getFriendRequestId();
-      if (requestId.isEmpty) {
+      if (_friendRequestId == null || _friendRequestId!.isEmpty) {
+        await _loadFriendRequestId();
+      }
+      
+      if (_friendRequestId == null || _friendRequestId!.isEmpty) {
         _showSnackBar('Friend request not found!');
         return;
       }
 
-      await FriendsService.cancelFriendRequest(requestId);
+      await FriendsService.cancelFriendRequest(_friendRequestId!);
       await _loadFriendshipStatus();
       _showSnackBar('Zahtev za prijateljstvo otkazan');
     } catch (e) {
@@ -95,34 +208,22 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
     }
   }
 
-  Future<String> _getFriendRequestId() async {
+  Future<void> _declineFriendRequest() async {
     try {
-      // Check for incoming request
-      final incomingQuery = await _firestore
-          .collection('friend_requests')
-          .where('senderId', isEqualTo: widget.userId)
-          .where('receiverId', isEqualTo: _currentUser!.uid)
-          .where('status', isEqualTo: 'pending')
-          .limit(1)
-          .get();
+      if (_friendRequestId == null || _friendRequestId!.isEmpty) {
+        await _loadFriendRequestId();
+      }
+      
+      if (_friendRequestId == null || _friendRequestId!.isEmpty) {
+        _showSnackBar('Friend request not found!');
+        return;
+      }
 
-      if (incomingQuery.docs.isNotEmpty) return incomingQuery.docs.first.id;
-
-      // Check for outgoing request
-      final outgoingQuery = await _firestore
-          .collection('friend_requests')
-          .where('senderId', isEqualTo: _currentUser.uid)
-          .where('receiverId', isEqualTo: widget.userId)
-          .where('status', isEqualTo: 'pending')
-          .limit(1)
-          .get();
-
-      if (outgoingQuery.docs.isNotEmpty) return outgoingQuery.docs.first.id;
-
-      return '';
+      await FriendsService.declineFriendRequest(_friendRequestId!);
+      await _loadFriendshipStatus();
+      _showSnackBar('Zahtev odbijen');
     } catch (e) {
-      print('Error getting request ID: $e');
-      return '';
+      _showSnackBar('Greška: $e');
     }
   }
 
@@ -149,6 +250,7 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
       try {
         await FriendsService.removeFriend(widget.userId);
         await _loadFriendshipStatus();
+        await _loadFriendCount(); // Refresh friend count
         _showSnackBar('Prijatelj uklonjen');
       } catch (e) {
         _showSnackBar('Greška: $e');
@@ -158,7 +260,12 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
 
   void _showSnackBar(String message) {
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          duration: const Duration(seconds: 2),
+        )
+      );
     }
   }
 
@@ -177,7 +284,43 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(widget.userName)),
+      appBar: AppBar(
+        title: Text(widget.userName),
+        actions: [
+          if (_friendshipStatus == FriendshipStatus.pendingIncoming)
+            PopupMenuButton<String>(
+              onSelected: (value) {
+                if (value == 'accept') {
+                  _acceptFriendRequest();
+                } else if (value == 'decline') {
+                  _declineFriendRequest();
+                }
+              },
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'accept',
+                  child: Row(
+                    children: [
+                      Icon(Icons.check, color: Colors.green),
+                      SizedBox(width: 8),
+                      Text('Prihvati zahtev'),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'decline',
+                  child: Row(
+                    children: [
+                      Icon(Icons.close, color: Colors.red),
+                      SizedBox(width: 8),
+                      Text('Odbij zahtev'),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+        ],
+      ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _userData == null
@@ -192,7 +335,6 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
     final String? city = data['city'];
     final String? bio = data['bio'];
     final List<dynamic> hobbies = data['hobbies'] ?? [];
-    final List<dynamic> friends = data['friends'] ?? [];
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -204,7 +346,7 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
           _buildFriendshipStatus(),
           const SizedBox(height: 16),
           if (bio != null && bio.isNotEmpty) _buildBioSection(bio),
-          _buildFriendsCount(friends.length),
+          _buildFriendsCount(),
           const SizedBox(height: 24),
           _buildHobbiesSection(hobbies),
           const SizedBox(height: 32),
@@ -220,21 +362,33 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
         children: [
           CircleAvatar(
             radius: 50,
+            backgroundColor: Colors.grey[200],
             backgroundImage: profilePic != null && profilePic.isNotEmpty
                 ? NetworkImage(profilePic)
-                : const AssetImage('assets/default_avatar.png') as ImageProvider,
+                : null,
+            child: profilePic == null || profilePic.isEmpty
+                ? Icon(
+                    Icons.person,
+                    size: 40,
+                    color: Colors.grey[600],
+                  )
+                : null,
           ),
           const SizedBox(height: 16),
-          Text(name ?? 'Nepoznato', style: Theme.of(context).textTheme.headlineSmall),
+          Text(
+            name ?? 'Nepoznato',
+            style: Theme.of(context).textTheme.headlineSmall,
+            textAlign: TextAlign.center,
+          ),
           if (city != null && city.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(top: 4),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.location_on, size: 16),
+                  const Icon(Icons.location_on, size: 16, color: Colors.grey),
                   const SizedBox(width: 4),
-                  Text(city),
+                  Text(city, style: const TextStyle(color: Colors.grey)),
                 ],
               ),
             ),
@@ -263,9 +417,10 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
           text: 'Zahtev poslat',
           color: Colors.blue,
         );
-      case FriendshipStatus.self:
       case FriendshipStatus.none:
         return const SizedBox();
+      case FriendshipStatus.self:
+        return const SizedBox(); // Should not happen in OtherUserProfileScreen
     }
   }
 
@@ -273,26 +428,51 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('O korisniku', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        const Text(
+          'O korisniku',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
         const SizedBox(height: 8),
-        Text(bio, style: const TextStyle(fontSize: 16)),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.grey[100],
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Text(bio, style: const TextStyle(fontSize: 16)),
+        ),
         const SizedBox(height: 24),
       ],
     );
   }
 
-  Widget _buildFriendsCount(int count) {
+  Widget _buildFriendsCount() {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.grey[100],
+        color: Colors.blue[50],
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
         children: [
           const Icon(Icons.people, color: Colors.blue),
           const SizedBox(width: 8),
-          Text('Prijatelja: $count', style: const TextStyle(fontSize: 16)),
+          Text(
+            'Prijatelja: $_friendCount',
+            style: const TextStyle(fontSize: 16, color: Colors.blue),
+          ),
+          const Spacer(),
+          if (_friendCount > 0)
+            TextButton(
+              onPressed: () {
+                // Optional: Add functionality to view friends list
+                _showSnackBar('Prikaz liste prijatelja nije implementiran');
+              },
+              child: const Text(
+                'Prikaži',
+                style: TextStyle(fontSize: 14),
+              ),
+            ),
         ],
       ),
     );
@@ -302,16 +482,26 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Hobiji', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        const Text(
+          'Hobiji',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
         const SizedBox(height: 8),
         if (hobbies.isEmpty)
-          const Text('Korisnik nije dodao hobije', style: TextStyle(color: Colors.grey))
+          const Text(
+            'Korisnik nije dodao hobije',
+            style: TextStyle(color: Colors.grey),
+          )
         else
           Wrap(
             spacing: 8,
             runSpacing: 8,
             children: hobbies.map<Widget>((hobby) {
-              return Chip(label: Text(hobby.toString()), backgroundColor: Colors.blue[50]);
+              return Chip(
+                label: Text(hobby.toString()),
+                backgroundColor: Colors.orange[50],
+                side: BorderSide(color: Colors.orange[200] ?? Colors.orange),
+              );
             }).toList(),
           ),
       ],
@@ -319,18 +509,22 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
   }
 
   Widget _buildActionButtons() {
-    return Row(
+    return Column(
       children: [
-        Expanded(
+        SizedBox(
+          width: double.infinity,
           child: ElevatedButton.icon(
             onPressed: _navigateToChat,
             icon: const Icon(Icons.message),
-            label: const Text('Poruka'),
-            style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 15)),
+            label: const Text('Pošalji poruku'),
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 15),
+              backgroundColor: Colors.blue,
+            ),
           ),
         ),
-        const SizedBox(width: 16),
-        Expanded(child: _buildFriendActionButton()),
+        const SizedBox(height: 12),
+        _buildFriendActionButton(),
       ],
     );
   }
@@ -338,37 +532,77 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
   Widget _buildFriendActionButton() {
     switch (_friendshipStatus) {
       case FriendshipStatus.friends:
-        return _ActionButton(
-          onPressed: _removeFriend,
-          icon: Icons.person_remove,
-          label: 'Ukloni',
-          color: Colors.grey,
+        return SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: _removeFriend,
+            icon: const Icon(Icons.person_remove, color: Colors.red),
+            label: const Text(
+              'Ukloni prijatelja',
+              style: TextStyle(color: Colors.red),
+            ),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 15),
+              side: const BorderSide(color: Colors.red),
+            ),
+          ),
         );
       case FriendshipStatus.pendingIncoming:
-        return _ActionButton(
-          onPressed: _acceptFriendRequest,
-          icon: Icons.person_add,
-          label: 'Prihvati',
+        return Row(
+          children: [
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: _acceptFriendRequest,
+                icon: const Icon(Icons.check),
+                label: const Text('Prihvati'),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 15),
+                  backgroundColor: Colors.green,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: _declineFriendRequest,
+                icon: const Icon(Icons.close),
+                label: const Text('Odbij'),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 15),
+                  side: const BorderSide(color: Colors.red),
+                ),
+              ),
+            ),
+          ],
         );
       case FriendshipStatus.pendingOutgoing:
-        return _ActionButton(
-          onPressed: _cancelFriendRequest,
-          icon: Icons.cancel,
-          label: 'Otkaži',
-          color: Colors.grey,
+        return SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: _cancelFriendRequest,
+            icon: const Icon(Icons.cancel),
+            label: const Text('Otkaži zahtev'),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 15),
+              side: BorderSide(color: Colors.grey[600] ?? Colors.grey),
+            ),
+          ),
         );
       case FriendshipStatus.none:
-        return _ActionButton(
-          onPressed: _sendFriendRequest,
-          icon: Icons.person_add,
-          label: 'Dodaj',
+        return SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: _sendFriendRequest,
+            icon: const Icon(Icons.person_add),
+            label: const Text('Dodaj za prijatelja'),
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 15),
+              backgroundColor: Colors.orange,
+            ),
+          ),
         );
       case FriendshipStatus.self:
-        return _ActionButton(
-          onPressed: null,
-          icon: Icons.person,
-          label: 'Vi ste',
-        );
+        return const SizedBox(); // Should not happen
     }
   }
 }
@@ -388,46 +622,22 @@ class _StatusChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withOpacity(0.3)),
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: color),
+          Icon(icon, size: 16, color: color),
           const SizedBox(width: 8),
-          Text(text, style: TextStyle(color: color, fontWeight: FontWeight.bold)),
+          Text(
+            text,
+            style: TextStyle(color: color, fontWeight: FontWeight.bold),
+          ),
         ],
-      ),
-    );
-  }
-}
-
-/// REUSABLE ACTION BUTTON WIDGET
-class _ActionButton extends StatelessWidget {
-  final VoidCallback? onPressed;
-  final IconData icon;
-  final String label;
-  final Color? color;
-
-  const _ActionButton({
-    required this.onPressed,
-    required this.icon,
-    required this.label,
-    this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return ElevatedButton.icon(
-      onPressed: onPressed,
-      icon: Icon(icon),
-      label: Text(label),
-      style: ElevatedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(vertical: 15),
-        backgroundColor: color,
       ),
     );
   }
