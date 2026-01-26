@@ -10,6 +10,7 @@ import '../auth/login_screen.dart';
 import 'other_user_profile.dart';
 import '../services/init.dart';
 import 'oglasi_screen.dart';
+import '../events/my_events_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -68,6 +69,16 @@ class _MainScreenState extends State<MainScreen> {
         foregroundColor: Colors.orange.shade700,
         elevation: 1,
         actions: [
+          IconButton(
+            icon: Icon(Icons.event, color: Colors.orange.shade700),
+            tooltip: 'Dogadjaji',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const MyEventsScreen()),
+              );
+            },
+          ),
           IconButton(
             icon: Icon(Icons.list_alt, color: Colors.orange.shade700),
             tooltip: 'Oglasi',

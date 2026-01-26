@@ -32,7 +32,6 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
   Map<String, String> _userNames = {};
   List<Map<String, dynamic>> _groupMembers = [];
   Map<String, dynamic>? _groupInfo;
-  String? _currentUserRole;
   bool _isAdmin = false;
 
   @override
@@ -71,16 +70,6 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
       final currentUserId = _auth.currentUser!.uid;
       final adminId = groupData['adminId'] as String?;
       _isAdmin = adminId == currentUserId;
-      
-      // Load current user's role from user_groups
-      final userGroupDoc = await _firestore
-          .collection('user_groups')
-          .doc('${currentUserId}_${widget.groupId}')
-          .get();
-      
-      if (userGroupDoc.exists) {
-        _currentUserRole = userGroupDoc['role'] as String?;
-      }
       
       // Load participants
       final participants = List<String>.from(groupData['participants'] ?? []);
