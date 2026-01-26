@@ -15,8 +15,20 @@ class MessagesScreen extends StatefulWidget {
   @override
   State<MessagesScreen> createState() => _MessagesScreenState();
 }
-
 class _MessagesScreenState extends State<MessagesScreen> {
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Force rebuild of the tab view when screen comes back into focus
+    // This triggers a refresh of the streams
+    setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
@@ -62,7 +74,34 @@ class _MessagesScreenState extends State<MessagesScreen> {
 }
 
 /// COMBINED CONVERSATIONS TAB (Private + Groups)
-class _CombinedConversationsTab extends StatelessWidget {
+class _CombinedConversationsTab extends StatefulWidget {
+  const _CombinedConversationsTab();
+
+  @override
+  State<_CombinedConversationsTab> createState() => _CombinedConversationsTabState();
+}
+
+class _CombinedConversationsTabState extends State<_CombinedConversationsTab> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Trigger refresh when app comes to foreground
+    if (state == AppLifecycleState.resumed) {
+      setState(() {});
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<Map<String, dynamic>>>(
@@ -160,7 +199,26 @@ class _ContactsAndRequestsTab extends StatefulWidget {
   State<_ContactsAndRequestsTab> createState() => _ContactsAndRequestsTabState();
 }
 
-class _ContactsAndRequestsTabState extends State<_ContactsAndRequestsTab> {
+class _ContactsAndRequestsTabState extends State<_ContactsAndRequestsTab> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      setState(() {});
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
@@ -210,7 +268,7 @@ class _ContactsListWithSearch extends StatefulWidget {
   State<_ContactsListWithSearch> createState() => _ContactsListWithSearchState();
 }
 
-class _ContactsListWithSearchState extends State<_ContactsListWithSearch> {
+class _ContactsListWithSearchState extends State<_ContactsListWithSearch> with WidgetsBindingObserver {
   String _searchQuery = '';
   String? _selectedCategory;
   String? _selectedSubcategory;
@@ -224,6 +282,7 @@ class _ContactsListWithSearchState extends State<_ContactsListWithSearch> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _searchController.addListener(() {
       setState(() {
         _searchQuery = _searchController.text;
@@ -235,8 +294,16 @@ class _ContactsListWithSearchState extends State<_ContactsListWithSearch> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _searchController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _loadFriendsWithData();
+    }
   }
 
   Future<void> _loadFriendsWithData() async {
@@ -810,7 +877,33 @@ class _ContactsListWithSearchState extends State<_ContactsListWithSearch> {
   }
 }
 /// FRIEND REQUESTS LIST
-class _FriendRequestsList extends StatelessWidget {
+class _FriendRequestsList extends StatefulWidget {
+  const _FriendRequestsList();
+
+  @override
+  State<_FriendRequestsList> createState() => _FriendRequestsListState();
+}
+
+class _FriendRequestsListState extends State<_FriendRequestsList> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      setState(() {});
+    }
+  }
+
   void _handleAcceptRequest(BuildContext context, String requestId) async {
     try {
       await FriendsService.acceptFriendRequest(requestId);

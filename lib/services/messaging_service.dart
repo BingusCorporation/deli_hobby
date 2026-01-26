@@ -426,7 +426,39 @@ class MessagingService {
           return 0;
         });
   }
-
+static Future<void> addMemberToGroup({
+  required String groupId,
+  required String userId,
+}) async {
+  try {
+    final batch = _firestore.batch();
+    final groupRef = _firestore.collection('groups').doc(groupId);
+    
+    // Add user to participants array
+    batch.update(groupRef, {
+      'participants': FieldValue.arrayUnion([userId]),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+    
+    // Create user_groups document
+    final userGroupRef = _firestore.collection('user_groups')
+        .doc('${userId}_$groupId');
+    
+    batch.set(userGroupRef, {
+      'groupId': groupId,
+      'userId': userId,
+      'role': 'member',
+      'joinedAt': FieldValue.serverTimestamp(),
+      'lastUpdated': FieldValue.serverTimestamp(),
+      'unreadCount': 0,
+    });
+    
+    await batch.commit();
+  } catch (e) {
+    print('Error adding member to group: $e');
+    rethrow;
+  }
+}
   /// Get unread message count for main screen
   static Stream<int> getUnreadCountStream() {
     return _firestore
