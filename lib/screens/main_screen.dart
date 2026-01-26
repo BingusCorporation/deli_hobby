@@ -10,7 +10,7 @@ import '../auth/login_screen.dart';
 import 'other_user_profile.dart';
 import '../services/init.dart';
 import 'oglasi_screen.dart';
-import '../events/my_events_screen.dart';
+import '../events/events_browse_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -75,7 +75,7 @@ class _MainScreenState extends State<MainScreen> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const MyEventsScreen()),
+                MaterialPageRoute(builder: (_) => const EventsBrowseScreen()),
               );
             },
           ),

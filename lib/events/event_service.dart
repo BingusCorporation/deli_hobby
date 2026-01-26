@@ -7,6 +7,10 @@ class EventService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
+  // Simple cache for frequently accessed events (5 minute TTL)
+  static final Map<String, _CacheEntry> _eventCache = {};
+  static final Map<String, _CacheEntry> _friendCountCache = {};
+
   String get _currentUserId => _auth.currentUser?.uid ?? '';
 
   // Collection references
@@ -206,17 +210,51 @@ class EventService {
 
   Future<void> sendInvite(String eventId, String inviteeId,
       String inviteeName) async {
-    final invite = EventInvite(
-      eventId: eventId,
-      inviteeId: inviteeId,
-      inviteeName: inviteeName,
-      inviterId: _currentUserId,
-    );
+    final eventDoc = _eventsCollection.doc(eventId);
 
-    await _eventsCollection
-        .doc(eventId)
-        .collection('invites')
-        .add(invite.toMap());
+    await _firestore.runTransaction((transaction) async {
+      final snapshot = await transaction.get(eventDoc);
+      if (!snapshot.exists) {
+        throw Exception('Event ne postoji');
+      }
+
+      final event = Event.fromFirestore(snapshot);
+
+      // Validation: Cannot invite the event organizer
+      if (inviteeId == event.organizerId) {
+        throw Exception('Ne možeš pozvati organizatora događaja');
+      }
+
+      // Validation: Cannot invite someone already participating
+      if (event.participants.contains(inviteeId)) {
+        throw Exception('Taj korisnik je već prijavljen na događaj');
+      }
+
+      // Get the invites subcollection to check for existing invites
+      final invitesSnapshot = await eventDoc
+          .collection('invites')
+          .where('inviteeId', isEqualTo: inviteeId)
+          .where('status', isEqualTo: 'pending')
+          .get();
+
+      // Validation: Cannot invite the same person twice (duplicate pending invite)
+      if (invitesSnapshot.docs.isNotEmpty) {
+        throw Exception('Već je poslata pozivnica ovom korisniku');
+      }
+
+      final invite = EventInvite(
+        eventId: eventId,
+        inviteeId: inviteeId,
+        inviteeName: inviteeName,
+        inviterId: _currentUserId,
+      );
+
+      // Add the invite within the transaction
+      transaction.set(
+        eventDoc.collection('invites').doc(),
+        invite.toMap(),
+      );
+    });
   }
 
   Future<void> respondToInvite(
@@ -247,9 +285,42 @@ class EventService {
         .where('inviteeId', isEqualTo: _currentUserId)
         .where('status', isEqualTo: 'pending')
         .snapshots()
+        .handleError((error) {
+          print('CollectionGroup query error: $error');
+          // If collectionGroup fails, return empty and log
+          return Stream<QuerySnapshot>.error(error);
+        })
         .map((snapshot) {
-      return snapshot.docs.map((doc) => EventInvite.fromFirestore(doc)).toList();
-    });
+          return snapshot.docs.map((doc) => EventInvite.fromFirestore(doc)).toList();
+        });
+  }
+
+  // Fallback method to query invites by iterating events (slower but works without indexes)
+  Future<List<EventInvite>> getMyPendingInvitesFallback() async {
+    try {
+      final invites = <EventInvite>[];
+      
+      // Get all events
+      final eventsSnapshot = await _eventsCollection.get();
+      
+      for (final eventDoc in eventsSnapshot.docs) {
+        // Get invites for this event
+        final invitesSnapshot = await eventDoc.reference
+            .collection('invites')
+            .where('inviteeId', isEqualTo: _currentUserId)
+            .where('status', isEqualTo: 'pending')
+            .get();
+        
+        for (final inviteDoc in invitesSnapshot.docs) {
+          invites.add(EventInvite.fromFirestore(inviteDoc));
+        }
+      }
+      
+      return invites;
+    } catch (e) {
+      print('Fallback invite query error: $e');
+      return [];
+    }
   }
 
   // ============ HELPERS ============
@@ -268,4 +339,112 @@ class EventService {
         !isOrganizer(event) &&
         event.status == 'active';
   }
+
+  /// Get count of user's friends participating in an event
+  /// Returns 0 if query fails (graceful degradation)
+  /// Uses caching to avoid repeated queries
+  Future<int> getMyFriendsParticipatingCount(String eventId) async {
+    // Check cache first
+    final cacheKey = '${_currentUserId}_$eventId';
+    if (_friendCountCache.containsKey(cacheKey)) {
+      final cached = _friendCountCache[cacheKey]!;
+      if (!cached.isExpired) {
+        return cached.value;
+      }
+    }
+
+    try {
+      final event = await getEvent(eventId);
+      if (event == null || event.participants.isEmpty) {
+        _friendCountCache[cacheKey] = _CacheEntry(0);
+        return 0;
+      }
+
+      // Get user's friends
+      final friendshipsSnapshot = await _firestore
+          .collection('friendships')
+          .where('userId', isEqualTo: _currentUserId)
+          .limit(500) // Reasonable limit
+          .get();
+
+      final friendIds = friendshipsSnapshot.docs
+          .map((doc) => doc.data()['friendId'] as String)
+          .toList();
+
+      if (friendIds.isEmpty) {
+        _friendCountCache[cacheKey] = _CacheEntry(0);
+        return 0;
+      }
+
+      // Count how many friends are in the event's participants
+      int count = 0;
+      for (final friendId in friendIds) {
+        if (event.participants.contains(friendId)) {
+          count++;
+        }
+      }
+      
+      // Cache the result
+      _friendCountCache[cacheKey] = _CacheEntry(count);
+      return count;
+    } catch (e) {
+      print('Error getting friends participating count: $e');
+      return 0; // Graceful degradation
+    }
+  }
+
+  /// Stream version for real-time updates
+  Stream<int> getMyFriendsParticipatingCountStream(String eventId) {
+    return _eventsCollection.doc(eventId).snapshots().asyncMap((eventDoc) async {
+      if (!eventDoc.exists) return 0;
+      
+      final event = Event.fromFirestore(eventDoc);
+      if (event.participants.isEmpty) return 0;
+
+      try {
+        final friendshipsSnapshot = await _firestore
+            .collection('friendships')
+            .where('userId', isEqualTo: _currentUserId)
+            .limit(500)
+            .get();
+
+        final friendIds = friendshipsSnapshot.docs
+            .map((doc) => doc.data()['friendId'] as String)
+            .toList();
+
+        int count = 0;
+        for (final friendId in friendIds) {
+          if (event.participants.contains(friendId)) {
+            count++;
+          }
+        }
+        return count;
+      } catch (e) {
+        print('Error in friend count stream: $e');
+        return 0;
+      }
+    });
+  }
+
+  /// Clear cache for a specific event
+  static void clearFriendCountCache(String userId, String eventId) {
+    _friendCountCache.remove('${userId}_$eventId');
+  }
+
+  /// Clear all caches
+  static void clearAllCaches() {
+    _eventCache.clear();
+    _friendCountCache.clear();
+  }
+}
+
+/// Simple cache entry with timestamp
+class _CacheEntry {
+  final dynamic value;
+  final DateTime timestamp;
+  static const Duration ttl = Duration(minutes: 5);
+
+  _CacheEntry(this.value) : timestamp = DateTime.now();
+
+  bool get isExpired => DateTime.now().difference(timestamp) > ttl;
 }

@@ -7,7 +7,10 @@ import 'chat_screen.dart';
 import 'group_chat_screen.dart';
 import 'other_user_profile.dart';
 import 'create_group_screen.dart';
-import '../data/hobbies.dart'; // ADD THIS IMPORT
+import '../data/hobbies.dart';
+import '../events/event_service.dart';
+import '../events/event_details_screen.dart';
+import '../events/event_invite_model.dart';
 
 class MessagesScreen extends StatefulWidget {
   const MessagesScreen({super.key});
@@ -239,7 +242,7 @@ class _ContactsAndRequestsTabState extends State<_ContactsAndRequestsTab> with W
                     children: [
                       Icon(Icons.notifications, size: 16),
                       SizedBox(width: 4),
-                      Text('ZAHTEVI'),
+                      Text('ZAHTEVI I POZIVNICE'),
                     ],
                   ),
                 ),
@@ -876,7 +879,7 @@ class _ContactsListWithSearchState extends State<_ContactsListWithSearch> with W
     });
   }
 }
-/// FRIEND REQUESTS LIST
+/// FRIEND REQUESTS AND EVENT INVITES LIST
 class _FriendRequestsList extends StatefulWidget {
   const _FriendRequestsList();
 
@@ -885,6 +888,8 @@ class _FriendRequestsList extends StatefulWidget {
 }
 
 class _FriendRequestsListState extends State<_FriendRequestsList> with WidgetsBindingObserver {
+  final EventService _eventService = EventService();
+
   @override
   void initState() {
     super.initState();
@@ -902,6 +907,47 @@ class _FriendRequestsListState extends State<_FriendRequestsList> with WidgetsBi
     if (state == AppLifecycleState.resumed) {
       setState(() {});
     }
+  }
+
+  Future<List<Map<String, dynamic>>> _loadInvitesWithDetails(List<EventInvite> invites) async {
+    final List<Map<String, dynamic>> invitesWithEventDetails = [];
+
+    for (final invite in invites) {
+      try {
+        final eventSnap = await FirebaseFirestore.instance
+            .collection('events')
+            .doc(invite.eventId)
+            .get();
+
+        if (eventSnap.exists) {
+          // Get inviter's name
+          String inviterName = 'Nepoznato';
+          try {
+            final inviterSnap = await FirebaseFirestore.instance
+                .collection('users_private')
+                .doc(invite.inviterId)
+                .get();
+            if (inviterSnap.exists) {
+              inviterName = inviterSnap.data()?['name'] ?? 'Nepoznato';
+            }
+          } catch (e) {
+            print('Error loading inviter name: $e');
+          }
+
+          invitesWithEventDetails.add({
+            'inviteId': invite.id,
+            'eventId': invite.eventId,
+            'eventTitle': eventSnap.data()?['title'] ?? 'Event',
+            'inviterName': inviterName,
+            'status': invite.status,
+          });
+        }
+      } catch (e) {
+        print('Error loading event details: $e');
+      }
+    }
+
+    return invitesWithEventDetails;
   }
 
   void _handleAcceptRequest(BuildContext context, String requestId) async {
@@ -922,6 +968,32 @@ class _FriendRequestsListState extends State<_FriendRequestsList> with WidgetsBi
     }
   }
 
+  void _handleAcceptEventInvite(BuildContext context, String eventId, String inviteId) async {
+    try {
+      await _eventService.respondToInvite(eventId, inviteId, true);
+      _showSnackBar(context, 'Pozivnica prihvaćena!', Colors.green);
+      // Refresh the screen by rebuilding
+      if (mounted) {
+        setState(() {});
+      }
+    } catch (e) {
+      _showSnackBar(context, 'Greška: $e', Colors.red);
+    }
+  }
+
+  void _handleDeclineEventInvite(BuildContext context, String eventId, String inviteId) async {
+    try {
+      await _eventService.respondToInvite(eventId, inviteId, false);
+      _showSnackBar(context, 'Pozivnica odbijena', Colors.orange);
+      // Refresh the screen by rebuilding
+      if (mounted) {
+        setState(() {});
+      }
+    } catch (e) {
+      _showSnackBar(context, 'Greška: $e', Colors.red);
+    }
+  }
+
   void _showSnackBar(BuildContext context, String message, Color color) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -933,70 +1005,189 @@ class _FriendRequestsListState extends State<_FriendRequestsList> with WidgetsBi
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<List<Map<String, dynamic>>>(
-      stream: FriendsService.getFriendRequestsStream(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(
-            child: CircularProgressIndicator(
-              color: Colors.orange,
-            ),
-          );
-        }
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          // Friend Requests Section
+          StreamBuilder<List<Map<String, dynamic>>>(
+            stream: FriendsService.getFriendRequestsStream(),
+            builder: (context, friendRequestsSnapshot) {
+              final friendRequests = friendRequestsSnapshot.data ?? [];
 
-        if (snapshot.hasError) {
-          return Center(
-            child: Text('Greška: ${snapshot.error}'),
-          );
-        }
-
-        final requests = snapshot.data ?? [];
-
-        if (requests.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.notifications_none, size: 80, color: Colors.orange.shade300),
-                const SizedBox(height: 20),
-                Text(
-                  'Nema zahteva',
-                  style: TextStyle(
-                    fontSize: 18,
-                    color: Colors.grey.shade700,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 40),
-                  child: Text(
-                    'Kada neko pošalje zahtev, pojaviće se ovde',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.grey.shade500,
-                      fontSize: 14,
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (friendRequests.isNotEmpty) ...[
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                      child: Text(
+                        'Zahtevi za prijateljstvo',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey.shade700,
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-              ],
-            ),
-          );
-        }
+                    ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      itemCount: friendRequests.length,
+                      itemBuilder: (context, index) {
+                        final request = friendRequests[index];
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: _FriendRequestTile(
+                            request: request,
+                            onAccept: () => _handleAcceptRequest(context, request['requestId']),
+                            onDecline: () => _handleDeclineRequest(context, request['requestId']),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ],
+              );
+            },
+          ),
 
-        return ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: requests.length,
-          itemBuilder: (context, index) {
-            final request = requests[index];
-            return _FriendRequestTile(
-              request: request,
-              onAccept: () => _handleAcceptRequest(context, request['requestId']),
-              onDecline: () => _handleDeclineRequest(context, request['requestId']),
-            );
-          },
-        );
-      },
+          // Event Invites Section
+          FutureBuilder<List<EventInvite>>(
+            future: _eventService.getMyPendingInvitesFallback(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              if (snapshot.hasError) {
+                print('Error fetching invites: ${snapshot.error}');
+                return Center(child: Text('Error: ${snapshot.error}'));
+              }
+
+              final invites = snapshot.data ?? [];
+              print('DEBUG: Got ${invites.length} pending invites from fallback');
+
+              return FutureBuilder<List<Map<String, dynamic>>>(
+                future: _loadInvitesWithDetails(invites),
+                builder: (context, detailsSnapshot) {
+                  if (detailsSnapshot.connectionState == ConnectionState.waiting) {
+                    return const SizedBox.shrink();
+                  }
+
+                  final invitesWithDetails = detailsSnapshot.data ?? [];
+
+                  if (invitesWithDetails.isEmpty) {
+                    return const SizedBox.shrink();
+                  }
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                        child: Text(
+                          'Pozivnice za dogadjaje',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey.shade700,
+                          ),
+                        ),
+                      ),
+                      ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        itemCount: invitesWithDetails.length,
+                        itemBuilder: (context, index) {
+                          final invite = invitesWithDetails[index];
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: _EventInviteTile(
+                              invite: invite,
+                              onAccept: () => _handleAcceptEventInvite(
+                                context,
+                                invite['eventId'],
+                                invite['inviteId'],
+                              ),
+                              onDecline: () => _handleDeclineEventInvite(
+                                context,
+                                invite['eventId'],
+                                invite['inviteId'],
+                              ),
+                              onViewEvent: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => EventDetailsScreen(
+                                      eventId: invite['eventId'],
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  );
+                },
+              );
+            },
+          ),
+
+          // Empty state
+          FutureBuilder<List<EventInvite>>(
+            future: _eventService.getMyPendingInvitesFallback(),
+            builder: (context, invitesSnapshot) {
+              return StreamBuilder<List<Map<String, dynamic>>>(
+                stream: FriendsService.getFriendRequestsStream(),
+                builder: (context, friendRequestsSnapshot) {
+                  final friendRequests = friendRequestsSnapshot.data ?? [];
+                  final eventInvites = invitesSnapshot.data ?? [];
+
+                  if (friendRequests.isEmpty && eventInvites.isEmpty) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const SizedBox(height: 40),
+                          Icon(Icons.notifications_none, size: 80, color: Colors.orange.shade300),
+                          const SizedBox(height: 20),
+                          Text(
+                            'Nema zahteva ili pozivnica',
+                            style: TextStyle(
+                              fontSize: 18,
+                              color: Colors.grey.shade700,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 40),
+                            child: Text(
+                              'Kada neko pošalje zahtev ili pozivnicu, pojaviće se ovde',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: Colors.grey.shade500,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 40),
+                        ],
+                      ),
+                    );
+                  }
+
+                  return const SizedBox.shrink();
+                },
+              );
+            },
+          ),
+        ],
+      ),
     );
   }
 }
@@ -1381,6 +1572,131 @@ class _FriendRequestTile extends StatelessWidget {
                     ),
                     icon: const Icon(Icons.close, size: 20),
                     label: const Text('Odbij'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// EVENT INVITE TILE WIDGET
+class _EventInviteTile extends StatelessWidget {
+  final Map<String, dynamic> invite;
+  final VoidCallback onAccept;
+  final VoidCallback onDecline;
+  final VoidCallback onViewEvent;
+
+  const _EventInviteTile({
+    required this.invite,
+    required this.onAccept,
+    required this.onDecline,
+    required this.onViewEvent,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 2,
+      color: Colors.blue.shade50,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: Colors.blue.shade200, width: 1),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.event,
+                  size: 30,
+                  color: Colors.blue.shade700,
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        invite['eventTitle'] ?? 'Event',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Od: ${invite['inviterName'] ?? 'Nepoznato'}',
+                        style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Pozvani ste na dogadjaj',
+              style: TextStyle(color: Colors.grey.shade700),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  flex: 2,
+                  child: ElevatedButton.icon(
+                    onPressed: onAccept,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue.shade700,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    icon: const Icon(Icons.check, size: 20),
+                    label: const Text('Prihvati'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: onDecline,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.red,
+                      side: const BorderSide(color: Colors.red),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    icon: const Icon(Icons.close, size: 18),
+                    label: const Text('Odbij'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: onViewEvent,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.blue.shade700,
+                      side: BorderSide(color: Colors.blue.shade700),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    icon: const Icon(Icons.info, size: 18),
+                    label: const Text('Info'),
                   ),
                 ),
               ],

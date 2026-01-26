@@ -9,6 +9,7 @@ import 'event_ranking_service.dart';
 import 'event_card.dart';
 import 'event_details_screen.dart';
 import 'event_create_screen.dart';
+import 'my_events_screen.dart';
 
 class EventsBrowseScreen extends StatefulWidget {
   const EventsBrowseScreen({super.key});
@@ -29,7 +30,6 @@ class _EventsBrowseScreenState extends State<EventsBrowseScreen> {
 
   // User data for ranking
   List<String> _userHobbies = [];
-  Map<String, String> _userSkills = {};
   String? _userCity;
 
   bool _isLoading = true;
@@ -52,9 +52,6 @@ class _EventsBrowseScreenState extends State<EventsBrowseScreen> {
           _userHobbies = data['hobbies'] != null
               ? List<String>.from(data['hobbies'])
               : [];
-          _userSkills = data['hobbySkills'] != null
-              ? Map<String, String>.from(data['hobbySkills'])
-              : {};
           _userCity = data['city'];
           _isLoading = false;
         });
@@ -78,6 +75,16 @@ class _EventsBrowseScreenState extends State<EventsBrowseScreen> {
         backgroundColor: Colors.orange.shade700,
         foregroundColor: Colors.white,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.my_library_books),
+            tooltip: 'Moji dogadjaji',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const MyEventsScreen()),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.filter_list),
             onPressed: _showFilterDialog,
@@ -130,23 +137,15 @@ class _EventsBrowseScreenState extends State<EventsBrowseScreen> {
         final rankedEvents = _rankingService.rankEvents(
           events: events,
           userHobbies: _userHobbies,
-          userSkills: _userSkills,
           userCity: _userCity,
         );
 
         return RefreshIndicator(
           onRefresh: _loadUserData,
-          child: ListView.builder(
-            padding: const EdgeInsets.all(12),
-            itemCount: rankedEvents.length,
-            itemBuilder: (context, index) {
-              final rankedEvent = rankedEvents[index];
-              return EventCard(
-                event: rankedEvent.event,
-                matchScore: rankedEvent.scorePercent,
-                onTap: () => _navigateToDetails(rankedEvent.event),
-              );
-            },
+          child: _EventsListWithFriendPriority(
+            rankedEvents: rankedEvents,
+            eventService: _eventService,
+            onEventTap: _navigateToDetails,
           ),
         );
       },
@@ -349,6 +348,99 @@ class _EventsBrowseScreenState extends State<EventsBrowseScreen> {
                   const SizedBox(height: 16),
                 ],
               ),
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+/// Widget that loads friend counts for all events and applies friend-based sorting
+class _EventsListWithFriendPriority extends StatefulWidget {
+  final List<RankedEvent> rankedEvents;
+  final EventService eventService;
+  final Function(Event) onEventTap;
+
+  const _EventsListWithFriendPriority({
+    required this.rankedEvents,
+    required this.eventService,
+    required this.onEventTap,
+  });
+
+  @override
+  State<_EventsListWithFriendPriority> createState() =>
+      _EventsListWithFriendPriorityState();
+}
+
+class _EventsListWithFriendPriorityState
+    extends State<_EventsListWithFriendPriority> {
+  late Future<List<RankedEvent>> _eventsFuture;
+  final Map<String, int> _friendCountCache = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _eventsFuture = _loadFriendCountsAndSort();
+  }
+
+  Future<List<RankedEvent>> _loadFriendCountsAndSort() async {
+    try {
+      final friendCounts = <String, int>{};
+      
+      // Load friend counts in parallel for efficiency
+      await Future.wait(
+        widget.rankedEvents.map((rankedEvent) async {
+          try {
+            final count =
+                await widget.eventService.getMyFriendsParticipatingCount(
+              rankedEvent.event.id!,
+            );
+            friendCounts[rankedEvent.event.id!] = count;
+          } catch (e) {
+            print('Error loading friend count: $e');
+            friendCounts[rankedEvent.event.id!] = 0;
+          }
+        }),
+        eagerError: false, // Continue even if some fail
+      );
+
+      _friendCountCache.addAll(friendCounts);
+
+      // Apply friend-based sorting
+      final rankingService = EventRankingService();
+      final sorted = rankingService.rankEventsWithFriends(
+        rankedEvents: widget.rankedEvents,
+        friendCountsByEventId: friendCounts,
+      );
+
+      return sorted;
+    } catch (e) {
+      print('Error in _loadFriendCountsAndSort: $e');
+      return widget.rankedEvents;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<List<RankedEvent>>(
+      future: _eventsFuture,
+      builder: (context, snapshot) {
+        final events = snapshot.data ?? widget.rankedEvents;
+
+        return ListView.builder(
+          padding: const EdgeInsets.all(12),
+          itemCount: events.length,
+          itemBuilder: (context, index) {
+            final rankedEvent = events[index];
+            return EventCard(
+              event: rankedEvent.event,
+              matchScore: rankedEvent.scorePercent,
+              onTap: () => widget.onEventTap(rankedEvent.event),
+              friendsParticipating:
+                  rankedEvent.friendsParticipating > 0
+                      ? rankedEvent.friendsParticipating
+                      : null,
             );
           },
         );

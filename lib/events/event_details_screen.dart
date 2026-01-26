@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/event_model.dart';
 import 'event_service.dart';
 import 'event_invites_screen.dart';
@@ -54,12 +55,13 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
             backgroundColor: Colors.orange.shade700,
             foregroundColor: Colors.white,
             actions: [
+              // Share button - available for all users
+              IconButton(
+                icon: const Icon(Icons.share),
+                onPressed: () => _navigateToInvites(event),
+                tooltip: 'Podeli sa prijateljem',
+              ),
               if (isOrganizer) ...[
-                IconButton(
-                  icon: const Icon(Icons.people),
-                  onPressed: () => _navigateToInvites(event),
-                  tooltip: 'Pozivnice',
-                ),
                 IconButton(
                   icon: const Icon(Icons.edit),
                   onPressed: () => _navigateToEdit(event),
@@ -564,38 +566,68 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                const Icon(Icons.people, color: Colors.orange),
-                const SizedBox(width: 8),
-                const Text(
-                  'Ucesnici',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const Spacer(),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: event.isFull
-                        ? Colors.red.shade100
-                        : Colors.green.shade100,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Text(
-                    '${event.currentParticipants}/${event.maxParticipants}',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: event.isFull ? Colors.red : Colors.green,
+            InkWell(
+              onTap: event.currentParticipants > 0
+                  ? () => _showParticipantsDialog(event)
+                  : null,
+              child: Row(
+                children: [
+                  const Icon(Icons.people, color: Colors.orange),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Ucesnici',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        if (event.currentParticipants > 0)
+                          Text(
+                            'Klikni za detalje',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.blue.shade700,
+                            ),
+                          ),
+                      ],
                     ),
                   ),
-                ),
-              ],
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: event.isFull
+                          ? Colors.red.shade100
+                          : Colors.green.shade100,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Text(
+                      '${event.currentParticipants}/${event.maxParticipants}',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: event.isFull ? Colors.red : Colors.green,
+                      ),
+                    ),
+                  ),
+                  if (event.currentParticipants > 0)
+                    const SizedBox(width: 8)
+                    else const SizedBox.shrink(),
+                  if (event.currentParticipants > 0)
+                    Icon(
+                      Icons.arrow_forward_ios,
+                      size: 16,
+                      color: Colors.blue.shade700,
+                    )
+                    else const SizedBox.shrink(),
+                ],
+              ),
             ),
             const SizedBox(height: 8),
             if (event.isFull)
@@ -612,6 +644,72 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
         ),
       ),
     );
+  }
+
+  void _showParticipantsDialog(Event event) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Učesnici (${event.currentParticipants})'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: event.participants.length,
+            itemBuilder: (context, index) {
+              final participantId = event.participants[index];
+              return FutureBuilder<Map<String, dynamic>?>(
+                future: _getUserData(participantId),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 8),
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    );
+                  }
+
+                  final userData = snapshot.data;
+                  final name = userData?['name'] ?? 'Nepoznato';
+                  final profilePic = userData?['profilePic'];
+
+                  return ListTile(
+                    leading: CircleAvatar(
+                      backgroundImage: profilePic != null && profilePic.isNotEmpty
+                          ? NetworkImage(profilePic)
+                          : null,
+                      child: profilePic == null || profilePic.isEmpty
+                          ? const Icon(Icons.person)
+                          : null,
+                    ),
+                    title: Text(name),
+                    contentPadding: EdgeInsets.zero,
+                  );
+                },
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Zatvori'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<Map<String, dynamic>?> _getUserData(String userId) async {
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .get();
+      return doc.data();
+    } catch (e) {
+      print('Error fetching user data: $e');
+      return null;
+    }
   }
 
   Widget _buildOrganizerSection(Event event) {

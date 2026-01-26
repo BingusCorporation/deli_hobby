@@ -27,14 +27,22 @@ class _EventInvitesScreenState extends State<EventInvitesScreen> {
   List<Map<String, dynamic>> _allFriends = [];
   List<Map<String, dynamic>> _filteredFriends = [];
   bool _isLoadingFriends = true;
+  bool _isSendingInvites = false;
   
   String? _selectedCategory;
   String? _selectedSubcategory;
+  
+  // Track selected friends across filter changes
+  final Set<String> _selectedFriendIds = {};
+  
+  // Cache for pending invites
+  final Set<String> _pendingInvites = {};
 
   @override
   void initState() {
     super.initState();
     _loadFriends();
+    _loadPendingInvites();
     _searchController.addListener(_filterFriends);
   }
 
@@ -122,6 +130,26 @@ class _EventInvitesScreenState extends State<EventInvitesScreen> {
     }
   }
 
+  Future<void> _loadPendingInvites() async {
+    try {
+      final invitesSnapshot = await _firestore
+          .collection('events')
+          .doc(widget.event.id)
+          .collection('invites')
+          .where('status', isEqualTo: 'pending')
+          .get();
+
+      setState(() {
+        _pendingInvites.clear();
+        _pendingInvites.addAll(
+          invitesSnapshot.docs.map((doc) => doc['inviteeId'] as String),
+        );
+      });
+    } catch (e) {
+      print('Error loading pending invites: $e');
+    }
+  }
+
   void _filterFriends() {
     final query = _searchController.text.trim().toLowerCase();
     
@@ -172,7 +200,7 @@ class _EventInvitesScreenState extends State<EventInvitesScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Pozovi prijatelja',
+                  'Odaberi prijatelje',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -196,7 +224,7 @@ class _EventInvitesScreenState extends State<EventInvitesScreen> {
                 
                 const SizedBox(height: 12),
                 
-                // Filter by category - FIXED DROPDOWNS
+                // Filter by category
                 Row(
                   children: [
                     Expanded(
@@ -230,7 +258,7 @@ class _EventInvitesScreenState extends State<EventInvitesScreen> {
                         onChanged: (value) {
                           setState(() {
                             _selectedCategory = value;
-                            _selectedSubcategory = null; // Reset subcategory when category changes
+                            _selectedSubcategory = null;
                             _filterFriends();
                           });
                         },
@@ -282,6 +310,20 @@ class _EventInvitesScreenState extends State<EventInvitesScreen> {
                     ),
                   ],
                 ),
+                
+                // Show selection count
+                if (_selectedFriendIds.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 12),
+                    child: Text(
+                      'Odabrano: ${_selectedFriendIds.length}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.green.shade700,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),
@@ -328,12 +370,94 @@ class _EventInvitesScreenState extends State<EventInvitesScreen> {
           ),
         ],
       ),
+      bottomNavigationBar: _selectedFriendIds.isNotEmpty
+          ? Padding(
+              padding: const EdgeInsets.all(16),
+              child: SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton(
+                  onPressed: _isSendingInvites ? null : _sendSelectedInvites,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange.shade700,
+                    disabledBackgroundColor: Colors.grey.shade400,
+                  ),
+                  child: _isSendingInvites
+                      ? const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation(Colors.white),
+                          ),
+                        )
+                      : Text(
+                          'Pošalji pozivnice (${_selectedFriendIds.length})',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                ),
+              ),
+            )
+          : null,
     );
   }
 
   Widget _buildFriendTile(Map<String, dynamic> friend) {
+    final friendId = friend['id'];
+    final isAlreadyInvited = _isUserAlreadyInvited(friendId);
+    final isAlreadyParticipant = widget.event.participants.contains(friendId);
+    final isDisabled = isAlreadyInvited || isAlreadyParticipant;
+    final isSelected = _selectedFriendIds.contains(friendId) && !isDisabled;
+
+    String statusLabel = '';
+    if (isAlreadyParticipant) {
+      statusLabel = 'Korisnik već prijavljen';
+    } else if (isAlreadyInvited) {
+      statusLabel = 'Korisnik već pozvan';
+    }
+
     return ListTile(
-      leading: CircleAvatar(
+      enabled: !isDisabled,
+      leading: Checkbox(
+        value: isSelected,
+        onChanged: isDisabled
+            ? null
+            : (value) {
+                setState(() {
+                  if (value == true) {
+                    _selectedFriendIds.add(friendId);
+                  } else {
+                    _selectedFriendIds.remove(friendId);
+                  }
+                });
+              },
+      ),
+      title: Text(
+        friend['name'] ?? 'Nepoznato',
+        style: TextStyle(
+          color: isDisabled ? Colors.grey : Colors.black,
+        ),
+      ),
+      subtitle: isDisabled
+          ? Text(
+              statusLabel,
+              style: TextStyle(
+                color: Colors.orange.shade700,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            )
+          : Text(
+              (friend['hobbies'] ?? []).take(2).join(', '),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(color: Colors.grey[600]),
+            ),
+      trailing: CircleAvatar(
         backgroundImage: friend['profilePic'] != null &&
                 friend['profilePic'].isNotEmpty
             ? NetworkImage(friend['profilePic'])
@@ -342,45 +466,70 @@ class _EventInvitesScreenState extends State<EventInvitesScreen> {
             ? const Icon(Icons.person)
             : null,
       ),
-      title: Text(friend['name'] ?? 'Nepoznato'),
-      subtitle: Text(
-        (friend['hobbies'] ?? []).take(2).join(', '),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: TextStyle(color: Colors.grey[600]),
-      ),
-      trailing: ElevatedButton(
-        onPressed: () => _sendInvite(friend),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.orange.shade700,
-          foregroundColor: Colors.white,
-        ),
-        child: const Text('Pozovi'),
-      ),
     );
   }
-  
-  Future<void> _sendInvite(Map<String, dynamic> friend) async {
+
+  bool _isUserAlreadyInvited(String userId) {
+    return _pendingInvites.contains(userId);
+  }
+
+  Future<void> _sendSelectedInvites() async {
+    if (_selectedFriendIds.isEmpty) return;
+
+    setState(() => _isSendingInvites = true);
+
     try {
-      await _eventService.sendInvite(
-        widget.event.id!,
-        friend['id'],
-        friend['name'] ?? 'Nepoznato',
-      );
+      final failedInvites = <String>[];
+      
+      for (final friendId in _selectedFriendIds.toList()) {
+        try {
+          final friend = _allFriends.firstWhere(
+            (f) => f['id'] == friendId,
+            orElse: () => {},
+          );
+          
+          if (friend.isEmpty) continue;
+
+          await _eventService.sendInvite(
+            widget.event.id!,
+            friendId,
+            friend['name'] ?? 'Nepoznato',
+          );
+        } catch (e) {
+          print('Error sending invite to $friendId: $e');
+          failedInvites.add(friendId);
+        }
+      }
+
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Pozivnica poslata korisniku ${friend['name']}')),
-        );
-        _searchController.clear();
-        _selectedCategory = null;
-        _selectedSubcategory = null;
-        _filterFriends();
+        if (failedInvites.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Poslano ${_selectedFriendIds.length} pozivnica!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          _selectedFriendIds.clear();
+          Navigator.pop(context);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Poslano ${_selectedFriendIds.length - failedInvites.length}, ${failedInvites.length} greške',
+              ),
+            ),
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Greska: $e')),
+          SnackBar(content: Text('Greška: $e')),
         );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSendingInvites = false);
       }
     }
   }

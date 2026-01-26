@@ -8,6 +8,7 @@ class EventCard extends StatelessWidget {
   final int? matchScore;
   final VoidCallback? onTap;
   final bool showOrganizer;
+  final int? friendsParticipating; // Add optional friend count
 
   const EventCard({
     super.key,
@@ -15,6 +16,7 @@ class EventCard extends StatelessWidget {
     this.matchScore,
     this.onTap,
     this.showOrganizer = true,
+    this.friendsParticipating,
   });
 
   Color _getMatchColor(int score) {
@@ -175,7 +177,7 @@ class EventCard extends StatelessWidget {
 
               const SizedBox(height: 12),
 
-              // Bottom row: Participants, Skill level, Visibility
+              // Bottom row: Participants, Skill level, Visibility, Friends
               Row(
                 children: [
                   // Participants
@@ -192,7 +194,45 @@ class EventCard extends StatelessWidget {
                     ),
                   ),
 
-                  const SizedBox(width: 16),
+                  // Friends participating badge
+                  if (friendsParticipating != null && friendsParticipating! > 0) ...[
+                    const SizedBox(width: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.green.shade50,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Colors.green.shade300,
+                          width: 0.5,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.people_alt,
+                            size: 12,
+                            color: Colors.green.shade700,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '$friendsParticipating prijatelja',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.green.shade700,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+
+                  const SizedBox(width: 8),
 
                   // Skill level
                   if (event.requiredSkillLevel != 'any') ...[

@@ -1,6 +1,7 @@
 // services/messaging_service.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:rxdart/rxdart.dart';
 
 class MessagingService {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -310,39 +311,58 @@ class MessagingService {
       final privateConversations = <Map<String, dynamic>>[];
       
       for (final doc in snapshot.docs) {
-        final data = doc.data() as Map<String, dynamic>;
-        final participants = List<String>.from(data['participants'] ?? []);
-        final otherUserId = participants.firstWhere(
-          (id) => id != currentUserId,
-          orElse: () => '',
-        );
-        
-        if (otherUserId.isEmpty) continue;
-        
-        // Get user info
         try {
-          final userDoc = await _firestore
-              .collection('users')
-              .doc(otherUserId)
-              .get();
+          final data = doc.data() as Map<String, dynamic>;
+          final participants = List<String>.from(data['participants'] ?? []);
+          final otherUserId = participants.firstWhere(
+            (id) => id != currentUserId,
+            orElse: () => '',
+          );
           
-          final userData = userDoc.data() ?? <String, dynamic>{};
+          if (otherUserId.isEmpty) continue;
           
-          privateConversations.add({
-            'type': 'private',
-            'id': doc.id,
-            'otherUserId': otherUserId,
-            'name': userData['name'] ?? 'Nepoznato',
-            'lastMessage': data['lastMessage'] ?? '',
-            'lastMessageTime': data['lastMessageTime'],
-            'unreadCount': (data['unreadCount'] as Map<String, dynamic>?)?[currentUserId] as int? ?? 0,
-          });
+          // Get user info with timeout to prevent hanging
+          try {
+            final userDoc = await _firestore
+                .collection('users')
+                .doc(otherUserId)
+                .get()
+                .timeout(const Duration(seconds: 5));
+            
+            final userData = userDoc.data() ?? <String, dynamic>{};
+            
+            privateConversations.add({
+              'type': 'private',
+              'id': doc.id,
+              'otherUserId': otherUserId,
+              'name': userData['name'] ?? 'Nepoznato',
+              'lastMessage': data['lastMessage'] ?? '',
+              'lastMessageTime': data['lastMessageTime'],
+              'unreadCount': (data['unreadCount'] as Map<String, dynamic>?)?[currentUserId] as int? ?? 0,
+            });
+          } catch (e) {
+            print('Error getting user info: $e');
+            // Add conversation without user info rather than skipping
+            privateConversations.add({
+              'type': 'private',
+              'id': doc.id,
+              'otherUserId': otherUserId,
+              'name': 'Nepoznato',
+              'lastMessage': data['lastMessage'] ?? '',
+              'lastMessageTime': data['lastMessageTime'],
+              'unreadCount': (data['unreadCount'] as Map<String, dynamic>?)?[currentUserId] as int? ?? 0,
+            });
+          }
         } catch (e) {
-          print('Error getting user info: $e');
+          print('Error processing conversation: $e');
+          continue;
         }
       }
       
       return privateConversations;
+    }).onErrorReturnWith((error, stackTrace) {
+      print('Error in private conversations stream: $error');
+      return [];
     });
     
     // Get group conversations
@@ -355,56 +375,80 @@ class MessagingService {
           final groupConversations = <Map<String, dynamic>>[];
           
           for (final doc in snapshot.docs) {
-            final data = doc.data();
-            final groupId = data['groupId'] as String? ?? '';
-            final unreadCount = data['unreadCount'] as int? ?? 0;
-            
-            if (groupId.isEmpty) continue;
-            
             try {
-              final groupDoc = await _firestore
-                  .collection('groups')
-                  .doc(groupId)
-                  .get();
+              final data = doc.data();
+              final groupId = data['groupId'] as String? ?? '';
+              final unreadCount = data['unreadCount'] as int? ?? 0;
               
-              if (groupDoc.exists) {
-                final groupData = groupDoc.data() as Map<String, dynamic>;
+              if (groupId.isEmpty) continue;
+              
+              try {
+                final groupDoc = await _firestore
+                    .collection('groups')
+                    .doc(groupId)
+                    .get()
+                    .timeout(const Duration(seconds: 5));
                 
+                if (groupDoc.exists) {
+                  final groupData = groupDoc.data() as Map<String, dynamic>;
+                  
+                  groupConversations.add({
+                    'type': 'group',
+                    'id': groupId,
+                    'name': groupData['name'] ?? 'Grupa',
+                    'lastMessage': groupData['lastMessage'] ?? '',
+                    'lastMessageTime': groupData['lastMessageTime'],
+                    'unreadCount': unreadCount,
+                  });
+                }
+              } catch (e) {
+                print('Error getting group info: $e');
+                // Still add the group from user_groups data even if full data fails
                 groupConversations.add({
                   'type': 'group',
                   'id': groupId,
-                  'name': groupData['name'] ?? 'Grupa',
-                  'lastMessage': groupData['lastMessage'] ?? '',
-                  'lastMessageTime': groupData['lastMessageTime'],
+                  'name': 'Grupa',
+                  'lastMessage': '',
+                  'lastMessageTime': data['lastUpdated'],
                   'unreadCount': unreadCount,
                 });
               }
             } catch (e) {
-              print('Error getting group info: $e');
+              print('Error processing group: $e');
+              continue;
             }
           }
           
           return groupConversations;
+        }).onErrorReturnWith((error, stackTrace) {
+          print('Error in group conversations stream: $error');
+          return [];
         });
     
-    // Combine both streams
-    return privateStream.asyncMap((privateList) async {
-      final groupsSnapshot = await groupStream.first;
-      final combined = [...privateList, ...groupsSnapshot];
-      
-      // Sort by last message time (newest first)
-      combined.sort((a, b) {
-        final timeA = a['lastMessageTime'] as Timestamp?;
-        final timeB = b['lastMessageTime'] as Timestamp?;
+    // Combine both streams more robustly
+    return Rx.combineLatest2(
+      privateStream,
+      groupStream,
+      (List<Map<String, dynamic>> privateList, List<Map<String, dynamic>> groupList) {
+        final combined = [...privateList, ...groupList];
         
-        if (timeA == null && timeB == null) return 0;
-        if (timeA == null) return 1;
-        if (timeB == null) return -1;
+        // Sort by last message time (newest first)
+        combined.sort((a, b) {
+          final timeA = a['lastMessageTime'] as Timestamp?;
+          final timeB = b['lastMessageTime'] as Timestamp?;
+          
+          if (timeA == null && timeB == null) return 0;
+          if (timeA == null) return 1;
+          if (timeB == null) return -1;
+          
+          return timeB.compareTo(timeA);
+        });
         
-        return timeB.compareTo(timeA);
-      });
-      
-      return combined;
+        return combined;
+      },
+    ).onErrorReturnWith((error, stackTrace) {
+      print('Error combining conversation streams: $error');
+      return [];
     });
   }
 
