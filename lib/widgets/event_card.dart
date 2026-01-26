@@ -70,24 +70,48 @@ class EventCard extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 4),
-                        // Category chip
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.blue.shade50,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            event.hobby,
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: Colors.blue.shade700,
+                        // Category chips
+                        const SizedBox(height: 4),
+                        Wrap(
+                          spacing: 4,
+                          runSpacing: 4,
+                          children:
+                              (event.hobbies.isNotEmpty
+                                      ? event.hobbies
+                                      : [event.hobby])
+                                  .take(3) // Show max 3 categories
+                                  .map(
+                                    (hobby) => Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.blue.shade50,
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Text(
+                                        hobby,
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          color: Colors.blue.shade700,
+                                        ),
+                                      ),
+                                    ),
+                                  )
+                                  .toList(),
+                        ),
+                        if (event.hobbies.length > 3)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: Text(
+                              '+${event.hobbies.length - 3} jos',
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: Colors.grey[600],
+                              ),
                             ),
                           ),
-                        ),
                       ],
                     ),
                   ),
@@ -122,10 +146,7 @@ class EventCard extends StatelessWidget {
                   const SizedBox(width: 6),
                   Text(
                     _formatDate(event.startDateTime),
-                    style: TextStyle(
-                      color: Colors.grey[700],
-                      fontSize: 13,
-                    ),
+                    style: TextStyle(color: Colors.grey[700], fontSize: 13),
                   ),
                   if (event.isRecurring) ...[
                     const SizedBox(width: 8),
@@ -144,10 +165,7 @@ class EventCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       '${event.city} - ${event.address}',
-                      style: TextStyle(
-                        color: Colors.grey[700],
-                        fontSize: 13,
-                      ),
+                      style: TextStyle(color: Colors.grey[700], fontSize: 13),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -168,7 +186,9 @@ class EventCard extends StatelessWidget {
                     style: TextStyle(
                       color: event.isFull ? Colors.red : Colors.grey[700],
                       fontSize: 13,
-                      fontWeight: event.isFull ? FontWeight.bold : FontWeight.normal,
+                      fontWeight: event.isFull
+                          ? FontWeight.bold
+                          : FontWeight.normal,
                     ),
                   ),
 
@@ -192,10 +212,7 @@ class EventCard extends StatelessWidget {
                       ),
                       child: Text(
                         'Svi nivoi',
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 12,
-                        ),
+                        style: TextStyle(color: Colors.grey[600], fontSize: 12),
                       ),
                     ),
 
@@ -249,10 +266,7 @@ class EventCard extends StatelessWidget {
                     const SizedBox(width: 8),
                     Text(
                       'Organizator: ${event.organizerName}',
-                      style: TextStyle(
-                        color: Colors.grey[600],
-                        fontSize: 12,
-                      ),
+                      style: TextStyle(color: Colors.grey[600], fontSize: 12),
                     ),
                   ],
                 ),

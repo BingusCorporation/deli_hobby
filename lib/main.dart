@@ -22,9 +22,20 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Deli Hobby',
       theme: ThemeData(primarySwatch: Colors.blue),
-      home: FirebaseAuth.instance.currentUser == null
-          ? const PrelogScreen()
-          : const AppShell(),
+      home: StreamBuilder<User?>(
+        stream: FirebaseAuth.instance.authStateChanges(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
+          }
+          if (snapshot.hasData) {
+            return const AppShell();
+          }
+          return const PrelogScreen();
+        },
+      ),
     );
   }
 }

@@ -17,17 +17,16 @@ class _AppShellState extends State<AppShell> {
   int _currentIndex = 0;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  late final List<Widget> _screens;
+  final List<Widget> _screens = const [
+    HomeScreen(),
+    EventsBrowseScreen(),
+    MyEventsScreen(),
+    ProfileScreen(),
+  ];
 
   @override
   void initState() {
     super.initState();
-    _screens = [
-      const HomeScreen(),
-      const EventsBrowseScreen(),
-      const MyEventsScreen(),
-      const ProfileScreen(),
-    ];
     _setupAuthListener();
   }
 
@@ -45,14 +44,6 @@ class _AppShellState extends State<AppShell> {
 
   @override
   Widget build(BuildContext context) {
-    if (_auth.currentUser == null) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
-    }
-
     return Scaffold(
       body: IndexedStack(
         index: _currentIndex,

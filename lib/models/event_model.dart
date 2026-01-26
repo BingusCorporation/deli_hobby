@@ -75,9 +75,12 @@ class Event {
   final int maxParticipants;
   final int currentParticipants;
   final List<String> participants;
-  final String category;
-  final String subcategory;
-  final String hobby; // "Category > Subcategory"
+  final String category; // Primary category (for backwards compatibility)
+  final String subcategory; // Primary subcategory (for backwards compatibility)
+  final String hobby; // Primary "Category > Subcategory" (for backwards compatibility)
+  final List<String> categories; // All categories
+  final List<String> subcategories; // All subcategories
+  final List<String> hobbies; // All "Category > Subcategory" combinations
   final String requiredSkillLevel; // beginner, intermediate, advanced, any
   final String visibility; // public, private
   final EventAccessibility accessibility;
@@ -106,6 +109,9 @@ class Event {
     required this.category,
     required this.subcategory,
     required this.hobby,
+    this.categories = const [],
+    this.subcategories = const [],
+    this.hobbies = const [],
     this.requiredSkillLevel = 'any',
     this.visibility = 'public',
     EventAccessibility? accessibility,
@@ -140,6 +146,9 @@ class Event {
       'category': category,
       'subcategory': subcategory,
       'hobby': hobby,
+      'categories': categories.isNotEmpty ? categories : [category],
+      'subcategories': subcategories.isNotEmpty ? subcategories : [subcategory],
+      'hobbies': hobbies.isNotEmpty ? hobbies : [hobby],
       'requiredSkillLevel': requiredSkillLevel,
       'visibility': visibility,
       'accessibility': accessibility.toMap(),
@@ -184,6 +193,15 @@ class Event {
       category: map['category'] ?? '',
       subcategory: map['subcategory'] ?? '',
       hobby: map['hobby'] ?? '',
+      categories: map['categories'] != null
+          ? List<String>.from(map['categories'])
+          : [map['category'] ?? ''],
+      subcategories: map['subcategories'] != null
+          ? List<String>.from(map['subcategories'])
+          : [map['subcategory'] ?? ''],
+      hobbies: map['hobbies'] != null
+          ? List<String>.from(map['hobbies'])
+          : [map['hobby'] ?? ''],
       requiredSkillLevel: map['requiredSkillLevel'] ?? 'any',
       visibility: map['visibility'] ?? 'public',
       accessibility: EventAccessibility.fromMap(map['accessibility']),
@@ -222,6 +240,9 @@ class Event {
     String? category,
     String? subcategory,
     String? hobby,
+    List<String>? categories,
+    List<String>? subcategories,
+    List<String>? hobbies,
     String? requiredSkillLevel,
     String? visibility,
     EventAccessibility? accessibility,
@@ -250,6 +271,9 @@ class Event {
       category: category ?? this.category,
       subcategory: subcategory ?? this.subcategory,
       hobby: hobby ?? this.hobby,
+      categories: categories ?? this.categories,
+      subcategories: subcategories ?? this.subcategories,
+      hobbies: hobbies ?? this.hobbies,
       requiredSkillLevel: requiredSkillLevel ?? this.requiredSkillLevel,
       visibility: visibility ?? this.visibility,
       accessibility: accessibility ?? this.accessibility,

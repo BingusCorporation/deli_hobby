@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../screens/main_screen.dart';
+import '../screens/app_shell.dart';
 import '../data/city.dart';
 
 class SignupScreen extends StatefulWidget {
@@ -82,7 +82,7 @@ Future<void> signup() async {
     // ---- GO TO LOGGED IN SCREEN AND CLEAR STACK ----
     Navigator.pushAndRemoveUntil(
       context,
-      MaterialPageRoute(builder: (_) => const MainScreen()),
+      MaterialPageRoute(builder: (_) => const AppShell()),
       (route) => false, // Clear all previous routes
     );
   } catch (e) {

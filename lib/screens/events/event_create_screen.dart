@@ -35,8 +35,14 @@ class _EventCreateScreenState extends State<EventCreateScreen> {
 
   // Form state
   String? _selectedCity;
-  String? _selectedCategory;
-  String? _selectedSubcategory;
+  String? _tempSelectedCategory;
+  String? _tempSelectedSubcategory;
+
+  // Multiple categories support
+  final List<String> _selectedCategories = [];
+  final List<String> _selectedSubcategories = [];
+  final List<String> _selectedHobbies = [];
+
   String _selectedSkillLevel = 'any';
   String _visibility = 'public';
   DateTime _startDate = DateTime.now().add(const Duration(days: 1));
@@ -88,8 +94,10 @@ class _EventCreateScreenState extends State<EventCreateScreen> {
     _locationDetailsController.text = event.locationDetails ?? '';
     _maxParticipantsController.text = event.maxParticipants.toString();
     _selectedCity = event.city;
-    _selectedCategory = event.category;
-    _selectedSubcategory = event.subcategory;
+    // Populate multiple categories
+    _selectedCategories.addAll(event.categories);
+    _selectedSubcategories.addAll(event.subcategories);
+    _selectedHobbies.addAll(event.hobbies);
     _selectedSkillLevel = event.requiredSkillLevel;
     _visibility = event.visibility;
     _startDate = event.startDateTime;
@@ -250,66 +258,153 @@ class _EventCreateScreenState extends State<EventCreateScreen> {
   }
 
   Widget _buildCategoryDropdowns() {
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(
-          child: DropdownButtonFormField<String>(
-            value: _selectedCategory,
-            decoration: const InputDecoration(
-              labelText: 'Kategorija',
-              border: OutlineInputBorder(),
+        // Category and Subcategory selectors
+        Row(
+          children: [
+            Expanded(
+              child: DropdownButtonFormField<String>(
+                value: _tempSelectedCategory,
+                decoration: const InputDecoration(
+                  labelText: 'Kategorija',
+                  border: OutlineInputBorder(),
+                ),
+                items: hobbyCategories.keys.map((category) {
+                  return DropdownMenuItem(
+                    value: category,
+                    child: Text(category),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _tempSelectedCategory = value;
+                    _tempSelectedSubcategory = null;
+                  });
+                },
+              ),
             ),
-            items: hobbyCategories.keys.map((category) {
-              return DropdownMenuItem(
-                value: category,
-                child: Text(category),
+            const SizedBox(width: 12),
+            Expanded(
+              child: DropdownButtonFormField<String>(
+                value: _tempSelectedSubcategory,
+                decoration: const InputDecoration(
+                  labelText: 'Podkategorija',
+                  border: OutlineInputBorder(),
+                ),
+                items: _tempSelectedCategory != null
+                    ? hobbyCategories[_tempSelectedCategory]!.map((sub) {
+                        return DropdownMenuItem(
+                          value: sub,
+                          child: Text(sub),
+                        );
+                      }).toList()
+                    : [],
+                onChanged: (value) {
+                  setState(() {
+                    _tempSelectedSubcategory = value;
+                  });
+                },
+              ),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 12),
+
+        // Add category button
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: _tempSelectedCategory != null && _tempSelectedSubcategory != null
+                ? _addCategory
+                : null,
+            icon: const Icon(Icons.add),
+            label: const Text('Dodaj kategoriju'),
+          ),
+        ),
+
+        // Selected categories chips
+        if (_selectedHobbies.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          const Text(
+            'Izabrane kategorije:',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: _selectedHobbies.map((hobby) {
+              return Chip(
+                label: Text(hobby),
+                deleteIcon: const Icon(Icons.close, size: 18),
+                onDeleted: () => _removeCategory(hobby),
               );
             }).toList(),
-            onChanged: (value) {
-              setState(() {
-                _selectedCategory = value;
-                _selectedSubcategory = null;
-              });
-            },
-            validator: (value) {
-              if (value == null) {
-                return 'Izaberi kategoriju';
-              }
-              return null;
-            },
           ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: DropdownButtonFormField<String>(
-            value: _selectedSubcategory,
-            decoration: const InputDecoration(
-              labelText: 'Podkategorija',
-              border: OutlineInputBorder(),
+        ],
+
+        // Validation message
+        if (_selectedHobbies.isEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(
+              'Dodaj bar jednu kategoriju',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.error,
+                fontSize: 12,
+              ),
             ),
-            items: _selectedCategory != null
-                ? hobbyCategories[_selectedCategory]!.map((sub) {
-                    return DropdownMenuItem(
-                      value: sub,
-                      child: Text(sub),
-                    );
-                  }).toList()
-                : [],
-            onChanged: (value) {
-              setState(() {
-                _selectedSubcategory = value;
-              });
-            },
-            validator: (value) {
-              if (value == null) {
-                return 'Izaberi podkategoriju';
-              }
-              return null;
-            },
           ),
-        ),
       ],
     );
+  }
+
+  void _addCategory() {
+    if (_tempSelectedCategory != null && _tempSelectedSubcategory != null) {
+      final hobby = '$_tempSelectedCategory > $_tempSelectedSubcategory';
+      if (!_selectedHobbies.contains(hobby)) {
+        setState(() {
+          if (!_selectedCategories.contains(_tempSelectedCategory!)) {
+            _selectedCategories.add(_tempSelectedCategory!);
+          }
+          if (!_selectedSubcategories.contains(_tempSelectedSubcategory!)) {
+            _selectedSubcategories.add(_tempSelectedSubcategory!);
+          }
+          _selectedHobbies.add(hobby);
+          _tempSelectedCategory = null;
+          _tempSelectedSubcategory = null;
+        });
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Ova kategorija je vec dodata')),
+        );
+      }
+    }
+  }
+
+  void _removeCategory(String hobby) {
+    setState(() {
+      _selectedHobbies.remove(hobby);
+      // Also remove from categories/subcategories if no longer used
+      final parts = hobby.split(' > ');
+      if (parts.length == 2) {
+        final category = parts[0];
+        final subcategory = parts[1];
+        // Check if category is still used by another hobby
+        final categoryStillUsed = _selectedHobbies.any((h) => h.startsWith('$category >'));
+        if (!categoryStillUsed) {
+          _selectedCategories.remove(category);
+        }
+        // Check if subcategory is still used
+        final subcategoryStillUsed = _selectedHobbies.any((h) => h.endsWith('> $subcategory'));
+        if (!subcategoryStillUsed) {
+          _selectedSubcategories.remove(subcategory);
+        }
+      }
+    });
   }
 
   Widget _buildSkillLevelDropdown() {
@@ -728,6 +823,14 @@ class _EventCreateScreenState extends State<EventCreateScreen> {
   Future<void> _submitForm() async {
     if (!_formKey.currentState!.validate()) return;
 
+    // Custom validation for categories
+    if (_selectedHobbies.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Dodaj bar jednu kategoriju')),
+      );
+      return;
+    }
+
     setState(() {
       _isLoading = true;
     });
@@ -742,6 +845,11 @@ class _EventCreateScreenState extends State<EventCreateScreen> {
       );
 
       final endDateTime = startDateTime.add(Duration(minutes: _durationMinutes));
+
+      // Use first category as primary (for backwards compatibility)
+      final primaryCategory = _selectedCategories.first;
+      final primarySubcategory = _selectedSubcategories.first;
+      final primaryHobby = _selectedHobbies.first;
 
       final event = Event(
         id: widget.eventToEdit?.id,
@@ -764,9 +872,12 @@ class _EventCreateScreenState extends State<EventCreateScreen> {
         maxParticipants: int.parse(_maxParticipantsController.text),
         currentParticipants: widget.eventToEdit?.currentParticipants ?? 0,
         participants: widget.eventToEdit?.participants ?? [],
-        category: _selectedCategory!,
-        subcategory: _selectedSubcategory!,
-        hobby: '$_selectedCategory > $_selectedSubcategory',
+        category: primaryCategory,
+        subcategory: primarySubcategory,
+        hobby: primaryHobby,
+        categories: _selectedCategories,
+        subcategories: _selectedSubcategories,
+        hobbies: _selectedHobbies,
         requiredSkillLevel: _selectedSkillLevel,
         visibility: _visibility,
         accessibility: EventAccessibility(
