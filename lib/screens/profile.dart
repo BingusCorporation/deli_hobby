@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../data/hobbies.dart';
+import '../data/city.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -28,6 +29,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _isEditing = false;
   String? _selectedCategory;
   String? _selectedSubcategory;
+  String? _selectedCity;
   File? _pickedImage;
   bool _isUploading = false;
 
@@ -44,6 +46,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         final data = doc.data() as Map<String, dynamic>;
         _bioController.text = data['bio'] ?? '';
         _cityController.text = data['city'] ?? '';
+        _selectedCity = data['city'] ?? '';
       }
     } catch (e) {
       print('Error loading initial data: $e');
@@ -129,15 +132,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _saveProfile() async {
     try {
+      final cityToSave = (_selectedCity != null && _selectedCity!.isNotEmpty)
+          ? _selectedCity!.trim()
+          : _cityController.text.trim();
+
       await _firestore.collection('users_private').doc(uid).update({
         'bio': _bioController.text.trim(),
-        'city': _cityController.text.trim(),
+        'city': cityToSave,
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
       await _firestore.collection('users').doc(uid).update({
         'bio': _bioController.text.trim(),
-        'city': _cityController.text.trim(),
+        'city': cityToSave,
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
@@ -156,7 +163,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _addHobby() async {
     if (_selectedCategory == null || _selectedSubcategory == null) return;
 
-    final hobby = "$_selectedCategory > $_selectedSubcategory";
+    final hobby = "
+$_selectedCategory > $_selectedSubcategory";
 
     try {
       await _firestore.collection('users_private').doc(uid).update({
@@ -313,7 +321,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-Widget _buildProfileContent() {
+ Widget _buildProfileContent() {
   return StreamBuilder<DocumentSnapshot>(
     stream: _firestore.collection('users_private').doc(uid).snapshots(),
     builder: (context, snapshot) {
@@ -425,12 +433,17 @@ Widget _buildProfileContent() {
         const Text('Grad', style: TextStyle(fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
         _isEditing
-            ? TextField(
-                controller: _cityController,
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  hintText: 'Unesi svoj grad...',
-                ),
+            ? DropdownButton<String>(
+                hint: const Text('Izaberi svoj grad...'),
+                value: (_selectedCity != null && _selectedCity!.isNotEmpty) ? _selectedCity : null,
+                isExpanded: true,
+                items: serbiaCities.map((city) {
+                  return DropdownMenuItem(value: city, child: Text(city));
+                }).toList(),
+                onChanged: (value) => setState(() {
+                  _selectedCity = value;
+                  _cityController.text = value ?? '';
+                }),
               )
             : Text((data['city'] ?? '').isNotEmpty ? data['city']! : 'Grad nije dodat.'),
       ],
