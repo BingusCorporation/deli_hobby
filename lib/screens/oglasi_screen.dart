@@ -5,6 +5,7 @@ import '../models/poster.dart';
 import './oglas_screen.dart';
 import './other_user_profile.dart';
 import './create_oglas_screen.dart';
+import '../data/city.dart';
 
 class OglasiScreen extends StatefulWidget {
   const OglasiScreen({super.key});
@@ -16,6 +17,41 @@ class OglasiScreen extends StatefulWidget {
 class _OglasiScreenState extends State<OglasiScreen> {
   final User? _currentUser = FirebaseAuth.instance.currentUser;
   bool _showMatchingOnly = false;
+  String? _selectedCityFilter;
+
+  void _showCityFilterDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Filtriraj po gradu'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView(
+            children: [
+              ListTile(
+                title: const Text('Svi gradovi'),
+                onTap: () {
+                  setState(() => _selectedCityFilter = null);
+                  Navigator.pop(context);
+                },
+                selected: _selectedCityFilter == null,
+              ),
+              ...serbiaCities.map((city) {
+                return ListTile(
+                  title: Text(city),
+                  onTap: () {
+                    setState(() => _selectedCityFilter = city);
+                    Navigator.pop(context);
+                  },
+                  selected: _selectedCityFilter == city,
+                );
+              }).toList(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,6 +59,15 @@ class _OglasiScreenState extends State<OglasiScreen> {
       appBar: AppBar(
         title: const Text('Oglasi'),
         actions: [
+          // City filter icon button
+          IconButton(
+            icon: Icon(
+              Icons.location_city,
+              color: _selectedCityFilter != null ? Colors.amber : Colors.white,
+            ),
+            onPressed: _showCityFilterDialog,
+            tooltip: 'Filtriraj po gradu',
+          ),
           // Filter button
           IconButton(
             icon: Icon(
@@ -61,7 +106,12 @@ class _OglasiScreenState extends State<OglasiScreen> {
           return Center(child: Text('Error: ${snapshot.error}'));
         }
 
-        final posters = snapshot.data ?? [];
+        var posters = snapshot.data ?? [];
+
+        // Filter by city if selected
+        if (_selectedCityFilter != null) {
+          posters = posters.where((p) => p.city == _selectedCityFilter).toList();
+        }
 
         if (posters.isEmpty) {
           return _buildEmptyState();
@@ -101,7 +151,12 @@ class _OglasiScreenState extends State<OglasiScreen> {
           return Center(child: Text('Error: ${snapshot.error}'));
         }
 
-        final posters = snapshot.data ?? [];
+        var posters = snapshot.data ?? [];
+
+        // Filter by city if selected
+        if (_selectedCityFilter != null) {
+          posters = posters.where((p) => p.city == _selectedCityFilter).toList();
+        }
 
         if (posters.isEmpty) {
           return Center(
@@ -308,6 +363,19 @@ class _PosterCard extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 12),
+              // City
+              if (poster.city != null)
+                Row(
+                  children: [
+                    Icon(Icons.location_on, size: 14, color: Colors.grey[600]),
+                    const SizedBox(width: 4),
+                    Text(
+                      poster.city!,
+                      style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                    ),
+                  ],
+                ),
+              if (poster.city != null) const SizedBox(height: 12),
               // Hobbies
               if (poster.requiredHobbies.isNotEmpty) ...[
                 Wrap(

@@ -3,6 +3,7 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import '../services/poster_service.dart';
 import '../data/hobbies.dart';
+import '../data/city.dart';
 
 class CreateOglasScreen extends StatefulWidget {
   const CreateOglasScreen({super.key});
@@ -18,6 +19,7 @@ class _CreateOglasScreenState extends State<CreateOglasScreen> {
   
   String? _selectedCategory;
   String? _selectedSubcategory;
+  String? _selectedCity;
   final List<String> _selectedHobbies = [];
   File? _selectedImage;
   bool _isSubmitting = false;
@@ -95,6 +97,11 @@ class _CreateOglasScreenState extends State<CreateOglasScreen> {
       _showSnackBar('Unesite opis');
       return;
     }
+
+    if (_selectedCity == null) {
+      _showSnackBar('Izaberite grad');
+      return;
+    }
     
     if (_selectedHobbies.isEmpty) {
       _showSnackBar('Odaberite barem jedan hobi');
@@ -109,6 +116,7 @@ class _CreateOglasScreenState extends State<CreateOglasScreen> {
         description: _descriptionController.text.trim(),
         requiredHobbies: _selectedHobbies,
         imageFile: _selectedImage,
+        city: _selectedCity,
       );
 
       _showSnackBar('Oglas uspešno objavljen!');
@@ -222,6 +230,29 @@ class _CreateOglasScreenState extends State<CreateOglasScreen> {
               ),
               maxLines: 5,
               maxLength: 1000,
+            ),
+            
+            const SizedBox(height: 20),
+            
+            // City
+            const Text(
+              'Grad*',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+            const SizedBox(height: 8),
+            DropdownButton<String>(
+              hint: const Text('Izaberi grad'),
+              value: _selectedCity,
+              isExpanded: true,
+              items: serbiaCities.map((city) {
+                return DropdownMenuItem(
+                  value: city,
+                  child: Text(city),
+                );
+              }).toList(),
+              onChanged: (value) {
+                setState(() => _selectedCity = value);
+              },
             ),
             
             const SizedBox(height: 20),

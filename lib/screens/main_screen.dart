@@ -27,6 +27,7 @@ class _MainScreenState extends State<MainScreen> {
   String? _selectedCity;
   String? _selectedCategory;
   String? _selectedSubcategory;
+  final TextEditingController _nameSearchController = TextEditingController();
   
   // Search results
   List<Map<String, dynamic>> _searchResults = [];
@@ -38,6 +39,12 @@ class _MainScreenState extends State<MainScreen> {
     super.initState();
     _setupAuthListener();
     initializeFirestoreStructure();
+  }
+
+  @override
+  void dispose() {
+    _nameSearchController.dispose();
+    super.dispose();
   }
 
   void _setupAuthListener() {
@@ -155,6 +162,22 @@ class _MainScreenState extends State<MainScreen> {
             color: Colors.grey[50],
             child: Column(
               children: [
+                // Name search field
+                TextField(
+                  controller: _nameSearchController,
+                  decoration: InputDecoration(
+                    hintText: 'Pretraži po imenu...',
+                    prefixIcon: const Icon(Icons.search),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+                  ),
+                  onChanged: (value) => setState(() {}),
+                ),
+                
+                const SizedBox(height: 12),
+                
                 // Hobby and City in one row
                 Row(
                   children: [
@@ -511,190 +534,101 @@ class _MainScreenState extends State<MainScreen> {
   Widget _buildUserCard(Map<String, dynamic> user) {
     final String? profilePic = user['profilePic'] as String?;
     final String? city = user['city'] as String?;
-    final String? bio = user['bio'] as String?;
-    final List<dynamic> matchingHobbies = user['matchingHobbies'] as List<dynamic>? ?? [];
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: 1,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // User info row
-            Row(
-              children: [
-                // Profile picture
-                GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => OtherUserProfileScreen(
-                          userId: user['id'] as String,
-                          userName: user['name'] as String? ?? 'Nepoznato',
-                        ),
-                      ),
-                    );
-                  },
-                  child: CircleAvatar(
-                    radius: 24,
-                    backgroundImage: profilePic != null && profilePic.isNotEmpty
-                        ? NetworkImage(profilePic)
-                        : const AssetImage('assets/default_avatar.png')
-                            as ImageProvider,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                
-                // Name and city
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => OtherUserProfileScreen(
-                                userId: user['id'] as String,
-                                userName: user['name'] as String? ?? 'Nepoznato',
-                              ),
-                            ),
-                          );
-                        },
-                        child: Text(
-                          user['name'] as String? ?? 'Nepoznato',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      if (city != null && city.isNotEmpty)
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.location_on,
-                              size: 14,
-                              color: Colors.grey.shade500,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              city,
-                              style: TextStyle(
-                                color: Colors.grey.shade600,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ],
-                        ),
-                    ],
-                  ),
-                ),
-                
-                // Message button
-                IconButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ChatScreen(
-                          otherUserId: user['id'] as String,
-                          otherUserName: user['name'] as String? ?? 'Nepoznato',
-                        ),
-                      ),
-                    );
-                  },
-                  icon: Icon(
-                    Icons.message,
-                    color: Colors.orange.shade700,
-                    size: 20,
-                  ),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                  tooltip: 'Pošalji poruku',
-                ),
-              ],
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => OtherUserProfileScreen(
+              userId: user['id'] as String,
+              userName: user['name'] as String? ?? 'Nepoznato',
             ),
-            
-            const SizedBox(height: 12),
-            
-            // Bio preview
-            if (bio != null && bio.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: Text(
-                  bio,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: Colors.grey.shade700,
-                    fontSize: 13,
-                  ),
+          ),
+        );
+      },
+      child: Card(
+        margin: const EdgeInsets.only(bottom: 10),
+        elevation: 1,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              // Profile picture
+              CircleAvatar(
+                radius: 20,
+                backgroundImage: profilePic != null && profilePic.isNotEmpty
+                    ? NetworkImage(profilePic)
+                    : const AssetImage('assets/default_avatar.png')
+                        as ImageProvider,
+              ),
+              const SizedBox(width: 12),
+              
+              // Name and city
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      user['name'] as String? ?? 'Nepoznato',
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (city != null && city.isNotEmpty)
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.location_on,
+                            size: 12,
+                            color: Colors.grey.shade500,
+                          ),
+                          const SizedBox(width: 3),
+                          Text(
+                            city,
+                            style: TextStyle(
+                              color: Colors.grey.shade600,
+                              fontSize: 12,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                  ],
                 ),
               ),
-            
-            // Matching hobbies
-            if (matchingHobbies.isNotEmpty)
-              Wrap(
-                spacing: 6,
-                runSpacing: 4,
-                children: matchingHobbies
-                    .take(4)
-                    .map<Widget>((hobby) {
-                      return Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.orange.shade50,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          hobby.toString().split(' > ').last,
-                          style: TextStyle(
-                            color: Colors.orange.shade800,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      );
-                    }).toList(),
-              ),
-            
-            const SizedBox(height: 8),
-            
-            // View profile button
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton(
+              
+              // Message button
+              IconButton(
                 onPressed: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => OtherUserProfileScreen(
-                        userId: user['id'] as String,
-                        userName: user['name'] as String? ?? 'Nepoznato',
+                      builder: (context) => ChatScreen(
+                        otherUserId: user['id'] as String,
+                        otherUserName: user['name'] as String? ?? 'Nepoznato',
                       ),
                     ),
                   );
                 },
-                child: const Text(
-                  'Pogledaj profil',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                  ),
+                icon: Icon(
+                  Icons.message,
+                  color: Colors.orange.shade700,
+                  size: 18,
                 ),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 30, minHeight: 30),
+                tooltip: 'Pošalji poruku',
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -714,7 +648,7 @@ class _MainScreenState extends State<MainScreen> {
       return;
     }
 
-    if (_selectedCategory == null && _selectedCity == null) {
+    if (_selectedCategory == null && _selectedCity == null && _nameSearchController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Izaberite bar jedan filter za pretragu')),
       );
@@ -741,10 +675,17 @@ class _MainScreenState extends State<MainScreen> {
       
       // Filter results
       final List<Map<String, dynamic>> results = [];
+      final String nameFilter = _nameSearchController.text.trim().toLowerCase();
       
       for (final doc in snapshot.docs) {
         final userData = doc.data() as Map<String, dynamic>;
+        final String userName = (userData['name'] as String? ?? '').toLowerCase();
         final List<dynamic> userHobbies = userData['hobbies'] as List<dynamic>? ?? [];
+        
+        // Check name filter
+        if (nameFilter.isNotEmpty && !userName.contains(nameFilter)) {
+          continue;
+        }
         
         // Check if we have hobby filter
         bool hasMatchingHobby = false;
@@ -768,7 +709,7 @@ class _MainScreenState extends State<MainScreen> {
             }
           }
         } else {
-          // No hobby filter, show all users (only filtered by city if selected)
+          // No hobby filter, show all users (only filtered by city/name if selected)
           hasMatchingHobby = true;
         }
         

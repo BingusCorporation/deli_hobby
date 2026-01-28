@@ -199,6 +199,20 @@ class _OglasScreenState extends State<OglasScreen> {
                       
                       const SizedBox(height: 24),
                       
+                      // City
+                      if (poster.city != null)
+                        Row(
+                          children: [
+                            Icon(Icons.location_on, size: 18, color: Colors.grey[600]),
+                            const SizedBox(width: 8),
+                            Text(
+                              poster.city!,
+                              style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                            ),
+                          ],
+                        ),
+                      if (poster.city != null) const SizedBox(height: 24),
+                      
                       // Required Hobbies
                       const Text(
                         'Traženi hobiji:',
