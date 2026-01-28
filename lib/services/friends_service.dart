@@ -239,7 +239,55 @@ static Future<FriendshipStatus> getFriendshipStatus(String otherUserId) async {
         });
   }
 
+  /// Get friends stream for a specific user
+  static Stream<List<Map<String, dynamic>>> getFriendsStreamForUser(String userId) {
+    return _firestore
+        .collection('friendships')
+        .where('userId', isEqualTo: userId)
+        .snapshots()
+        .asyncMap((snapshot) async {
+          if (snapshot.docs.isEmpty) return [];
+          
+          final friendIds = snapshot.docs
+              .map((doc) => doc.data()['friendId'] as String)
+              .where((id) => id.isNotEmpty)
+              .toSet()
+              .toList();
+          
+          if (friendIds.isEmpty) return [];
+          
+          // Get missing users from cache or Firestore
+          await _fetchAndCacheUsers(friendIds);
+          
+          final friends = <Map<String, dynamic>>[];
+          
+          for (final doc in snapshot.docs) {
+            final friendId = doc.data()['friendId'] as String;
+            final userData = _userCache[friendId];
+            
+            if (userData != null) {
+              friends.add({
+                'id': friendId,
+                ...userData,
+                'friendshipId': doc.id,
+              });
+            }
+          }
+          
+          return friends;
+        });
+  }
+
   /// Get friend requests stream - Optimized with batch user fetching
+  static Stream<int> getFriendRequestsCountStream() {
+    return _firestore
+        .collection('friend_requests')
+        .where('receiverId', isEqualTo: currentUserId)
+        .where('status', isEqualTo: 'pending')
+        .snapshots()
+        .map((snapshot) => snapshot.docs.length);
+  }
+
   static Stream<List<Map<String, dynamic>>> getFriendRequestsStream() {
     return _firestore
         .collection('friend_requests')

@@ -47,6 +47,10 @@ class MessagingService {
           'lastMessageSender': currentUserId,
           'createdAt': now,
           'updatedAt': now,
+          'unreadCount': {
+            currentUserId: 0,
+            receiverId: FieldValue.increment(1),
+          }
         }, SetOptions(merge: true));
       } catch (e) {
         print('Note: Conversation update failed (might be permission issue): $e');
@@ -87,7 +91,7 @@ class MessagingService {
   /// Mark messages as read
   static Future<void> markAsRead(String conversationId, String otherUserId) async {
     try {
-      // Just mark individual messages as read
+      // Mark individual messages as read
       final messagesSnapshot = await _firestore
           .collection('conversations')
           .doc(conversationId)
@@ -100,6 +104,11 @@ class MessagingService {
       for (final doc in messagesSnapshot.docs) {
         batch.update(doc.reference, {'read': true});
       }
+      
+      // Reset unread count for current user to 0
+      batch.update(_firestore.collection('conversations').doc(conversationId), {
+        'unreadCount.$currentUserId': 0,
+      });
       
       if (messagesSnapshot.docs.isNotEmpty) {
         await batch.commit();
@@ -203,7 +212,7 @@ class MessagingService {
       for (final userId in participants) {
         final userGroupRef = _firestore
             .collection('user_groups')
-            .doc('${userId}_${groupId}');
+            .doc('${userId}_$groupId');
         
         if (userId != currentUserId) {
           // Increment unread count for others
@@ -273,7 +282,7 @@ class MessagingService {
     // Create user_group entry
     final userGroupRef = _firestore
         .collection('user_groups')
-        .doc('${userId}_${groupId}');
+        .doc('${userId}_$groupId');
     
     batch.set(userGroupRef, {
       'userId': userId,
@@ -292,7 +301,7 @@ class MessagingService {
     try {
       await _firestore
           .collection('user_groups')
-          .doc('${currentUserId}_${groupId}')
+          .doc('${currentUserId}_$groupId')
           .update({
         'unreadCount': 0,
         'lastUpdated': FieldValue.serverTimestamp(),
@@ -513,8 +522,12 @@ static Future<void> addMemberToGroup({
           int total = 0;
           for (final doc in snapshot.docs) {
             final data = doc.data();
-            final unread = (data['unreadCount'] as Map<String, dynamic>?)?[currentUserId] as int? ?? 0;
-            total += unread;
+            // Get unread count from the unreadCount map using currentUserId as key
+            final unreadMap = data['unreadCount'] as Map<String, dynamic>?;
+            if (unreadMap != null && unreadMap.containsKey(currentUserId)) {
+              final unread = unreadMap[currentUserId] as int? ?? 0;
+              total += unread;
+            }
           }
           return total;
         })

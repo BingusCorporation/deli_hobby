@@ -295,6 +295,19 @@ class EventService {
         });
   }
 
+  Stream<int> getMyPendingInvitesCountStream() {
+    return _firestore
+        .collectionGroup('invites')
+        .where('inviteeId', isEqualTo: _currentUserId)
+        .where('status', isEqualTo: 'pending')
+        .snapshots()
+        .handleError((error) {
+          print('CollectionGroup query error: $error');
+          return Stream<QuerySnapshot>.error(error);
+        })
+        .map((snapshot) => snapshot.docs.length);
+  }
+
   // Fallback method to query invites by iterating events (slower but works without indexes)
   Future<List<EventInvite>> getMyPendingInvitesFallback() async {
     try {

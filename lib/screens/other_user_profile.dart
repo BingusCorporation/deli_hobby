@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/friends_service.dart';
 import 'chat_screen.dart';
+import 'friends_list_screen.dart';
 
 class OtherUserProfileScreen extends StatefulWidget {
   final String userId;
@@ -286,6 +287,9 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.userName),
+        backgroundColor: Colors.orange.shade700,
+        foregroundColor: Colors.white,
+        elevation: 2,
         actions: [
           if (_friendshipStatus == FriendshipStatus.pendingIncoming)
             PopupMenuButton<String>(
@@ -336,22 +340,35 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
     final String? bio = data['bio'];
     final List<dynamic> hobbies = data['hobbies'] ?? [];
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildProfileHeader(profilePic, data['name'], city),
-          const SizedBox(height: 24),
-          _buildFriendshipStatus(),
-          const SizedBox(height: 16),
-          if (bio != null && bio.isNotEmpty) _buildBioSection(bio),
-          _buildFriendsCount(),
-          const SizedBox(height: 24),
-          _buildHobbiesSection(hobbies),
-          const SizedBox(height: 32),
-          _buildActionButtons(),
-        ],
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.white,
+            Colors.orange.shade50,
+            Colors.amber.shade50,
+          ],
+        ),
+      ),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildProfileHeader(profilePic, data['name'], city),
+            const SizedBox(height: 24),
+            _buildFriendshipStatus(),
+            const SizedBox(height: 16),
+            if (bio != null && bio.isNotEmpty) _buildBioSection(bio),
+            _buildFriendsCount(),
+            const SizedBox(height: 24),
+            _buildHobbiesSection(hobbies),
+            const SizedBox(height: 32),
+            _buildActionButtons(),
+          ],
+        ),
       ),
     );
   }
@@ -361,23 +378,26 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
       child: Column(
         children: [
           CircleAvatar(
-            radius: 50,
-            backgroundColor: Colors.grey[200],
+            radius: 55,
+            backgroundColor: Colors.orange.shade100,
             backgroundImage: profilePic != null && profilePic.isNotEmpty
                 ? NetworkImage(profilePic)
                 : null,
             child: profilePic == null || profilePic.isEmpty
                 ? Icon(
                     Icons.person,
-                    size: 40,
-                    color: Colors.grey[600],
+                    size: 45,
+                    color: Colors.orange.shade400,
                   )
                 : null,
           ),
           const SizedBox(height: 16),
           Text(
             name ?? 'Nepoznato',
-            style: Theme.of(context).textTheme.headlineSmall,
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: Colors.orange.shade900,
+            ),
             textAlign: TextAlign.center,
           ),
           if (city != null && city.isNotEmpty)
@@ -447,33 +467,47 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
   }
 
   Widget _buildFriendsCount() {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.blue[50],
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.people, color: Colors.blue),
-          const SizedBox(width: 8),
-          Text(
-            'Prijatelja: $_friendCount',
-            style: const TextStyle(fontSize: 16, color: Colors.blue),
+    return GestureDetector(
+      onTap: _friendCount > 0
+          ? () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => FriendsListScreen(userId: widget.userId),
+                ),
+              )
+          : null,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Colors.orange.shade50,
+              Colors.amber.shade50,
+            ],
           ),
-          const Spacer(),
-          if (_friendCount > 0)
-            TextButton(
-              onPressed: () {
-                // Optional: Add functionality to view friends list
-                _showSnackBar('Prikaz liste prijatelja nije implementiran');
-              },
-              child: const Text(
-                'Prikaži',
-                style: TextStyle(fontSize: 14),
+          border: Border.all(color: Colors.orange.shade200),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              '$_friendCount Prijatelji',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+                color: Colors.orange.shade900,
               ),
             ),
-        ],
+            if (_friendCount > 0)
+              Icon(
+                Icons.arrow_forward_ios,
+                size: 16,
+                color: Colors.orange.shade700,
+              ),
+          ],
+        ),
       ),
     );
   }

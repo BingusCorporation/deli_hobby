@@ -14,15 +14,34 @@ import '../events/event_details_screen.dart';
 import '../events/event_invite_model.dart';
 
 class MessagesScreen extends StatefulWidget {
-  const MessagesScreen({super.key});
+  final int initialTab;
+  
+  const MessagesScreen({
+    super.key,
+    this.initialTab = 0,
+  });
 
   @override
   State<MessagesScreen> createState() => _MessagesScreenState();
 }
-class _MessagesScreenState extends State<MessagesScreen> {
+
+class _MessagesScreenState extends State<MessagesScreen> with TickerProviderStateMixin {
+  late TabController _tabController;
+
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(
+      length: 2,
+      initialIndex: widget.initialTab,
+      vsync: this,
+    );
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   @override
@@ -35,43 +54,42 @@ class _MessagesScreenState extends State<MessagesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 2,
-      child: Scaffold(
-        appBar: AppBar(
-          backgroundColor: Colors.orange.shade700,
-          foregroundColor: Colors.white,
-          title: const Text('Poruke'),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.group_add),
-              tooltip: 'Kreiraj grupu',
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const CreateGroupScreen(),
-                  ),
-                );
-              },
-            ),
-          ],
-          bottom: TabBar(
-            indicatorColor: Colors.white,
-            labelColor: Colors.white,
-            unselectedLabelColor: Colors.white.withOpacity(0.7),
-            tabs: const [
-              Tab(text: 'RAZGOVORI'),
-              Tab(text: 'KONTAKTI'),
-            ],
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.orange.shade700,
+        foregroundColor: Colors.white,
+        title: const Text('Poruke'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.group_add),
+            tooltip: 'Kreiraj grupu',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const CreateGroupScreen(),
+                ),
+              );
+            },
           ),
-        ),
-        body: TabBarView(
-          children: [
-            _CombinedConversationsTab(),
-            _ContactsAndRequestsTab(),
+        ],
+        bottom: TabBar(
+          controller: _tabController,
+          indicatorColor: Colors.white,
+          labelColor: Colors.white,
+          unselectedLabelColor: Colors.white.withOpacity(0.7),
+          tabs: const [
+            Tab(text: 'RAZGOVORI'),
+            Tab(text: 'KONTAKTI'),
           ],
         ),
+      ),
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          _CombinedConversationsTab(),
+          _ContactsAndRequestsTab(),
+        ],
       ),
     );
   }
@@ -1557,93 +1575,117 @@ class _FriendRequestTile extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+      child: Stack(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                CircleAvatar(
-                  radius: 25,
-                  backgroundColor: Colors.orange.shade100,
-                  backgroundImage: request['profilePic'] != null && request['profilePic'].isNotEmpty
-                      ? NetworkImage(request['profilePic'])
-                      : null,
-                  child: request['profilePic'] == null || request['profilePic'].isEmpty
-                      ? Icon(
-                          Icons.person,
-                          color: Colors.orange.shade700,
-                          size: 30,
-                        )
-                      : null,
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        request['name'],
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
+                Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 25,
+                      backgroundColor: Colors.orange.shade100,
+                      backgroundImage: request['profilePic'] != null && request['profilePic'].isNotEmpty
+                          ? NetworkImage(request['profilePic'])
+                          : null,
+                      child: request['profilePic'] == null || request['profilePic'].isEmpty
+                          ? Icon(
+                              Icons.person,
+                              color: Colors.orange.shade700,
+                              size: 30,
+                            )
+                          : null,
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            request['name'],
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          if (request['city'] != null && request['city'].isNotEmpty)
+                            Text(
+                              request['city'],
+                              style: TextStyle(color: Colors.grey.shade600),
+                            ),
+                        ],
                       ),
-                      const SizedBox(height: 4),
-                      if (request['city'] != null && request['city'].isNotEmpty)
-                        Text(
-                          request['city'],
-                          style: TextStyle(color: Colors.grey.shade600),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Želi da vas doda za prijatelja',
+                  style: TextStyle(color: Colors.grey.shade700),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: onAccept,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
                         ),
-                    ],
-                  ),
+                        icon: const Icon(Icons.check, size: 20),
+                        label: const Text('Prihvati'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: onDecline,
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.red,
+                          side: const BorderSide(color: Colors.red),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                        icon: const Icon(Icons.close, size: 20),
+                        label: const Text('Odbij'),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-            Text(
-              'Želi da vas doda za prijatelja',
-              style: TextStyle(color: Colors.grey.shade700),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: onAccept,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
-                    icon: const Icon(Icons.check, size: 20),
-                    label: const Text('Prihvati'),
-                  ),
+          ),
+          // Red NEW badge
+          Positioned(
+            top: 8,
+            right: 8,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.red,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: const Text(
+                'NOVO',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: onDecline,
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.red,
-                      side: const BorderSide(color: Colors.red),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
-                    icon: const Icon(Icons.close, size: 20),
-                    label: const Text('Odbij'),
-                  ),
-                ),
-              ],
+              ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -1942,6 +1984,26 @@ class _PosterShareTileState extends State<_PosterShareTile> {
               ],
             ),
             ],
+            ),
+          ),
+          // NOVO badge
+          Positioned(
+            top: 8,
+            left: 8,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.red,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: const Text(
+                'NOVO',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
           ),
           Positioned(

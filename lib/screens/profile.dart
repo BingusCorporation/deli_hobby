@@ -11,6 +11,7 @@ import '../services/friends_service.dart';
 import '../screens/other_user_profile.dart';
 import 'messages_screen.dart';
 
+
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
@@ -270,6 +271,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Profil"),
+        backgroundColor: Colors.orange.shade700,
+        foregroundColor: Colors.white,
+        elevation: 2,
         actions: [
           StreamBuilder<int>(
             stream: _getUnreadCountStream(),
@@ -328,24 +332,37 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       final data = snapshot.data!.data() as Map<String, dynamic>;
       
-      return SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildProfileHeader(data),
-              const SizedBox(height: 20),
-              _buildCityField(data),
-              const SizedBox(height: 16),
-              _buildBioSection(data),
-              const SizedBox(height: 20),
-              _buildHobbiesSection(data),
-              const SizedBox(height: 24),
-              _buildFriendsSection(),
-              const SizedBox(height: 20),
-              _buildLogoutButton(),
+      return Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Colors.white,
+              Colors.orange.shade50,
+              Colors.amber.shade50,
             ],
+          ),
+        ),
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildProfileHeader(data),
+                const SizedBox(height: 20),
+                _buildCityField(data),
+                const SizedBox(height: 16),
+                _buildBioSection(data),
+                const SizedBox(height: 20),
+                _buildHobbiesSection(data),
+                const SizedBox(height: 24),
+                _buildFriendsSection(),
+                const SizedBox(height: 20),
+                _buildLogoutButton(),
+              ],
+            ),
           ),
         ),
       );
@@ -368,7 +385,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 height: 120,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.grey.shade300, width: 2),
+                  border: Border.all(color: Colors.orange.shade300, width: 3),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.orange.withValues(alpha: 0.2),
+                      blurRadius: 12,
+                      spreadRadius: 2,
+                    ),
+                  ],
                 ),
                 child: ClipOval(
                   child: _buildProfileImage(profilePicUrl),
@@ -380,9 +404,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   right: 0,
                   child: Container(
                     decoration: BoxDecoration(
-                      color: Theme.of(context).primaryColor,
+                      gradient: LinearGradient(
+                        colors: [
+                          Colors.orange.shade700,
+                          Colors.orange.shade600,
+                        ],
+                      ),
                       shape: BoxShape.circle,
                       border: Border.all(color: Colors.white, width: 2),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.orange.withValues(alpha: 0.4),
+                          blurRadius: 8,
+                        ),
+                      ],
                     ),
                     child: IconButton(
                       icon: const Icon(Icons.camera_alt, size: 20),
@@ -527,8 +562,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Prijatelji', style: TextStyle(fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8),
+        const Text('Prijatelji', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        const SizedBox(height: 12),
         StreamBuilder<List<Map<String, dynamic>>>(
           stream: FriendsService.getFriendsStream(),
           builder: (context, snapshot) {
@@ -539,11 +574,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
             final friends = snapshot.data ?? [];
 
             if (friends.isEmpty) {
-              return const Text('Nemate prijatelja', style: TextStyle(color: Colors.grey));
+              return Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.6),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.orange.shade100),
+                ),
+                child: const Text('Nemate prijatelja', style: TextStyle(color: Colors.grey)),
+              );
             }
 
             return SizedBox(
-              height: 100,
+              height: 110,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
                 itemCount: friends.length,
@@ -560,23 +603,46 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                     ),
                     child: Container(
-                      width: 80,
+                      width: 85,
                       margin: const EdgeInsets.only(right: 12),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            Colors.white,
+                            Colors.orange.shade50.withValues(alpha: 0.3),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.orange.shade100),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.orange.withValues(alpha: 0.1),
+                            blurRadius: 4,
+                          ),
+                        ],
+                      ),
                       child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           CircleAvatar(
-                            radius: 30,
+                            radius: 32,
+                            backgroundColor: Colors.orange.shade100,
                             backgroundImage: friend['profilePic'] != null && friend['profilePic'].isNotEmpty
                                 ? NetworkImage(friend['profilePic'])
                                 : const AssetImage('assets/default_avatar.png') as ImageProvider,
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            friend['name'],
-                            textAlign: TextAlign.center,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(fontSize: 12),
+                          const SizedBox(height: 6),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            child: Text(
+                              friend['name'],
+                              textAlign: TextAlign.center,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontSize: 12),
+                            ),
                           ),
                         ],
                       ),

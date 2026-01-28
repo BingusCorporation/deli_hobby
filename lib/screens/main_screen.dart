@@ -11,8 +11,8 @@ import 'other_user_profile.dart';
 import '../services/init.dart';
 import 'oglasi_screen.dart';
 import '../events/events_browse_screen.dart';
-import 'notifications_screen.dart';
-import '../services/notification_service.dart';
+import '../services/friends_service.dart';
+import '../events/event_service.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -78,43 +78,24 @@ class _MainScreenState extends State<MainScreen> {
         foregroundColor: Colors.orange.shade700,
         elevation: 1,
         actions: [
-          IconButton(
-            icon: Icon(Icons.event, color: Colors.orange.shade700),
-            tooltip: 'Dogadjaji',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const EventsBrowseScreen()),
-              );
-            },
-          ),
-          IconButton(
-            icon: Icon(Icons.list_alt, color: Colors.orange.shade700),
-            tooltip: 'Oglasi',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const OglasiScreen()),
-              );
-            },
-          ),
-          // Messages icon button
+          // Events icon button with invites count
           StreamBuilder<int>(
-            stream: _getUnreadCountStream(),
+            stream: EventService().getMyPendingInvitesCountStream(),
             builder: (context, snapshot) {
-              final unreadCount = snapshot.data ?? 0;
+              final inviteCount = snapshot.data ?? 0;
               return Stack(
                 children: [
                   IconButton(
-                    icon: Icon(Icons.message, color: Colors.orange.shade700),
+                    icon: Icon(Icons.event, color: Colors.orange.shade700),
+                    tooltip: 'Dogadjaji',
                     onPressed: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => const MessagesScreen()),
+                        MaterialPageRoute(builder: (_) => const EventsBrowseScreen()),
                       );
                     },
                   ),
-                  if (unreadCount > 0)
+                  if (inviteCount > 0)
                     Positioned(
                       right: 8,
                       top: 8,
@@ -129,7 +110,7 @@ class _MainScreenState extends State<MainScreen> {
                           minHeight: 16,
                         ),
                         child: Text(
-                          unreadCount > 9 ? '9+' : unreadCount.toString(),
+                          inviteCount > 9 ? '9+' : inviteCount.toString(),
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 10,
@@ -143,49 +124,72 @@ class _MainScreenState extends State<MainScreen> {
               );
             },
           ),
-          // Notifications icon button
-          FutureBuilder<int>(
-            future: NotificationService().getUnreadCount(),
-            builder: (context, snapshot) {
-              final unreadNotifications = snapshot.data ?? 0;
-              return Stack(
-                children: [
-                  IconButton(
-                    icon: Icon(Icons.notifications, color: Colors.orange.shade700),
-                    tooltip: 'Obavesti',
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+          IconButton(
+            icon: Icon(Icons.list_alt, color: Colors.orange.shade700),
+            tooltip: 'Oglasi',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const OglasiScreen()),
+              );
+            },
+          ),
+          // Messages icon button with count (unread messages + friend requests + invites)
+          StreamBuilder<int>(
+            stream: _getUnreadCountStream(),
+            builder: (context, unreadSnapshot) {
+              return StreamBuilder<int>(
+                stream: FriendsService.getFriendRequestsCountStream(),
+                builder: (context, friendsSnapshot) {
+                  return StreamBuilder<int>(
+                    stream: EventService().getMyPendingInvitesCountStream(),
+                    builder: (context, invitesSnapshot) {
+                      final unreadCount = unreadSnapshot.data ?? 0;
+                      final friendRequestCount = friendsSnapshot.data ?? 0;
+                      final inviteCount = invitesSnapshot.data ?? 0;
+                      final totalCount = unreadCount + friendRequestCount + inviteCount;
+                      
+                      return Stack(
+                        children: [
+                          IconButton(
+                            icon: Icon(Icons.message, color: Colors.orange.shade700),
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (_) => const MessagesScreen()),
+                              );
+                            },
+                          ),
+                          if (totalCount > 0)
+                            Positioned(
+                              right: 8,
+                              top: 8,
+                              child: Container(
+                                padding: const EdgeInsets.all(2),
+                                decoration: BoxDecoration(
+                                  color: Colors.red,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                constraints: const BoxConstraints(
+                                  minWidth: 16,
+                                  minHeight: 16,
+                                ),
+                                child: Text(
+                                  totalCount > 9 ? '9+' : totalCount.toString(),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            ),
+                        ],
                       );
                     },
-                  ),
-                  if (unreadNotifications > 0)
-                    Positioned(
-                      right: 8,
-                      top: 8,
-                      child: Container(
-                        padding: const EdgeInsets.all(2),
-                        decoration: BoxDecoration(
-                          color: Colors.orange,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        constraints: const BoxConstraints(
-                          minWidth: 16,
-                          minHeight: 16,
-                        ),
-                        child: Text(
-                          unreadNotifications > 9 ? '9+' : unreadNotifications.toString(),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ),
-                ],
+                  );
+                },
               );
             },
           ),
@@ -202,13 +206,33 @@ class _MainScreenState extends State<MainScreen> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          // COMPACT SEARCH SECTION
-          Container(
-            padding: const EdgeInsets.all(16),
-            color: Colors.grey[50],
-            child: Column(
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Colors.white,
+              Colors.orange.shade50,
+              Colors.amber.shade50,
+            ],
+          ),
+        ),
+        child: Column(
+          children: [
+            // COMPACT SEARCH SECTION
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.9),
+                border: Border(
+                  bottom: BorderSide(
+                    color: Colors.orange.shade100,
+                    width: 1,
+                  ),
+                ),
+              ),
+              child: Column(
               children: [
                 // Name search field
                 TextField(
@@ -363,17 +387,36 @@ class _MainScreenState extends State<MainScreen> {
                 const SizedBox(height: 16),
                 SizedBox(
                   width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: _searchForMatches,
-                    icon: const Icon(Icons.search),
-                    label: const Text('Pronađi ljude'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.orange.shade700,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          Colors.orange.shade700,
+                          Colors.orange.shade600,
+                        ],
                       ),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      borderRadius: BorderRadius.circular(8),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.orange.withValues(alpha: 0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: ElevatedButton.icon(
+                      onPressed: _searchForMatches,
+                      icon: const Icon(Icons.search),
+                      label: const Text('Pronađi ljude'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        foregroundColor: Colors.white,
+                        shadowColor: Colors.transparent,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
                     ),
                   ),
                 ),
@@ -392,20 +435,30 @@ class _MainScreenState extends State<MainScreen> {
                             _selectedSubcategory != null 
                                 ? '$_selectedCategory > $_selectedSubcategory'
                                 : _selectedCategory!,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w500,
+                              color: Colors.white,
+                            ),
                           ),
-                          deleteIcon: const Icon(Icons.close, size: 16),
+                          deleteIcon: const Icon(Icons.close, size: 16, color: Colors.white),
                           onDeleted: () => setState(() {
                             _selectedCategory = null;
                             _selectedSubcategory = null;
                           }),
-                          backgroundColor: Colors.orange.shade50,
+                          backgroundColor: Colors.orange.shade600,
                         ),
                       if (_selectedCity != null)
                         Chip(
-                          label: Text(_selectedCity!),
-                          deleteIcon: const Icon(Icons.close, size: 16),
+                          label: Text(
+                            _selectedCity!,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w500,
+                              color: Colors.white,
+                            ),
+                          ),
+                          deleteIcon: const Icon(Icons.close, size: 16, color: Colors.white),
                           onDeleted: () => setState(() => _selectedCity = null),
-                          backgroundColor: Colors.blue.shade50,
+                          backgroundColor: Colors.blue.shade600,
                         ),
                     ],
                   ),
@@ -418,7 +471,15 @@ class _MainScreenState extends State<MainScreen> {
           if (_searchStatus.isNotEmpty)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              color: Colors.grey[50],
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.8),
+                border: Border(
+                  bottom: BorderSide(
+                    color: Colors.orange.shade100,
+                    width: 1,
+                  ),
+                ),
+              ),
               child: Row(
                 children: [
                   Icon(
@@ -460,8 +521,9 @@ class _MainScreenState extends State<MainScreen> {
           Expanded(
             child: _buildSearchResults(),
           ),
-        ],
-      ),
+            ],
+          ),
+        ),
     );
   }
 
@@ -596,74 +658,88 @@ class _MainScreenState extends State<MainScreen> {
         );
       },
       child: Card(
-        margin: const EdgeInsets.only(bottom: 10),
-        elevation: 1,
+        margin: const EdgeInsets.only(bottom: 12),
+        elevation: 2,
+        shadowColor: Colors.orange.withValues(alpha: 0.2),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            children: [
-              // Profile picture
-              CircleAvatar(
-                radius: 20,
-                backgroundImage: profilePic != null && profilePic.isNotEmpty
-                    ? NetworkImage(profilePic)
-                    : const AssetImage('assets/default_avatar.png')
-                        as ImageProvider,
-              ),
-              const SizedBox(width: 12),
-              
-              // Name and city
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      user['name'] as String? ?? 'Nepoznato',
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    if (city != null && city.isNotEmpty)
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.location_on,
-                            size: 12,
-                            color: Colors.grey.shade500,
-                          ),
-                          const SizedBox(width: 3),
-                          Text(
-                            city,
-                            style: TextStyle(
-                              color: Colors.grey.shade600,
-                              fontSize: 12,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                  ],
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Colors.white,
+                Colors.orange.shade50.withValues(alpha: 0.3),
+              ],
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                // Profile picture
+                CircleAvatar(
+                  radius: 22,
+                  backgroundColor: Colors.orange.shade100,
+                  backgroundImage: profilePic != null && profilePic.isNotEmpty
+                      ? NetworkImage(profilePic)
+                      : const AssetImage('assets/default_avatar.png')
+                          as ImageProvider,
                 ),
-              ),
-              
-              // Message button
-              IconButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ChatScreen(
-                        otherUserId: user['id'] as String,
-                        otherUserName: user['name'] as String? ?? 'Nepoznato',
+                const SizedBox(width: 12),
+                
+                // Name and city
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        user['name'] as String? ?? 'Nepoznato',
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
+                      if (city != null && city.isNotEmpty)
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.location_on,
+                              size: 13,
+                              color: Colors.orange.shade600,
+                            ),
+                            const SizedBox(width: 3),
+                            Text(
+                              city,
+                              style: TextStyle(
+                                color: Colors.grey.shade600,
+                                fontSize: 12,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                    ],
+                  ),
+                ),
+                
+                // Message button
+                IconButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ChatScreen(
+                          otherUserId: user['id'] as String,
+                          otherUserName: user['name'] as String? ?? 'Nepoznato',
+                        ),
+                      ),
                   );
                 },
                 icon: Icon(
@@ -676,6 +752,7 @@ class _MainScreenState extends State<MainScreen> {
                 tooltip: 'Pošalji poruku',
               ),
             ],
+          ),
           ),
         ),
       ),

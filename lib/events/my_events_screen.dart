@@ -38,6 +38,13 @@ class _MyEventsScreenState extends State<MyEventsScreen>
     super.dispose();
   }
 
+  /// Check if an event is starting within 24 hours
+  bool _isEventSoon(Event event) {
+    final now = DateTime.now();
+    final difference = event.startDateTime.difference(now);
+    return difference.inHours > 0 && difference.inHours <= 24;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -264,6 +271,9 @@ class _MyEventsScreenState extends State<MyEventsScreen>
                         final hasOrganizing = dayEvents.any((event) =>
                           organizingEvents.any((e) => e.id == event.id)
                         );
+                        
+                        // Check if any event is soon
+                        final hasSoonEvent = dayEvents.any(_isEventSoon);
 
                         return Positioned(
                           right: 1,
@@ -271,7 +281,17 @@ class _MyEventsScreenState extends State<MyEventsScreen>
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              if (hasParticipating)
+                              if (hasSoonEvent)
+                                Container(
+                                  width: 6,
+                                  height: 6,
+                                  margin: const EdgeInsets.symmetric(horizontal: 1),
+                                  decoration: BoxDecoration(
+                                    color: Colors.red.shade700,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                              if (hasParticipating && !hasSoonEvent)
                                 Container(
                                   width: 6,
                                   height: 6,
@@ -281,7 +301,7 @@ class _MyEventsScreenState extends State<MyEventsScreen>
                                     shape: BoxShape.circle,
                                   ),
                                 ),
-                              if (hasOrganizing)
+                              if (hasOrganizing && !hasSoonEvent)
                                 Container(
                                   width: 6,
                                   height: 6,
@@ -361,53 +381,88 @@ class _MyEventsScreenState extends State<MyEventsScreen>
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: Colors.orange.shade200),
                 ),
-                child: Row(
+                child: Column(
                   children: [
-                    Expanded(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            width: 8,
-                            height: 8,
-                            decoration: BoxDecoration(
-                              color: Colors.blue.shade600,
-                              shape: BoxShape.circle,
-                            ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Container(
+                                width: 8,
+                                height: 8,
+                                decoration: BoxDecoration(
+                                  color: Colors.red.shade700,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Uskoro (24h)',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.orange.shade800,
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(width: 6),
-                          Text(
-                            'Učestvujem',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.orange.shade800,
-                            ),
+                        ),
+                        Expanded(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Container(
+                                width: 8,
+                                height: 8,
+                                decoration: BoxDecoration(
+                                  color: Colors.blue.shade600,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Učestvujem',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.orange.shade800,
+                                ),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                    Expanded(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            width: 8,
-                            height: 8,
-                            decoration: BoxDecoration(
-                              color: Colors.green.shade600,
-                              shape: BoxShape.circle,
-                            ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Container(
+                                width: 8,
+                                height: 8,
+                                decoration: BoxDecoration(
+                                  color: Colors.green.shade600,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Organizujem',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.orange.shade800,
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(width: 6),
-                          Text(
-                            'Organizujem',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.orange.shade800,
-                            ),
-                          ),
-                        ],
-                      ),
+                        ),
+                        const Expanded(
+                          child: SizedBox(),
+                        ),
+                      ],
                     ),
                   ],
                 ),

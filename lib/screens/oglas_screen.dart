@@ -546,10 +546,44 @@ class _SharePosterScreenState extends State<SharePosterScreen> {
 
   Future<void> _loadPendingShares() async {
     try {
-      final sharesSnapshot = await _firestore.collection('posters').doc(widget.poster.id).collection('shares').where('status', isEqualTo: 'pending').get();
+      final currentUserId = _auth.currentUser?.uid;
+      if (currentUserId == null) return;
+
+      // Get shares that exist in the poster's shares collection
+      final sharesSnapshot = await _firestore
+          .collection('posters')
+          .doc(widget.poster.id)
+          .collection('shares')
+          .where('status', isEqualTo: 'pending')
+          .get();
+      
+      final pendingSet = <String>{};
+      
+      // For each pending share, check if it still exists in the recipient's poster_shares
+      for (final doc in sharesSnapshot.docs) {
+        final recipientId = doc['recipientId'] as String?;
+        if (recipientId != null) {
+          // Check if the share still exists in user's collection
+          final userShare = await _firestore
+              .collection('users')
+              .doc(recipientId)
+              .collection('poster_shares')
+              .doc(doc.id)
+              .get();
+          
+          // Only mark as pending if it still exists in the user's collection
+          if (userShare.exists) {
+            pendingSet.add(recipientId);
+          } else {
+            // If user deleted it, mark status as 'deleted' in the poster shares
+            await doc.reference.update({'status': 'deleted'});
+          }
+        }
+      }
+      
       setState(() {
         _pendingShares.clear();
-        _pendingShares.addAll(sharesSnapshot.docs.map((d) => d['recipientId'] as String));
+        _pendingShares.addAll(pendingSet);
       });
     } catch (e) {
       print('Error loading pending shares: $e');

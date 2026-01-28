@@ -41,11 +41,26 @@ class EventCard extends StatelessWidget {
     }
   }
 
+  /// Check if event is starting within 24 hours
+  bool _isEventSoon() {
+    final now = DateTime.now();
+    final difference = event.startDateTime.difference(now);
+    return difference.inHours > 0 && difference.inHours <= 24;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isSoon = _isEventSoon();
+    
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      elevation: 2,
+      elevation: isSoon ? 4 : 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: isSoon 
+            ? BorderSide(color: Colors.red, width: 2)
+            : BorderSide.none,
+      ),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
@@ -117,25 +132,52 @@ class EventCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  if (matchScore != null)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: _getMatchColor(matchScore!),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Text(
-                        '$matchScore%',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                        ),
-                      ),
+                  Expanded(
+                    child: Wrap(
+                      spacing: 8,
+                      alignment: WrapAlignment.end,
+                      children: [
+                        if (isSoon)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.red,
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: const Text(
+                              'Uskoro',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                        if (matchScore != null)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: _getMatchColor(matchScore!),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Text(
+                              '$matchScore%',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
+                  ),
                 ],
               ),
 
@@ -144,11 +186,19 @@ class EventCard extends StatelessWidget {
               // Date and time
               Row(
                 children: [
-                  Icon(Icons.calendar_today, size: 16, color: Colors.grey[600]),
+                  Icon(
+                    Icons.calendar_today, 
+                    size: 16, 
+                    color: isSoon ? Colors.red : Colors.grey[600],
+                  ),
                   const SizedBox(width: 6),
                   Text(
                     _formatDate(event.startDateTime),
-                    style: TextStyle(color: Colors.grey[700], fontSize: 13),
+                    style: TextStyle(
+                      color: isSoon ? Colors.red : Colors.grey[700],
+                      fontSize: 13,
+                      fontWeight: isSoon ? FontWeight.bold : FontWeight.normal,
+                    ),
                   ),
                   if (event.isRecurring) ...[
                     const SizedBox(width: 8),
