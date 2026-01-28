@@ -84,12 +84,25 @@ class _MessagesScreenState extends State<MessagesScreen> with TickerProviderStat
           ],
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          _CombinedConversationsTab(),
-          _ContactsAndRequestsTab(),
-        ],
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Colors.white,
+              Colors.orange.shade50,
+              Colors.amber.shade50,
+            ],
+          ),
+        ),
+        child: TabBarView(
+          controller: _tabController,
+          children: [
+            _CombinedConversationsTab(),
+            _ContactsAndRequestsTab(),
+          ],
+        ),
       ),
     );
   }
@@ -138,18 +151,23 @@ class _CombinedConversationsTabState extends State<_CombinedConversationsTab> wi
         }
 
         if (snapshot.hasError) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.error, color: Colors.orange, size: 60),
-                const SizedBox(height: 16),
-                Text(
-                  'Greška: ${snapshot.error}',
-                  style: const TextStyle(color: Colors.grey),
-                  textAlign: TextAlign.center,
+          return SingleChildScrollView(
+            child: SizedBox(
+              height: MediaQuery.of(context).size.height * 0.8,
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.error, color: Colors.orange, size: 60),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Greška: ${snapshot.error}',
+                      style: const TextStyle(color: Colors.grey),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           );
         }
@@ -157,7 +175,12 @@ class _CombinedConversationsTabState extends State<_CombinedConversationsTab> wi
         final conversations = snapshot.data ?? [];
 
         if (conversations.isEmpty) {
-          return _buildEmptyConversationsState();
+          return SingleChildScrollView(
+            child: SizedBox(
+              height: MediaQuery.of(context).size.height * 0.8,
+              child: _buildEmptyConversationsState(),
+            ),
+          );
         }
 
         return ListView.builder(
@@ -248,7 +271,7 @@ class _ContactsAndRequestsTabState extends State<_ContactsAndRequestsTab> with W
       child: Column(
         children: [
           Container(
-            color: Colors.grey.shade50,
+            color: Colors.white,
             child: TabBar(
               indicatorColor: Colors.orange.shade700,
               labelColor: Colors.orange.shade700,
@@ -272,7 +295,9 @@ class _ContactsAndRequestsTabState extends State<_ContactsAndRequestsTab> with W
             child: TabBarView(
               children: [
                 _ContactsListWithSearch(),
-                _FriendRequestsList(),
+                SingleChildScrollView(
+                  child: _FriendRequestsList(),
+                ),
               ],
             ),
           ),
@@ -583,7 +608,12 @@ class _ContactsListWithSearchState extends State<_ContactsListWithSearch> with W
                   ),
                 )
               : _filteredFriends.isEmpty
-                  ? _buildEmptyOrNoResultsState()
+                  ? SingleChildScrollView(
+                      child: SizedBox(
+                        height: MediaQuery.of(context).size.height * 0.6,
+                        child: _buildEmptyOrNoResultsState(),
+                      ),
+                    )
                   : ListView.builder(
                       padding: const EdgeInsets.only(top: 8),
                       itemCount: _filteredFriends.length,
@@ -1232,35 +1262,37 @@ class _FriendRequestsListState extends State<_FriendRequestsList> with WidgetsBi
                   final eventInvites = invitesSnapshot.data ?? [];
 
                   if (friendRequests.isEmpty && eventInvites.isEmpty) {
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const SizedBox(height: 40),
-                          Icon(Icons.notifications_none, size: 80, color: Colors.orange.shade300),
-                          const SizedBox(height: 20),
-                          Text(
-                            'Nema zahteva ili pozivnica',
-                            style: TextStyle(
-                              fontSize: 18,
-                              color: Colors.grey.shade700,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 40),
-                            child: Text(
-                              'Kada neko pošalje zahtev ili pozivnicu, pojaviće se ovde',
-                              textAlign: TextAlign.center,
+                    return Container(
+                      padding: const EdgeInsets.all(40),
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.notifications_none, size: 80, color: Colors.orange.shade300),
+                            const SizedBox(height: 20),
+                            Text(
+                              'Nema zahteva ili pozivnica',
                               style: TextStyle(
-                                color: Colors.grey.shade500,
-                                fontSize: 14,
+                                fontSize: 18,
+                                color: Colors.grey.shade700,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
-                          ),
-                          const SizedBox(height: 40),
-                        ],
+                            const SizedBox(height: 8),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 40),
+                              child: Text(
+                                'Kada neko pošalje zahtev ili pozivnicu, pojaviće se ovde',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: Colors.grey.shade500,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 40),
+                          ],
+                        ),
                       ),
                     );
                   }

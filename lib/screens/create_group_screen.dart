@@ -156,6 +156,9 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Kreiraj grupu'),
+        backgroundColor: Colors.orange.shade700,
+        foregroundColor: Colors.white,
+        elevation: 2,
         actions: [
           IconButton(
             icon: const Icon(Icons.check),
@@ -163,266 +166,281 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
           ),
         ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Form(
-                key: _formKey,
-                child: ListView(
-                  children: [
-                    // Group name field
-                    TextFormField(
-                      controller: _nameController,
-                      decoration: const InputDecoration(
-                        labelText: 'Naziv grupe',
-                        prefixIcon: Icon(Icons.group),
-                        hintText: 'Unesite naziv grupe',
-                      ),
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Unesite naziv grupe';
-                        }
-                        if (value.trim().length < 2) {
-                          return 'Naziv mora imati bar 2 karaktera';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    
-                    // Group description field
-                    TextFormField(
-                      controller: _descriptionController,
-                      decoration: const InputDecoration(
-                        labelText: 'Opis (opciono)',
-                        prefixIcon: Icon(Icons.description),
-                        hintText: 'Dodajte opis grupe...',
-                      ),
-                      maxLines: 3,
-                    ),
-                    
-                    const SizedBox(height: 24),
-                    
-                    // Friends selection header
-                    Row(
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Colors.white,
+              Colors.orange.shade50,
+              Colors.amber.shade50,
+            ],
+          ),
+        ),
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
                       children: [
-                        const Text(
-                          'Izaberi prijatelje:',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
+                        // Group name field
+                        TextFormField(
+                          controller: _nameController,
+                          decoration: const InputDecoration(
+                            labelText: 'Naziv grupe',
+                            prefixIcon: Icon(Icons.group),
+                            hintText: 'Unesite naziv grupe',
                           ),
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'Unesite naziv grupe';
+                            }
+                            if (value.trim().length < 2) {
+                              return 'Naziv mora imati bar 2 karaktera';
+                            }
+                            return null;
+                          },
                         ),
-                        const Spacer(),
-                        if (_selectedParticipants.isNotEmpty)
-                          Text(
-                            '${_selectedParticipants.length} izabrano',
-                            style: const TextStyle(
-                              color: Colors.orange,
-                              fontSize: 14,
-                            ),
+                        const SizedBox(height: 16),
+                        
+                        // Group description field
+                        TextFormField(
+                          controller: _descriptionController,
+                          decoration: const InputDecoration(
+                            labelText: 'Opis (opciono)',
+                            prefixIcon: Icon(Icons.description),
+                            hintText: 'Dodajte opis grupe...',
                           ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    
-                    // Loading indicator for friends
-                    if (_isLoadingFriends)
-                      const Padding(
-                        padding: EdgeInsets.all(20),
-                        child: Center(
-                          child: Column(
-                            children: [
-                              CircularProgressIndicator(),
-                              SizedBox(height: 8),
-                              Text('Učitavanje prijatelja...'),
-                            ],
-                          ),
+                          maxLines: 3,
                         ),
-                      ),
-                    
-                    // No friends message
-                    if (!_isLoadingFriends && _availableFriends.isEmpty)
-                      Padding(
-                        padding: const EdgeInsets.all(20),
-                        child: Center(
-                          child: Column(
-                            children: [
-                              const Icon(
-                                Icons.people_outline,
-                                size: 50,
-                                color: Colors.grey,
-                              ),
-                              const SizedBox(height: 12),
-                              const Text(
-                                'Nemate prijatelja',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Dodajte prijatelje da biste kreirali grupu',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.grey[600],
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    
-                    // Friends list
-                    if (!_isLoadingFriends && _availableFriends.isNotEmpty)
-                      Column(
-                        children: _availableFriends.map((friend) {
-                          final isSelected = _selectedParticipants.contains(friend['id']);
-                          return Card(
-                            margin: const EdgeInsets.symmetric(vertical: 4),
-                            elevation: isSelected ? 2 : 0,
-                            color: isSelected ? Colors.blue[50] : null,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              side: BorderSide(
-                                color: isSelected ? Colors.blue : Colors.grey[300]!,
-                                width: isSelected ? 1 : 0.5,
-                              ),
-                            ),
-                            child: CheckboxListTile(
-                              title: Text(
-                                friend['name'],
-                                style: TextStyle(
-                                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                                ),
-                              ),
-                              subtitle: friend['profilePic'] != null 
-                                  ? Row(
-                                      children: [
-                                        CircleAvatar(
-                                          backgroundImage: NetworkImage(friend['profilePic']),
-                                          radius: 16,
-                                        ),
-                                        const SizedBox(width: 8),
-                                        if (isSelected)
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 8,
-                                              vertical: 2,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: Colors.blue,
-                                              borderRadius: BorderRadius.circular(10),
-                                            ),
-                                            child: const Text(
-                                              'Izabran',
-                                              style: TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 12,
-                                              ),
-                                            ),
-                                          ),
-                                      ],
-                                    )
-                                  : null,
-                              value: isSelected,
-                              onChanged: (value) {
-                                setState(() {
-                                  if (value == true) {
-                                    _selectedParticipants.add(friend['id']);
-                                  } else {
-                                    _selectedParticipants.remove(friend['id']);
-                                  }
-                                });
-                              },
-                              secondary: friend['profilePic'] == null 
-                                  ? CircleAvatar(
-                                      backgroundColor: Colors.blue[100],
-                                      child: Text(
-                                        friend['name'].substring(0, 1).toUpperCase(),
-                                        style: const TextStyle(color: Colors.blue),
-                                      ),
-                                    )
-                                  : null,
-                              controlAffinity: ListTileControlAffinity.leading,
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                    
-                    // Selected participants summary
-                    if (_selectedParticipants.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        
+                        const SizedBox(height: 24),
+                        
+                        // Friends selection header
+                        Row(
                           children: [
                             const Text(
-                              'Izabrani prijatelji:',
+                              'Izaberi prijatelje:',
                               style: TextStyle(
-                                fontSize: 14,
+                                fontSize: 16,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            const SizedBox(height: 8),
-                            Wrap(
-                              spacing: 8,
-                              runSpacing: 4,
-                              children: _selectedParticipants.map((participantId) {
-                                final friend = _availableFriends.firstWhere(
-                                  (f) => f['id'] == participantId,
-                                  orElse: () => {'name': 'Nepoznato'},
-                                );
-                                return Chip(
-                                  label: Text(friend['name']),
-                                  avatar: friend['profilePic'] != null
-                                      ? CircleAvatar(
-                                          backgroundImage: NetworkImage(friend['profilePic']),
-                                          radius: 12,
-                                        )
-                                      : CircleAvatar(
-                                          backgroundColor: Colors.blue[100],
-                                          radius: 12,
-                                          child: Text(
-                                            friend['name'].substring(0, 1).toUpperCase(),
-                                            style: const TextStyle(fontSize: 12),
-                                          ),
-                                        ),
-                                  deleteIcon: const Icon(Icons.close, size: 16),
-                                  onDeleted: () {
-                                    setState(() {
-                                      _selectedParticipants.remove(participantId);
-                                    });
-                                  },
-                                );
-                              }).toList(),
-                            ),
+                            const Spacer(),
+                            if (_selectedParticipants.isNotEmpty)
+                              Text(
+                                '${_selectedParticipants.length} izabrano',
+                                style: const TextStyle(
+                                  color: Colors.orange,
+                                  fontSize: 14,
+                                ),
+                              ),
                           ],
                         ),
-                      ),
-                    
-                    // Create button at bottom
-                    const SizedBox(height: 32),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: _isLoading ? null : _createGroup,
-                        icon: const Icon(Icons.group_add),
-                        label: const Text('Kreiraj grupu'),
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          backgroundColor: Colors.orange,
+                        const SizedBox(height: 8),
+                        
+                        // Loading indicator for friends
+                        if (_isLoadingFriends)
+                          const Padding(
+                            padding: EdgeInsets.all(20),
+                            child: Center(
+                              child: Column(
+                                children: [
+                                  CircularProgressIndicator(),
+                                  SizedBox(height: 8),
+                                  Text('Učitavanje prijatelja...'),
+                                ],
+                              ),
+                            ),
+                          ),
+                        
+                        // No friends message
+                        if (!_isLoadingFriends && _availableFriends.isEmpty)
+                          Padding(
+                            padding: const EdgeInsets.all(20),
+                            child: Center(
+                              child: Column(
+                                children: [
+                                  const Icon(
+                                    Icons.people_outline,
+                                    size: 50,
+                                    color: Colors.grey,
+                                  ),
+                                  const SizedBox(height: 12),
+                                  const Text(
+                                    'Nemate prijatelja',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Dodajte prijatelje da biste kreirali grupu',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.grey[600],
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        
+                        // Friends list
+                        if (!_isLoadingFriends && _availableFriends.isNotEmpty)
+                          Column(
+                            children: _availableFriends.map((friend) {
+                              final isSelected = _selectedParticipants.contains(friend['id']);
+                              return Card(
+                                margin: const EdgeInsets.symmetric(vertical: 4),
+                                elevation: isSelected ? 2 : 0,
+                                color: isSelected ? Colors.blue[50] : null,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  side: BorderSide(
+                                    color: isSelected ? Colors.blue : Colors.grey[300]!,
+                                    width: isSelected ? 1 : 0.5,
+                                  ),
+                                ),
+                                child: CheckboxListTile(
+                                  title: Text(
+                                    friend['name'],
+                                    style: TextStyle(
+                                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                    ),
+                                  ),
+                                  subtitle: friend['profilePic'] != null 
+                                      ? Row(
+                                          children: [
+                                            CircleAvatar(
+                                              backgroundImage: NetworkImage(friend['profilePic']),
+                                              radius: 16,
+                                            ),
+                                            const SizedBox(width: 8),
+                                            if (isSelected)
+                                              Container(
+                                                padding: const EdgeInsets.symmetric(
+                                                  horizontal: 8,
+                                                  vertical: 2,
+                                                ),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.blue,
+                                                  borderRadius: BorderRadius.circular(10),
+                                                ),
+                                                child: const Text(
+                                                  'Izabran',
+                                                  style: TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 12,
+                                                  ),
+                                                ),
+                                              ),
+                                          ],
+                                        )
+                                      : null,
+                                  value: isSelected,
+                                  onChanged: (value) {
+                                    setState(() {
+                                      if (value == true) {
+                                        _selectedParticipants.add(friend['id']);
+                                      } else {
+                                        _selectedParticipants.remove(friend['id']);
+                                      }
+                                    });
+                                  },
+                                  secondary: friend['profilePic'] == null 
+                                      ? CircleAvatar(
+                                          backgroundColor: Colors.blue[100],
+                                          child: Text(
+                                            friend['name'].substring(0, 1).toUpperCase(),
+                                            style: const TextStyle(color: Colors.blue),
+                                          ),
+                                        )
+                                      : null,
+                                  controlAffinity: ListTileControlAffinity.leading,
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        
+                        // Selected participants summary
+                        if (_selectedParticipants.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Izabrani prijatelji:',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 4,
+                                  children: _selectedParticipants.map((participantId) {
+                                    final friend = _availableFriends.firstWhere(
+                                      (f) => f['id'] == participantId,
+                                      orElse: () => {'name': 'Nepoznato'},
+                                    );
+                                    return Chip(
+                                      label: Text(friend['name']),
+                                      avatar: friend['profilePic'] != null
+                                          ? CircleAvatar(
+                                              backgroundImage: NetworkImage(friend['profilePic']),
+                                              radius: 12,
+                                            )
+                                          : CircleAvatar(
+                                              backgroundColor: Colors.blue[100],
+                                              radius: 12,
+                                              child: Text(
+                                                friend['name'].substring(0, 1).toUpperCase(),
+                                                style: const TextStyle(fontSize: 12),
+                                              ),
+                                            ),
+                                      deleteIcon: const Icon(Icons.close, size: 16),
+                                      onDeleted: () {
+                                        setState(() {
+                                          _selectedParticipants.remove(participantId);
+                                        });
+                                      },
+                                    );
+                                  }).toList(),
+                                ),
+                              ],
+                            ),
+                          ),
+                        
+                        // Create button at bottom
+                        const SizedBox(height: 32),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed: _isLoading ? null : _createGroup,
+                            icon: const Icon(Icons.group_add),
+                            label: const Text('Kreiraj grupu'),
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              backgroundColor: Colors.orange,
+                            ),
+                          ),
                         ),
-                      ),
+                        const SizedBox(height: 20),
+                      ],
                     ),
-                    const SizedBox(height: 20),
-                  ],
+                  ),
                 ),
               ),
-            ),
+      ),
     );
   }
 }

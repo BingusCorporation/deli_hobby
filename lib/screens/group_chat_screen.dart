@@ -831,6 +831,7 @@ Future<void> _addMember() async {
         backgroundColor: Colors.orange.shade700,
         foregroundColor: Colors.white,
         title: Text(widget.groupName),
+        elevation: 2,
         actions: [
           IconButton(
             icon: const Icon(Icons.info_outline),
@@ -842,177 +843,200 @@ Future<void> _addMember() async {
           ),
         ],
       ),
-      body: Stack(
-        children: [
-          Column(
-            children: [
-              // Messages list
-              Expanded(
-                child: StreamBuilder<QuerySnapshot>(
-                  stream: _firestore
-                      .collection('groups')
-                      .doc(widget.groupId)
-                      .collection('messages')
-                      .orderBy('timestamp', descending: false)
-                      .snapshots(),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(
-                        child: CircularProgressIndicator(
-                          color: Colors.orange,
-                        ),
-                      );
-                    }
-                    
-                    if (snapshot.hasError) {
-                      return Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.error, color: Colors.orange, size: 60),
-                            const SizedBox(height: 16),
-                            Text(
-                              'Greška: ${snapshot.error}',
-                              style: const TextStyle(color: Colors.grey),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
-                        ),
-                      );
-                    }
-                    
-                    final messages = snapshot.data?.docs ?? [];
-                    
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      _scrollToBottom();
-                    });
-                    
-                    if (messages.isEmpty) {
-                      return Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.chat_bubble_outline, size: 80, color: Colors.orange.shade300),
-                            const SizedBox(height: 20),
-                            Text(
-                              'Nema poruka u grupi',
-                              style: TextStyle(
-                                fontSize: 18,
-                                color: Colors.grey.shade700,
-                                fontWeight: FontWeight.w600,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Colors.white,
+              Colors.orange.shade50,
+              Colors.amber.shade50,
+            ],
+          ),
+        ),
+        child: Stack(
+          children: [
+            Column(
+              children: [
+                // Messages list
+                Expanded(
+                  child: StreamBuilder<QuerySnapshot>(
+                    stream: _firestore
+                        .collection('groups')
+                        .doc(widget.groupId)
+                        .collection('messages')
+                        .orderBy('timestamp', descending: false)
+                        .snapshots(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(
+                          child: CircularProgressIndicator(
+                            color: Colors.orange,
+                          ),
+                        );
+                      }
+                      
+                      if (snapshot.hasError) {
+                        return SingleChildScrollView(
+                          child: SizedBox(
+                            height: MediaQuery.of(context).size.height * 0.8,
+                            child: Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(Icons.error, color: Colors.orange, size: 60),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    'Greška: ${snapshot.error}',
+                                    style: const TextStyle(color: Colors.grey),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
                               ),
                             ),
-                            const SizedBox(height: 8),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 40),
-                              child: Text(
-                                'Pošaljite prvu poruku!',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: Colors.grey.shade500,
-                                  fontSize: 14,
+                          ),
+                        );
+                      }
+                      
+                      final messages = snapshot.data?.docs ?? [];
+                      
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        _scrollToBottom();
+                      });
+                      
+                      if (messages.isEmpty) {
+                        return SingleChildScrollView(
+                          child: SizedBox(
+                            height: MediaQuery.of(context).size.height * 0.8,
+                            child: Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.chat_bubble_outline, size: 80, color: Colors.orange.shade300),
+                                  const SizedBox(height: 20),
+                                  Text(
+                                    'Nema poruka u grupi',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      color: Colors.grey.shade700,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 40),
+                                    child: Text(
+                                      'Pošaljite prvu poruku!',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        color: Colors.grey.shade500,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      }
+                      
+                      return ListView.builder(
+                        controller: _scrollController,
+                        padding: const EdgeInsets.all(16),
+                        itemCount: messages.length,
+                        itemBuilder: (context, index) {
+                          final message = messages[index].data() as Map<String, dynamic>;
+                          final isMe = message['senderId'] == _auth.currentUser!.uid;
+                          final messageText = message['message'] ?? '';
+                          final timestamp = message['timestamp'] as Timestamp?;
+                          final senderName = _userNames[message['senderId']] ?? message['senderName'] ?? 'Nepoznato';
+                          
+                          return Row(
+                            mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+                            children: [
+                              ConstrainedBox(
+                                constraints: BoxConstraints(
+                                  maxWidth: MediaQuery.of(context).size.width * 0.75,
                                 ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    }
-                    
-                    return ListView.builder(
-                      controller: _scrollController,
-                      padding: const EdgeInsets.all(16),
-                      itemCount: messages.length,
-                      itemBuilder: (context, index) {
-                        final message = messages[index].data() as Map<String, dynamic>;
-                        final isMe = message['senderId'] == _auth.currentUser!.uid;
-                        final messageText = message['message'] ?? '';
-                        final timestamp = message['timestamp'] as Timestamp?;
-                        final senderName = _userNames[message['senderId']] ?? message['senderName'] ?? 'Nepoznato';
-                        
-                        return Row(
-                          mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
-                          children: [
-                            ConstrainedBox(
-                              constraints: BoxConstraints(
-                                maxWidth: MediaQuery.of(context).size.width * 0.75,
-                              ),
-                              child: Container(
-                                margin: const EdgeInsets.symmetric(vertical: 4),
-                                child: Column(
-                                  crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-                                  children: [
-                                    if (!isMe)
+                                child: Container(
+                                  margin: const EdgeInsets.symmetric(vertical: 4),
+                                  child: Column(
+                                    crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                                    children: [
+                                      if (!isMe)
+                                        Container(
+                                          margin: const EdgeInsets.only(bottom: 4),
+                                          child: Text(
+                                            senderName,
+                                            style: TextStyle(
+                                              color: Colors.orange.shade700,
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ),
                                       Container(
-                                        margin: const EdgeInsets.only(bottom: 4),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 16,
+                                          vertical: 10,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: isMe ? Colors.orange.shade700 : Colors.grey.shade200,
+                                          borderRadius: BorderRadius.circular(18),
+                                        ),
                                         child: Text(
-                                          senderName,
+                                          messageText,
                                           style: TextStyle(
-                                            color: Colors.orange.shade700,
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w600,
+                                            color: isMe ? Colors.white : Colors.black,
+                                            fontSize: 16,
                                           ),
                                         ),
                                       ),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 16,
-                                        vertical: 10,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: isMe ? Colors.orange.shade700 : Colors.grey.shade200,
-                                        borderRadius: BorderRadius.circular(18),
-                                      ),
-                                      child: Text(
-                                        messageText,
-                                        style: TextStyle(
-                                          color: isMe ? Colors.white : Colors.black,
-                                          fontSize: 16,
+                                      const SizedBox(height: 4),
+                                      if (timestamp != null)
+                                        Text(
+                                          _formatTime(timestamp.toDate()),
+                                          style: TextStyle(
+                                            color: Colors.grey.shade600,
+                                            fontSize: 12,
+                                          ),
                                         ),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    if (timestamp != null)
-                                      Text(
-                                        _formatTime(timestamp.toDate()),
-                                        style: TextStyle(
-                                          color: Colors.grey.shade600,
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
                               ),
-                            ),
-                          ],
-                        );
-                      },
-                    );
-                  },
+                            ],
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
+                
+                // Message input
+                _buildMessageInput(),
+              ],
+            ),
+            
+            // Overlay when panel is open
+            if (_showInfoPanel)
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _showInfoPanel = false;
+                  });
+                },
+                child: Container(
+                  color: Colors.black54,
                 ),
               ),
-              
-              // Message input
-              _buildMessageInput(),
-            ],
-          ),
-          
-          // Overlay when panel is open
-          if (_showInfoPanel)
-            GestureDetector(
-              onTap: () {
-                setState(() {
-                  _showInfoPanel = false;
-                });
-              },
-              child: Container(
-                color: Colors.black54,
-              ),
-            ),
-          
-          // Info panel
-          _buildInfoPanel(),
-        ],
+            
+            // Info panel
+            _buildInfoPanel(),
+          ],
+        ),
       ),
     );
   }

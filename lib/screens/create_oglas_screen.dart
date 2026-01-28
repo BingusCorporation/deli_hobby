@@ -180,6 +180,9 @@ class _CreateOglasScreenState extends State<CreateOglasScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(isEditing ? 'Izmeni oglas' : 'Novi oglas'),
+        backgroundColor: Colors.orange.shade700,
+        foregroundColor: Colors.white,
+        elevation: 2,
         actions: [
           IconButton(
             icon: _isSubmitting
@@ -189,198 +192,211 @@ class _CreateOglasScreenState extends State<CreateOglasScreen> {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Image picker
-            GestureDetector(
-              onTap: _showImagePickerDialog,
-              child: Container(
-                height: 200,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: Colors.grey[200] ?? Colors.grey,
-                    width: 2,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Colors.white,
+              Colors.orange.shade50,
+              Colors.amber.shade50,
+            ],
+          ),
+        ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Image picker
+              GestureDetector(
+                onTap: _showImagePickerDialog,
+                child: Container(
+                  height: 200,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[100],
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Colors.grey[200] ?? Colors.grey,
+                      width: 2,
+                    ),
                   ),
-                ),
-                child: _selectedImage != null
-                    ? ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: Image.file(
-                          _selectedImage!,
-                          fit: BoxFit.cover,
-                        ),
-                      )
-                    : Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.add_photo_alternate,
-                              size: 60, color: Colors.grey),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Dodaj sliku (opciono)',
-                            style: TextStyle(color: Colors.grey),
+                  child: _selectedImage != null
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: Image.file(
+                            _selectedImage!,
+                            fit: BoxFit.cover,
                           ),
-                        ],
-                      ),
+                        )
+                      : Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.add_photo_alternate,
+                                size: 60, color: Colors.grey),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Dodaj sliku (opciono)',
+                              style: TextStyle(color: Colors.grey),
+                            ),
+                          ],
+                        ),
+                ),
               ),
-            ),
-            
-            const SizedBox(height: 24),
-            
-            // Title
-            const Text(
-              'Naslov*',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _titleController,
-              decoration: const InputDecoration(
-                hintText: 'Unesite naslov oglasa...',
-                border: OutlineInputBorder(),
+              
+              const SizedBox(height: 24),
+              
+              // Title
+              const Text(
+                'Naslov*',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               ),
-              maxLength: 100,
-            ),
-            
-            const SizedBox(height: 20),
-            
-            // Description
-            const Text(
-              'Opis*',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _descriptionController,
-              decoration: const InputDecoration(
-                hintText: 'Opisite šta tražite...',
-                border: OutlineInputBorder(),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _titleController,
+                decoration: const InputDecoration(
+                  hintText: 'Unesite naslov oglasa...',
+                  border: OutlineInputBorder(),
+                ),
+                maxLength: 100,
               ),
-              maxLines: 5,
-              maxLength: 1000,
-            ),
-            
-            const SizedBox(height: 20),
-            
-            // City
-            const Text(
-              'Grad*',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-            ),
-            const SizedBox(height: 8),
-            DropdownButton<String>(
-              hint: const Text('Izaberi grad'),
-              value: _selectedCity,
-              isExpanded: true,
-              items: serbiaCities.map((city) {
-                return DropdownMenuItem(
-                  value: city,
-                  child: Text(city),
-                );
-              }).toList(),
-              onChanged: (value) {
-                setState(() => _selectedCity = value);
-              },
-            ),
-            
-            const SizedBox(height: 20),
-            
-            // Hobbies selection
-            const Text(
-              'Traženi hobiji*',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-            ),
-            const SizedBox(height: 8),
-            
-            // Selected hobbies
-            if (_selectedHobbies.isNotEmpty)
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: _selectedHobbies.map((hobby) {
-                  return Chip(
-                    label: Text(hobby),
-                    deleteIcon: const Icon(Icons.close, size: 18),
-                    onDeleted: () => _removeHobby(hobby),
+              
+              const SizedBox(height: 20),
+              
+              // Description
+              const Text(
+                'Opis*',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _descriptionController,
+                decoration: const InputDecoration(
+                  hintText: 'Opisite šta tražite...',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 5,
+                maxLength: 1000,
+              ),
+              
+              const SizedBox(height: 20),
+              
+              // City
+              const Text(
+                'Grad*',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              const SizedBox(height: 8),
+              DropdownButton<String>(
+                hint: const Text('Izaberi grad'),
+                value: _selectedCity,
+                isExpanded: true,
+                items: serbiaCities.map((city) {
+                  return DropdownMenuItem(
+                    value: city,
+                    child: Text(city),
                   );
                 }).toList(),
+                onChanged: (value) {
+                  setState(() => _selectedCity = value);
+                },
               ),
-            
-            if (_selectedHobbies.isNotEmpty) const SizedBox(height: 16),
-            
-            // Hobby picker
-            DropdownButton<String>(
-              hint: const Text("Izaberi kategoriju"),
-              value: _selectedCategory,
-              isExpanded: true,
-              items: hobbyCategories.keys.map((category) {
-                return DropdownMenuItem(
-                  value: category,
-                  child: Text(category),
-                );
-              }).toList(),
-              onChanged: (value) {
-                setState(() {
-                  _selectedCategory = value;
-                  _selectedSubcategory = null;
-                });
-              },
-            ),
-            
-            if (_selectedCategory != null)
-              Column(
-                children: [
-                  const SizedBox(height: 12),
-                  DropdownButton<String>(
-                    hint: const Text("Izaberi podkategoriju"),
-                    value: _selectedSubcategory,
-                    isExpanded: true,
-                    items: hobbyCategories[_selectedCategory]!
-                        .map((sub) => DropdownMenuItem(
-                              value: sub,
-                              child: Text(sub),
-                            ))
-                        .toList(),
-                    onChanged: (value) {
-                      setState(() => _selectedSubcategory = value);
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  ElevatedButton(
-                    onPressed: _addHobby,
-                    child: const Text("Dodaj hobi"),
-                  ),
-                ],
+              
+              const SizedBox(height: 20),
+              
+              // Hobbies selection
+              const Text(
+                'Traženi hobiji*',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               ),
-            
-            const SizedBox(height: 32),
-            
-            // Submit button
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _isSubmitting ? null : _submitPoster,
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  backgroundColor: Colors.blue,
+              const SizedBox(height: 8),
+              
+              // Selected hobbies
+              if (_selectedHobbies.isNotEmpty)
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: _selectedHobbies.map((hobby) {
+                    return Chip(
+                      label: Text(hobby),
+                      deleteIcon: const Icon(Icons.close, size: 18),
+                      onDeleted: () => _removeHobby(hobby),
+                    );
+                  }).toList(),
                 ),
-                child: _isSubmitting
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text(
-                        'Objavi oglas',
-                        style: TextStyle(fontSize: 16),
-                      ),
+              
+              if (_selectedHobbies.isNotEmpty) const SizedBox(height: 16),
+              
+              // Hobby picker
+              DropdownButton<String>(
+                hint: const Text("Izaberi kategoriju"),
+                value: _selectedCategory,
+                isExpanded: true,
+                items: hobbyCategories.keys.map((category) {
+                  return DropdownMenuItem(
+                    value: category,
+                    child: Text(category),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedCategory = value;
+                    _selectedSubcategory = null;
+                  });
+                },
               ),
-            ),
-            
-            const SizedBox(height: 20),
-          ],
+              
+              if (_selectedCategory != null)
+                Column(
+                  children: [
+                    const SizedBox(height: 12),
+                    DropdownButton<String>(
+                      hint: const Text("Izaberi podkategoriju"),
+                      value: _selectedSubcategory,
+                      isExpanded: true,
+                      items: hobbyCategories[_selectedCategory]!
+                          .map((sub) => DropdownMenuItem(
+                                value: sub,
+                                child: Text(sub),
+                              ))
+                          .toList(),
+                      onChanged: (value) {
+                        setState(() => _selectedSubcategory = value);
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    ElevatedButton(
+                      onPressed: _addHobby,
+                      child: const Text("Dodaj hobi"),
+                    ),
+                  ],
+                ),
+              
+              const SizedBox(height: 32),
+              
+              // Submit button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _isSubmitting ? null : _submitPoster,
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    backgroundColor: Colors.blue,
+                  ),
+                  child: _isSubmitting
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Text(
+                          'Objavi oglas',
+                          style: TextStyle(fontSize: 16),
+                        ),
+                ),
+              ),
+              
+              const SizedBox(height: 40), // Extra padding for scrolling
+            ],
+          ),
         ),
       ),
     );

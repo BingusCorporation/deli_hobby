@@ -407,6 +407,9 @@ class _ChatScreenState extends State<ChatScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.otherUserName),
+        backgroundColor: Colors.orange.shade700,
+        foregroundColor: Colors.white,
+        elevation: 2,
         actions: [
           IconButton(
             icon: const Icon(Icons.info_outline),
@@ -418,146 +421,164 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
         ],
       ),
-      body: Stack(
-        children: [
-          Column(
-            children: [
-              // Messages list
-              Expanded(
-                child: StreamBuilder<QuerySnapshot>(
-                  stream: MessagingService.getConversationStream(widget.otherUserId),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-                    
-                    if (snapshot.hasError) {
-                      return Center(child: Text('Error: ${snapshot.error}'));
-                    }
-                    
-                    final messages = snapshot.data?.docs ?? [];
-                    
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      _scrollToBottom();
-                    });
-                    
-                    if (messages.isEmpty) {
-                      return const Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.chat_bubble_outline, size: 60, color: Colors.grey),
-                            SizedBox(height: 16),
-                            Text(
-                              'Nema poruka',
-                              style: TextStyle(color: Colors.grey),
-                            ),
-                            SizedBox(height: 8),
-                            Text(
-                              'Pošaljite prvu poruku!',
-                              style: TextStyle(color: Colors.grey, fontSize: 12),
-                            ),
-                          ],
-                        ),
-                      );
-                    }
-                    
-                    return ListView.builder(
-                      controller: _scrollController,
-                      padding: const EdgeInsets.all(16),
-                      itemCount: messages.length,
-                      itemBuilder: (context, index) {
-                        final message = messages[index].data() as Map<String, dynamic>;
-                        final isMe = message['senderId'] == _auth.currentUser!.uid;
-                        final messageText = message['message'] ?? '';
-                        final timestamp = message['timestamp'] as Timestamp?;
-                        final read = message['read'] as bool? ?? false;
-                        
-                        return Row(
-                          mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
-                          children: [
-                            ConstrainedBox(
-                              constraints: BoxConstraints(
-                                maxWidth: MediaQuery.of(context).size.width * 0.75,
-                              ),
-                              child: Container(
-                                margin: const EdgeInsets.symmetric(vertical: 4),
-                                child: Column(
-                                  crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 16,
-                                        vertical: 10,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: isMe ? Colors.blue : Colors.grey[200],
-                                        borderRadius: BorderRadius.circular(18),
-                                      ),
-                                      child: Text(
-                                        messageText,
-                                        style: TextStyle(
-                                          color: isMe ? Colors.white : Colors.black,
-                                          fontSize: 16,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        if (timestamp != null)
-                                          Text(
-                                            _formatTime(timestamp.toDate()),
-                                            style: TextStyle(
-                                              color: Colors.grey[600],
-                                              fontSize: 12,
-                                            ),
-                                          ),
-                                        if (isMe && read)
-                                          Padding(
-                                            padding: const EdgeInsets.only(left: 4),
-                                            child: Icon(
-                                              Icons.check_circle,
-                                              size: 14,
-                                              color: Colors.blue,
-                                            ),
-                                          ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        );
-                      },
-                    );
-                  },
-                ),
-              ),
-              
-              // Message input
-              _buildMessageInput(),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Colors.white,
+              Colors.orange.shade50,
+              Colors.amber.shade50,
             ],
           ),
-          
-          // Overlay when panel is open
-          if (_showInfoPanel)
-            GestureDetector(
-              onTap: () {
-                setState(() {
-                  _showInfoPanel = false;
-                });
-              },
-              child: Container(
-                color: Colors.black54,
-              ),
+        ),
+        child: Stack(
+          children: [
+            Column(
+              children: [
+                // Messages list
+                Expanded(
+                  child: StreamBuilder<QuerySnapshot>(
+                    stream: MessagingService.getConversationStream(widget.otherUserId),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      
+                      if (snapshot.hasError) {
+                        return Center(child: Text('Error: ${snapshot.error}'));
+                      }
+                      
+                      final messages = snapshot.data?.docs ?? [];
+                      
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        _scrollToBottom();
+                      });
+                      
+                      if (messages.isEmpty) {
+                        return SingleChildScrollView(
+                          child: SizedBox(
+                            height: MediaQuery.of(context).size.height * 0.8,
+                            child: Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.chat_bubble_outline, size: 60, color: Colors.grey.shade400),
+                                  const SizedBox(height: 16),
+                                  const Text(
+                                    'Nema poruka',
+                                    style: TextStyle(color: Colors.grey),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  const Text(
+                                    'Pošaljite prvu poruku!',
+                                    style: TextStyle(color: Colors.grey, fontSize: 12),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      }
+                      
+                      return ListView.builder(
+                        controller: _scrollController,
+                        padding: const EdgeInsets.all(16),
+                        itemCount: messages.length,
+                        itemBuilder: (context, index) {
+                          final message = messages[index].data() as Map<String, dynamic>;
+                          final isMe = message['senderId'] == _auth.currentUser!.uid;
+                          final messageText = message['message'] ?? '';
+                          final timestamp = message['timestamp'] as Timestamp?;
+                          final read = message['read'] as bool? ?? false;
+                          
+                          return Row(
+                            mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+                            children: [
+                              ConstrainedBox(
+                                constraints: BoxConstraints(
+                                  maxWidth: MediaQuery.of(context).size.width * 0.75,
+                                ),
+                                child: Container(
+                                  margin: const EdgeInsets.symmetric(vertical: 4),
+                                  child: Column(
+                                    crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 16,
+                                          vertical: 10,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: isMe ? Colors.blue : Colors.grey[200],
+                                          borderRadius: BorderRadius.circular(18),
+                                        ),
+                                        child: Text(
+                                          messageText,
+                                          style: TextStyle(
+                                            color: isMe ? Colors.white : Colors.black,
+                                            fontSize: 16,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          if (timestamp != null)
+                                            Text(
+                                              _formatTime(timestamp.toDate()),
+                                              style: TextStyle(
+                                                color: Colors.grey[600],
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                          if (isMe && read)
+                                            Padding(
+                                              padding: const EdgeInsets.only(left: 4),
+                                              child: Icon(
+                                                Icons.check_circle,
+                                                size: 14,
+                                                color: Colors.blue,
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
+                
+                // Message input
+                _buildMessageInput(),
+              ],
             ),
-          
-          // Info panel
-          _buildInfoPanel(),
-        ],
+            
+            // Overlay when panel is open
+            if (_showInfoPanel)
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _showInfoPanel = false;
+                  });
+                },
+                child: Container(
+                  color: Colors.black54,
+                ),
+              ),
+            
+            // Info panel
+            _buildInfoPanel(),
+          ],
+        ),
       ),
     );
   }
