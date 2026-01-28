@@ -163,8 +163,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _addHobby() async {
     if (_selectedCategory == null || _selectedSubcategory == null) return;
 
-    final hobby = "
-$_selectedCategory > $_selectedSubcategory";
+    final hobby = "$_selectedCategory > $_selectedSubcategory";
 
     try {
       await _firestore.collection('users_private').doc(uid).update({
