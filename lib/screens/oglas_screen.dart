@@ -645,6 +645,13 @@ class _SharePosterScreenState extends State<SharePosterScreen> {
         title: const Text('Podeli oglas'),
         backgroundColor: Colors.orange.shade700,
         foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.filter_list),
+            tooltip: 'Filtriraj po hobijima',
+            onPressed: () => _showFilterDialog(),
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -809,22 +816,7 @@ class _SharePosterScreenState extends State<SharePosterScreen> {
 
   Widget _buildBottomBar() {
     if (_selectedFriendIds.isEmpty) {
-      return Container(
-        padding: const EdgeInsets.all(12),
-        child: ElevatedButton.icon(
-          onPressed: () => _showFilterDialog(),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.grey.shade200,
-            foregroundColor: Colors.grey.shade600,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-            padding: const EdgeInsets.symmetric(vertical: 12),
-          ),
-          icon: const Icon(Icons.filter_list, size: 18),
-          label: const Text('Filtriraj po hobijima'),
-        ),
-      );
+      return const SizedBox.shrink();
     }
 
     return Container(
@@ -835,55 +827,33 @@ class _SharePosterScreenState extends State<SharePosterScreen> {
           top: BorderSide(color: Colors.grey.shade200),
         ),
       ),
-      child: Row(
-        children: [
-          Expanded(
-            child: ElevatedButton.icon(
-              onPressed: () => _showFilterDialog(),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.grey.shade100,
-                foregroundColor: Colors.grey.shade700,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-              ),
-              icon: const Icon(Icons.filter_list, size: 18),
-              label: const Text('Filter'),
-            ),
+      child: ElevatedButton(
+        onPressed: _isSendingShare ? null : _sendShareNotifications,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.orange.shade700,
+          disabledBackgroundColor: Colors.grey.shade400,
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: ElevatedButton(
-              onPressed: _isSendingShare ? null : _sendShareNotifications,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.orange.shade700,
-                disabledBackgroundColor: Colors.grey.shade400,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          elevation: 0,
+        ),
+        child: _isSendingShare
+            ? const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation(Colors.white),
                 ),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                elevation: 0,
+              )
+            : Text(
+                'Podeli sa ${_selectedFriendIds.length} ${_selectedFriendIds.length == 1 ? 'prijateljem' : 'prijatelja'}',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-              child: _isSendingShare
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation(Colors.white),
-                      ),
-                    )
-                  : Text(
-                      'Podeli (${_selectedFriendIds.length})',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-            ),
-          ),
-        ],
       ),
     );
   }

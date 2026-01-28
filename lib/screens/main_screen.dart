@@ -11,6 +11,8 @@ import 'other_user_profile.dart';
 import '../services/init.dart';
 import 'oglasi_screen.dart';
 import '../events/events_browse_screen.dart';
+import 'notifications_screen.dart';
+import '../services/notification_service.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -128,6 +130,52 @@ class _MainScreenState extends State<MainScreen> {
                         ),
                         child: Text(
                           unreadCount > 9 ? '9+' : unreadCount.toString(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            },
+          ),
+          // Notifications icon button
+          FutureBuilder<int>(
+            future: NotificationService().getUnreadCount(),
+            builder: (context, snapshot) {
+              final unreadNotifications = snapshot.data ?? 0;
+              return Stack(
+                children: [
+                  IconButton(
+                    icon: Icon(Icons.notifications, color: Colors.orange.shade700),
+                    tooltip: 'Obavesti',
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+                      );
+                    },
+                  ),
+                  if (unreadNotifications > 0)
+                    Positioned(
+                      right: 8,
+                      top: 8,
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: BoxDecoration(
+                          color: Colors.orange,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 16,
+                          minHeight: 16,
+                        ),
+                        child: Text(
+                          unreadNotifications > 9 ? '9+' : unreadNotifications.toString(),
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 10,

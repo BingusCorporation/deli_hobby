@@ -11,11 +11,13 @@
         "cloud_firestore",
         "firebase_auth",
         "firebase_core",
+        "firebase_messaging",
         "firebase_storage",
         "flutter",
         "image_picker",
         "intl",
-        "rxdart"
+        "rxdart",
+        "table_calendar"
       ],
       "devDependencies": [
         "flutter_lints",
@@ -48,6 +50,15 @@
       ]
     },
     {
+      "name": "table_calendar",
+      "version": "3.2.0",
+      "dependencies": [
+        "flutter",
+        "intl",
+        "simple_gesture_detector"
+      ]
+    },
+    {
       "name": "rxdart",
       "version": "0.27.7",
       "dependencies": []
@@ -65,7 +76,7 @@
     },
     {
       "name": "intl",
-      "version": "0.18.1",
+      "version": "0.20.2",
       "dependencies": [
         "clock",
         "meta",
@@ -84,6 +95,18 @@
         "image_picker_macos",
         "image_picker_platform_interface",
         "image_picker_windows"
+      ]
+    },
+    {
+      "name": "firebase_messaging",
+      "version": "16.1.0",
+      "dependencies": [
+        "firebase_core",
+        "firebase_core_platform_interface",
+        "firebase_messaging_platform_interface",
+        "firebase_messaging_web",
+        "flutter",
+        "meta"
       ]
     },
     {
@@ -234,6 +257,13 @@
       ]
     },
     {
+      "name": "simple_gesture_detector",
+      "version": "0.2.1",
+      "dependencies": [
+        "flutter"
+      ]
+    },
+    {
       "name": "octo_image",
       "version": "2.1.0",
       "dependencies": [
@@ -343,6 +373,42 @@
       ]
     },
     {
+      "name": "firebase_messaging_web",
+      "version": "4.1.1",
+      "dependencies": [
+        "_flutterfire_internals",
+        "firebase_core",
+        "firebase_core_web",
+        "firebase_messaging_platform_interface",
+        "flutter",
+        "flutter_web_plugins",
+        "meta",
+        "web"
+      ]
+    },
+    {
+      "name": "firebase_messaging_platform_interface",
+      "version": "4.7.5",
+      "dependencies": [
+        "_flutterfire_internals",
+        "firebase_core",
+        "flutter",
+        "meta",
+        "plugin_platform_interface"
+      ]
+    },
+    {
+      "name": "firebase_core_platform_interface",
+      "version": "6.0.2",
+      "dependencies": [
+        "collection",
+        "flutter",
+        "flutter_test",
+        "meta",
+        "plugin_platform_interface"
+      ]
+    },
+    {
       "name": "firebase_storage_web",
       "version": "3.11.1",
       "dependencies": [
@@ -366,17 +432,6 @@
         "collection",
         "firebase_core",
         "flutter",
-        "meta",
-        "plugin_platform_interface"
-      ]
-    },
-    {
-      "name": "firebase_core_platform_interface",
-      "version": "6.0.2",
-      "dependencies": [
-        "collection",
-        "flutter",
-        "flutter_test",
         "meta",
         "plugin_platform_interface"
       ]

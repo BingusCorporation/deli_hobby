@@ -1774,7 +1774,7 @@ class _EventInviteTile extends StatelessWidget {
   }
 }
 /// POSTER SHARE TILE WIDGET
-class _PosterShareTile extends StatelessWidget {
+class _PosterShareTile extends StatefulWidget {
   final String shareId;
   final String posterId;
   final String posterTitle;
@@ -1794,6 +1794,60 @@ class _PosterShareTile extends StatelessWidget {
   });
 
   @override
+  State<_PosterShareTile> createState() => _PosterShareTileState();
+}
+
+class _PosterShareTileState extends State<_PosterShareTile> {
+
+  Future<void> _deleteShare() async {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Obriši preporuku'),
+        content: const Text('Da li želiš da obrišeš ovu preporuku oglasa?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Odustani'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              try {
+                final currentUser = FirebaseAuth.instance.currentUser;
+                if (currentUser != null) {
+                  await FirebaseFirestore.instance
+                      .collection('users')
+                      .doc(currentUser.uid)
+                      .collection('poster_shares')
+                      .doc(widget.shareId)
+                      .delete();
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Preporuka obrisana'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  }
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Greška: $e')),
+                  );
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Obriši'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -1803,11 +1857,13 @@ class _PosterShareTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(color: Colors.orange.shade200, width: 1),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+      child: Stack(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
             Row(
               children: [
                 Container(
@@ -1828,7 +1884,7 @@ class _PosterShareTile extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        posterTitle,
+                        widget.posterTitle,
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
@@ -1837,14 +1893,14 @@ class _PosterShareTile extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 4),
-                      if (posterCity != null)
+                      if (widget.posterCity != null)
                         Row(
                           children: [
                             Icon(Icons.location_on,
                                 size: 12, color: Colors.grey.shade600),
                             const SizedBox(width: 3),
                             Text(
-                              posterCity!,
+                              widget.posterCity!,
                               style: TextStyle(
                                 color: Colors.grey.shade600,
                                 fontSize: 12,
@@ -1859,7 +1915,7 @@ class _PosterShareTile extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              message,
+              widget.message,
               style: TextStyle(
                 color: Colors.grey.shade700,
                 fontStyle: FontStyle.italic,
@@ -1870,7 +1926,7 @@ class _PosterShareTile extends StatelessWidget {
               children: [
                 Expanded(
                   child: ElevatedButton.icon(
-                    onPressed: onView,
+                    onPressed: widget.onView,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.orange.shade700,
                       foregroundColor: Colors.white,
@@ -1885,8 +1941,23 @@ class _PosterShareTile extends StatelessWidget {
                 ),
               ],
             ),
-          ],
-        ),
+            ],
+            ),
+          ),
+          Positioned(
+            top: 8,
+            right: 8,
+            child: Material(
+              color: Colors.transparent,
+              child: IconButton(
+                icon: const Icon(Icons.close, size: 20),
+                color: Colors.orange.shade700,
+                onPressed: _deleteShare,
+                tooltip: 'Obriši preporuku',
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

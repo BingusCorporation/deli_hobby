@@ -5,6 +5,8 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'firebase_options.dart';
 import 'auth/prelog_screen.dart';
 import 'screens/main_screen.dart';
+import 'services/notification_service.dart';
+import 'widgets/notification_overlay.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -12,6 +14,11 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
   await initializeDateFormatting('sr_RS', null);
+  
+  // Initialize notification service
+  final notificationService = NotificationService();
+  await notificationService.initialize();
+  
   runApp(const MyApp());
 }
 
@@ -25,7 +32,9 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: const AuthWrapper(),
+      home: NotificationOverlay(
+        child: const AuthWrapper(),
+      ),
     );
   }
 }

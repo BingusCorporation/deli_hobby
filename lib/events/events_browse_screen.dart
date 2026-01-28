@@ -23,14 +23,22 @@ class _EventsBrowseScreenState extends State<EventsBrowseScreen> {
   final EventRankingService _rankingService = EventRankingService();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final TextEditingController _searchController = TextEditingController();
 
   // Filter state
   String? _selectedCity;
   String? _selectedCategory;
+  String? _selectedSubcategory;
+  String? _selectedSkillLevel;
+  bool? _wheelchairAccessible;
+  bool? _hearingAssistance;
+  bool? _visualAssistance;
+  bool? _onlyWithFriends;
 
   // User data for ranking
   List<String> _userHobbies = [];
   String? _userCity;
+  Set<String> _userFriends = {};
 
   bool _isLoading = true;
 
@@ -38,6 +46,12 @@ class _EventsBrowseScreenState extends State<EventsBrowseScreen> {
   void initState() {
     super.initState();
     _loadUserData();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadUserData() async {
@@ -53,13 +67,27 @@ class _EventsBrowseScreenState extends State<EventsBrowseScreen> {
               ? List<String>.from(data['hobbies'])
               : [];
           _userCity = data['city'];
-          _isLoading = false;
-        });
-      } else {
-        setState(() {
-          _isLoading = false;
         });
       }
+
+      // Load user's friends
+      final friendships = await _firestore
+          .collection('friendships')
+          .where('userId', isEqualTo: uid)
+          .get();
+      
+      final friendIds = <String>{};
+      for (var doc in friendships.docs) {
+        final friendId = doc['friendId'] as String?;
+        if (friendId != null) {
+          friendIds.add(friendId);
+        }
+      }
+
+      setState(() {
+        _userFriends = friendIds;
+        _isLoading = false;
+      });
     } catch (e) {
       setState(() {
         _isLoading = false;
@@ -71,7 +99,26 @@ class _EventsBrowseScreenState extends State<EventsBrowseScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Dogadjaji'),
+        title: TextField(
+          controller: _searchController,
+          style: const TextStyle(color: Colors.white),
+          decoration: InputDecoration(
+            hintText: 'Pretrazi dogadjaje...',
+            hintStyle: TextStyle(color: Colors.white70),
+            border: InputBorder.none,
+            prefixIcon: Icon(Icons.search, color: Colors.white70),
+            suffixIcon: _searchController.text.isNotEmpty
+                ? IconButton(
+                    icon: const Icon(Icons.clear, color: Colors.white70),
+                    onPressed: () {
+                      _searchController.clear();
+                      setState(() {});
+                    },
+                  )
+                : null,
+          ),
+          onChanged: (_) => setState(() {}),
+        ),
         backgroundColor: Colors.orange.shade700,
         foregroundColor: Colors.white,
         actions: [
@@ -129,13 +176,64 @@ class _EventsBrowseScreenState extends State<EventsBrowseScreen> {
 
         final events = snapshot.data ?? [];
 
-        if (events.isEmpty) {
+        // Apply client-side filters
+        final filteredEvents = events.where((event) {
+          // Search filter
+          final searchQuery = _searchController.text.toLowerCase();
+          if (searchQuery.isNotEmpty) {
+            final matchesTitle = event.title.toLowerCase().contains(searchQuery);
+            final matchesDescription = event.description.toLowerCase().contains(searchQuery);
+            if (!matchesTitle && !matchesDescription) {
+              return false;
+            }
+          }
+
+          // Subcategory filter
+          if (_selectedSubcategory != null) {
+            final selectedHobby = '$_selectedCategory > $_selectedSubcategory';
+            if (!event.hobbies.contains(selectedHobby)) {
+              return false;
+            }
+          }
+
+          // Skill level filter
+          if (_selectedSkillLevel != null && _selectedSkillLevel != 'any') {
+            if (event.requiredSkillLevel != _selectedSkillLevel) {
+              return false;
+            }
+          }
+
+          // Accessibility filters
+          if (_wheelchairAccessible == true &&
+              !event.accessibility.wheelchairAccessible) {
+            return false;
+          }
+          if (_hearingAssistance == true && !event.accessibility.hearingAssistance) {
+            return false;
+          }
+          if (_visualAssistance == true && !event.accessibility.visualAssistance) {
+            return false;
+          }
+
+          // Friends filter
+          if (_onlyWithFriends == true) {
+            final hasFriends =
+                event.participants.any((p) => _userFriends.contains(p));
+            if (!hasFriends) {
+              return false;
+            }
+          }
+
+          return true;
+        }).toList();
+
+        if (filteredEvents.isEmpty) {
           return _buildEmptyState();
         }
 
         // Rank events based on user profile
         final rankedEvents = _rankingService.rankEvents(
-          events: events,
+          events: filteredEvents,
           userHobbies: _userHobbies,
           userCity: _userCity,
         );
@@ -146,6 +244,7 @@ class _EventsBrowseScreenState extends State<EventsBrowseScreen> {
             rankedEvents: rankedEvents,
             eventService: _eventService,
             onEventTap: _navigateToDetails,
+            userFriends: _userFriends,
           ),
         );
       },
@@ -212,146 +311,297 @@ class _EventsBrowseScreenState extends State<EventsBrowseScreen> {
       builder: (context) {
         String? tempCity = _selectedCity;
         String? tempCategory = _selectedCategory;
+        String? tempSubcategory = _selectedSubcategory;
+        String? tempSkillLevel = _selectedSkillLevel;
+        bool? tempWheelchair = _wheelchairAccessible;
+        bool? tempHearing = _hearingAssistance;
+        bool? tempVisual = _visualAssistance;
+        bool? tempOnlyWithFriends = _onlyWithFriends;
 
         return StatefulBuilder(
           builder: (context, setModalState) {
-            return Padding(
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context).viewInsets.bottom,
-                left: 16,
-                right: 16,
-                top: 16,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Filteri',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.close),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-
-                  // City filter
-                  const Text(
-                    'Grad:',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey.shade400),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        isExpanded: true,
-                        hint: const Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 12),
-                          child: Text('Svi gradovi'),
-                        ),
-                        value: tempCity,
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        items: [
-                          const DropdownMenuItem<String>(
-                            value: null,
-                            child: Text('Svi gradovi'),
+            return SingleChildScrollView(
+              child: Padding(
+                padding: EdgeInsets.only(
+                  bottom: MediaQuery.of(context).viewInsets.bottom,
+                  left: 16,
+                  right: 16,
+                  top: 16,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Filteri',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
                           ),
-                          ...serbiaCities.map((city) {
-                            return DropdownMenuItem(
-                              value: city,
-                              child: Text(city),
-                            );
-                          }),
-                        ],
-                        onChanged: (value) {
-                          setModalState(() {
-                            tempCity = value;
-                          });
-                        },
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // Category filter
-                  const Text(
-                    'Kategorija:',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey.shade400),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        isExpanded: true,
-                        hint: const Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 12),
-                          child: Text('Sve kategorije'),
                         ),
-                        value: tempCategory,
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        items: [
-                          const DropdownMenuItem<String>(
-                            value: null,
-                            child: Text('Sve kategorije'),
-                          ),
-                          ...hobbyCategories.keys.map((category) {
-                            return DropdownMenuItem(
-                              value: category,
-                              child: Text(category),
-                            );
-                          }),
-                        ],
-                        onChanged: (value) {
-                          setModalState(() {
-                            tempCategory = value;
-                          });
-                        },
-                      ),
+                        Row(
+                          children: [
+                            TextButton(
+                              onPressed: () {
+                                setModalState(() {
+                                  tempCity = null;
+                                  tempCategory = null;
+                                  tempSubcategory = null;
+                                  tempSkillLevel = null;
+                                  tempWheelchair = null;
+                                  tempHearing = null;
+                                  tempVisual = null;
+                                  tempOnlyWithFriends = null;
+                                });
+                              },
+                              child: const Text('Obriši sve'),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.close),
+                              onPressed: () => Navigator.pop(context),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
-                  ),
+                    const SizedBox(height: 16),
 
-                  const SizedBox(height: 24),
-
-                  // Apply button
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        setState(() {
-                          _selectedCity = tempCity;
-                          _selectedCategory = tempCategory;
-                        });
-                        Navigator.pop(context);
+                    // Location filter
+                    const Text(
+                      'Lokacija:',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    _buildDropdown(
+                      value: tempCity,
+                      hint: 'Svi gradovi',
+                      items: serbiaCities,
+                      onChanged: (value) {
+                        setModalState(() => tempCity = value);
                       },
-                      child: const Text('Primeni filtere'),
                     ),
-                  ),
+                    const SizedBox(height: 16),
 
-                  const SizedBox(height: 16),
-                ],
+                    // Hobby category filter
+                    const Text(
+                      'Kategorija hobija:',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    _buildDropdown(
+                      value: tempCategory,
+                      hint: 'Sve kategorije',
+                      items: hobbyCategories.keys.toList(),
+                      onChanged: (value) {
+                        setModalState(() {
+                          tempCategory = value;
+                          tempSubcategory = null; // Reset subcategory
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Hobby subcategory filter
+                    if (tempCategory != null)
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Podkategorija hobija:',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 8),
+                          _buildDropdown(
+                            value: tempSubcategory,
+                            hint: 'Sve podkategorije',
+                            items: hobbyCategories[tempCategory] ?? [],
+                            onChanged: (value) {
+                              setModalState(() => tempSubcategory = value);
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                        ],
+                      ),
+
+                    // Skill level filter
+                    const Text(
+                      'Nivo veštine:',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    _buildDropdown(
+                      value: tempSkillLevel,
+                      hint: 'Svi nivoi',
+                      items: const ['beginner', 'intermediate', 'advanced', 'any'],
+                      onChanged: (value) {
+                        setModalState(() => tempSkillLevel = value);
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Accessibility filters
+                    const Text(
+                      'Dostupnost:',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    _buildCheckbox(
+                      label: 'Dostupno za invalidska kolica',
+                      value: tempWheelchair,
+                      onChanged: (value) {
+                        setModalState(() => tempWheelchair = value);
+                      },
+                    ),
+                    _buildCheckbox(
+                      label: 'Pomoć za čujuće',
+                      value: tempHearing,
+                      onChanged: (value) {
+                        setModalState(() => tempHearing = value);
+                      },
+                    ),
+                    _buildCheckbox(
+                      label: 'Pomoć za vidne',
+                      value: tempVisual,
+                      onChanged: (value) {
+                        setModalState(() => tempVisual = value);
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Friends filter
+                    _buildCheckbox(
+                      label: 'Samo dogadjaji sa prijateljima',
+                      value: tempOnlyWithFriends,
+                      onChanged: (value) {
+                        setModalState(() => tempOnlyWithFriends = value);
+                      },
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Apply button
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          setState(() {
+                            _selectedCity = tempCity;
+                            _selectedCategory = tempCategory;
+                            _selectedSubcategory = tempSubcategory;
+                            _selectedSkillLevel = tempSkillLevel;
+                            _wheelchairAccessible = tempWheelchair;
+                            _hearingAssistance = tempHearing;
+                            _visualAssistance = tempVisual;
+                            _onlyWithFriends = tempOnlyWithFriends;
+                          });
+                          Navigator.pop(context);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.orange.shade700,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                        child: const Text('Primeni filtere'),
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
+                  ],
+                ),
               ),
             );
           },
         );
       },
+    );
+  }
+
+  Widget _buildDropdown({
+    required String? value,
+    required String hint,
+    required List<String> items,
+    required ValueChanged<String?> onChanged,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey.shade400),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          isExpanded: true,
+          hint: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Text(hint),
+          ),
+          value: value,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          items: [
+            DropdownMenuItem<String>(
+              value: null,
+              child: Text(hint),
+            ),
+            ...items.map((item) {
+              return DropdownMenuItem(
+                value: item,
+                child: Text(item),
+              );
+            }),
+          ],
+          onChanged: onChanged,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCheckbox({
+    required String label,
+    required bool? value,
+    required ValueChanged<bool?> onChanged,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: GestureDetector(
+        onTap: () {
+          // Cycle through null -> true -> false -> null
+          bool? newValue;
+          if (value == null) {
+            newValue = true;
+          } else if (value == true) {
+            newValue = false;
+          } else {
+            newValue = null;
+          }
+          onChanged(newValue);
+        },
+        child: Row(
+          children: [
+            Container(
+              width: 24,
+              height: 24,
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: value == null ? Colors.grey : Colors.orange.shade700,
+                  width: 2,
+                ),
+                borderRadius: BorderRadius.circular(4),
+                color: value == true ? Colors.orange.shade700 : null,
+              ),
+              child: value == true
+                  ? const Icon(Icons.check, size: 16, color: Colors.white)
+                  : value == false
+                      ? Icon(Icons.close, size: 16, color: Colors.orange.shade700)
+                      : null,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(label),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -361,11 +611,13 @@ class _EventsListWithFriendPriority extends StatefulWidget {
   final List<RankedEvent> rankedEvents;
   final EventService eventService;
   final Function(Event) onEventTap;
+  final Set<String> userFriends;
 
   const _EventsListWithFriendPriority({
     required this.rankedEvents,
     required this.eventService,
     required this.onEventTap,
+    required this.userFriends,
   });
 
   @override

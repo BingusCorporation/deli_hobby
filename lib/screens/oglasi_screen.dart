@@ -18,6 +18,13 @@ class _OglasiScreenState extends State<OglasiScreen> {
   final User? _currentUser = FirebaseAuth.instance.currentUser;
   bool _showMatchingOnly = false;
   String? _selectedCityFilter;
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   void _showCityFilterDialog() {
     showDialog(
@@ -57,7 +64,28 @@ class _OglasiScreenState extends State<OglasiScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Oglasi'),
+        title: TextField(
+          controller: _searchController,
+          style: const TextStyle(color: Colors.white),
+          decoration: InputDecoration(
+            hintText: 'Pretrazi oglase...',
+            hintStyle: TextStyle(color: Colors.white70),
+            border: InputBorder.none,
+            prefixIcon: Icon(Icons.search, color: Colors.white70),
+            suffixIcon: _searchController.text.isNotEmpty
+                ? IconButton(
+                    icon: const Icon(Icons.clear, color: Colors.white70),
+                    onPressed: () {
+                      _searchController.clear();
+                      setState(() {});
+                    },
+                  )
+                : null,
+          ),
+          onChanged: (_) => setState(() {}),
+        ),
+        backgroundColor: Colors.orange.shade700,
+        foregroundColor: Colors.white,
         actions: [
           // City filter icon button
           IconButton(
@@ -108,6 +136,16 @@ class _OglasiScreenState extends State<OglasiScreen> {
 
         var posters = snapshot.data ?? [];
 
+        // Filter by search query
+        final searchQuery = _searchController.text.toLowerCase();
+        if (searchQuery.isNotEmpty) {
+          posters = posters.where((p) {
+            final matchesTitle = p.title.toLowerCase().contains(searchQuery);
+            final matchesDescription = p.description.toLowerCase().contains(searchQuery);
+            return matchesTitle || matchesDescription;
+          }).toList();
+        }
+
         // Filter by city if selected
         if (_selectedCityFilter != null) {
           posters = posters.where((p) => p.city == _selectedCityFilter).toList();
@@ -152,6 +190,16 @@ class _OglasiScreenState extends State<OglasiScreen> {
         }
 
         var posters = snapshot.data ?? [];
+
+        // Filter by search query
+        final searchQuery = _searchController.text.toLowerCase();
+        if (searchQuery.isNotEmpty) {
+          posters = posters.where((p) {
+            final matchesTitle = p.title.toLowerCase().contains(searchQuery);
+            final matchesDescription = p.description.toLowerCase().contains(searchQuery);
+            return matchesTitle || matchesDescription;
+          }).toList();
+        }
 
         // Filter by city if selected
         if (_selectedCityFilter != null) {

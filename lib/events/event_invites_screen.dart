@@ -24,7 +24,7 @@ class _EventInvitesScreenState extends State<EventInvitesScreen> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final _searchController = TextEditingController();
 
-  List<Map<String, dynamic>> _allFriends = [];
+  final List<Map<String, dynamic>> _allFriends = [];
   List<Map<String, dynamic>> _filteredFriends = [];
   bool _isLoadingFriends = true;
   bool _isSendingInvites = false;
@@ -49,7 +49,7 @@ class _EventInvitesScreenState extends State<EventInvitesScreen> {
   @override
   void dispose() {
     _searchController.dispose();
-    super.dispose();
+    super.dispose();  
   }
 
   Future<void> _loadFriends() async {
@@ -190,6 +190,13 @@ class _EventInvitesScreenState extends State<EventInvitesScreen> {
         title: const Text('Pozivnice'),
         backgroundColor: Colors.orange.shade700,
         foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.filter_list),
+            tooltip: 'Filtriraj po hobijima',
+            onPressed: () => _showFilterDialog(),
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -224,92 +231,31 @@ class _EventInvitesScreenState extends State<EventInvitesScreen> {
                 
                 const SizedBox(height: 12),
                 
-                // Filter by category
-                Row(
-                  children: [
-                    Expanded(
-                      child: DropdownButtonFormField<String>(
-                        value: _selectedCategory,
-                        isExpanded: true,
-                        decoration: InputDecoration(
-                          labelText: 'Kategorija',
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
+                // Filter display
+                if (_selectedCategory != null || _selectedSubcategory != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Filter: ${_selectedSubcategory != null ? '$_selectedCategory > $_selectedSubcategory' : _selectedCategory}',
+                            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                           ),
-                          isDense: true,
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                         ),
-                        items: [
-                          const DropdownMenuItem(
-                            value: null,
-                            child: Text('Sve kategorije'),
-                          ),
-                          ...hobbyCategories.keys.map((category) {
-                            return DropdownMenuItem(
-                              value: category,
-                              child: Text(
-                                category,
-                                overflow: TextOverflow.ellipsis,
-                                maxLines: 1,
-                              ),
-                            );
-                          }).toList(),
-                        ],
-                        onChanged: (value) {
-                          setState(() {
-                            _selectedCategory = value;
-                            _selectedSubcategory = null;
-                            _filterFriends();
-                          });
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: DropdownButtonFormField<String>(
-                        value: _selectedSubcategory,
-                        isExpanded: true,
-                        decoration: InputDecoration(
-                          labelText: 'Podkategorija',
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          isDense: true,
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        IconButton(
+                          onPressed: () {
+                            setState(() {
+                              _selectedCategory = null;
+                              _selectedSubcategory = null;
+                              _filterFriends();
+                            });
+                          },
+                          icon: Icon(Icons.close, size: 18, color: Colors.grey.shade600),
                         ),
-                        items: _selectedCategory != null
-                            ? [
-                                const DropdownMenuItem(
-                                  value: null,
-                                  child: Text('Sve'),
-                                ),
-                                ...hobbyCategories[_selectedCategory]!.map((sub) {
-                                  return DropdownMenuItem(
-                                    value: sub,
-                                    child: Text(
-                                      sub,
-                                      overflow: TextOverflow.ellipsis,
-                                      maxLines: 1,
-                                    ),
-                                  );
-                                }).toList(),
-                              ]
-                            : [
-                                const DropdownMenuItem(
-                                  value: null,
-                                  child: Text('Izaberite kategoriju'),
-                                ),
-                              ],
-                        onChanged: (value) {
-                          setState(() {
-                            _selectedSubcategory = value;
-                            _filterFriends();
-                          });
-                        },
-                      ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
                 
                 // Show selection count
                 if (_selectedFriendIds.isNotEmpty)
@@ -403,6 +349,141 @@ class _EventInvitesScreenState extends State<EventInvitesScreen> {
               ),
             )
           : null,
+    );
+  }
+
+  void _showFilterDialog() {
+    String? tempCategory = _selectedCategory;
+    String? tempSubcategory = _selectedSubcategory;
+
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Filtriraj po hobijima',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.close),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    initialValue: tempCategory,
+                    decoration: InputDecoration(
+                      labelText: 'Kategorija',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey.shade50,
+                    ),
+                    items: [
+                      const DropdownMenuItem(
+                        value: null,
+                        child: Text('Sve kategorije'),
+                      ),
+                      ...hobbyCategories.keys.map((category) {
+                        return DropdownMenuItem(
+                          value: category,
+                          child: Text(category),
+                        );
+                      }),
+                    ],
+                    onChanged: (value) {
+                      setState(() {
+                        tempCategory = value;
+                        tempSubcategory = null;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  if (tempCategory != null &&
+                      hobbyCategories[tempCategory] != null &&
+                      hobbyCategories[tempCategory]!.isNotEmpty)
+                    DropdownButtonFormField<String>(
+                      initialValue: tempSubcategory,
+                      decoration: InputDecoration(
+                        labelText: 'Podkategorija (opciono)',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        filled: true,
+                        fillColor: Colors.grey.shade50,
+                      ),
+                      items: [
+                        const DropdownMenuItem(
+                          value: null,
+                          child: Text('Sve podkategorije'),
+                        ),
+                        ...hobbyCategories[tempCategory]!.map((sub) {
+                          return DropdownMenuItem(
+                            value: sub,
+                            child: Text(sub),
+                          );
+                        }),
+                      ],
+                      onChanged: (value) {
+                        setState(() {
+                          tempSubcategory = value;
+                        });
+                      },
+                    ),
+                  const SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      TextButton(
+                        onPressed: () {
+                          setState(() {
+                            tempCategory = null;
+                            tempSubcategory = null;
+                          });
+                        },
+                        child: const Text('Obriši filter'),
+                      ),
+                      ElevatedButton(
+                        onPressed: () {
+                          this.setState(() {
+                            _selectedCategory = tempCategory;
+                            _selectedSubcategory = tempSubcategory;
+                            _filterFriends();
+                          });
+                          Navigator.pop(context);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.orange.shade700,
+                          foregroundColor: Colors.white,
+                        ),
+                        child: const Text('Primeni'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
