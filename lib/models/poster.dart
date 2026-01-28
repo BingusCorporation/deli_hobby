@@ -9,6 +9,7 @@ class Poster {
   final String description;
   final List<String> requiredHobbies;
   final String? imageUrl;
+  final String? city;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -21,6 +22,7 @@ class Poster {
     required this.description,
     required this.requiredHobbies,
     this.imageUrl,
+    this.city,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -36,6 +38,7 @@ class Poster {
       description: data['description'] ?? '',
       requiredHobbies: List<String>.from(data['requiredHobbies'] ?? []),
       imageUrl: data['imageUrl'],
+      city: data['city'],
       createdAt: (data['createdAt'] as Timestamp).toDate(),
       updatedAt: (data['updatedAt'] as Timestamp).toDate(),
     );
@@ -50,6 +53,7 @@ class Poster {
       'description': description,
       'requiredHobbies': requiredHobbies,
       'imageUrl': imageUrl,
+      'city': city,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
     };
