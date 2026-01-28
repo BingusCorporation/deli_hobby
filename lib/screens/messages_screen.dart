@@ -7,6 +7,7 @@ import 'chat_screen.dart';
 import 'group_chat_screen.dart';
 import 'other_user_profile.dart';
 import 'create_group_screen.dart';
+import 'oglas_screen.dart';
 import '../data/hobbies.dart';
 import '../events/event_service.dart';
 import '../events/event_details_screen.dart';
@@ -275,8 +276,8 @@ class _ContactsListWithSearchState extends State<_ContactsListWithSearch> with W
   String _searchQuery = '';
   String? _selectedCategory;
   String? _selectedSubcategory;
-  List<String> _activeFilters = [];
-  TextEditingController _searchController = TextEditingController();
+  final List<String> _activeFilters = [];
+  final TextEditingController _searchController = TextEditingController();
   List<Map<String, dynamic>> _allFriendsWithData = [];
   List<Map<String, dynamic>> _filteredFriends = [];
   bool _isLoading = true;
@@ -542,7 +543,7 @@ class _ContactsListWithSearchState extends State<_ContactsListWithSearch> with W
                                 ),
                               ),
                             );
-                          }).toList(),
+                          }),
                         ],
                       ),
                     ),
@@ -696,7 +697,7 @@ class _ContactsListWithSearchState extends State<_ContactsListWithSearch> with W
                       
                       // Category dropdown
                       DropdownButtonFormField<String>(
-                        value: tempCategory,
+                        initialValue: tempCategory,
                         decoration: InputDecoration(
                           labelText: 'Kategorija',
                           border: OutlineInputBorder(
@@ -732,7 +733,7 @@ class _ContactsListWithSearchState extends State<_ContactsListWithSearch> with W
                           hobbyCategories[tempCategory] != null && 
                           hobbyCategories[tempCategory]!.isNotEmpty)
                         DropdownButtonFormField<String>(
-                          value: tempSubcategory,
+                          initialValue: tempSubcategory,
                           decoration: InputDecoration(
                             labelText: 'Podkategorija (opciono)',
                             border: OutlineInputBorder(
@@ -1133,6 +1134,71 @@ class _FriendRequestsListState extends State<_FriendRequestsList> with WidgetsBi
                     ],
                   );
                 },
+              );
+            },
+          ),
+
+          // Poster Shares (Recommendations) Section
+          StreamBuilder<QuerySnapshot>(
+            stream: FirebaseFirestore.instance
+                .collection('users')
+                .doc(FirebaseAuth.instance.currentUser?.uid)
+                .collection('poster_shares')
+                .orderBy('createdAt', descending: true)
+                .snapshots(),
+            builder: (context, posterSharesSnapshot) {
+              final posterShares = posterSharesSnapshot.data?.docs ?? [];
+
+              if (posterShares.isEmpty) {
+                return const SizedBox.shrink();
+              }
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                    child: Text(
+                      'Preporučeni oglasi',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey.shade700,
+                      ),
+                    ),
+                  ),
+                  ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: posterShares.length,
+                    itemBuilder: (context, index) {
+                      final shareDoc = posterShares[index];
+                      final shareData = shareDoc.data() as Map<String, dynamic>;
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: _PosterShareTile(
+                          shareId: shareDoc.id,
+                          posterId: shareData['posterId'] ?? '',
+                          posterTitle: shareData['posterTitle'] ?? 'Oglas',
+                          posterCity: shareData['posterCity'],
+                          sharerName: shareData['sharerName'] ?? 'Nepoznato',
+                          message: shareData['message'] ?? '',
+                          onView: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => OglasScreen(
+                                  posterId: shareData['posterId'] ?? '',
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      );
+                    },
+                  ),
+                ],
               );
             },
           ),
@@ -1697,6 +1763,124 @@ class _EventInviteTile extends StatelessWidget {
                     ),
                     icon: const Icon(Icons.info, size: 18),
                     label: const Text('Info'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+/// POSTER SHARE TILE WIDGET
+class _PosterShareTile extends StatelessWidget {
+  final String shareId;
+  final String posterId;
+  final String posterTitle;
+  final String? posterCity;
+  final String sharerName;
+  final String message;
+  final VoidCallback onView;
+
+  const _PosterShareTile({
+    required this.shareId,
+    required this.posterId,
+    required this.posterTitle,
+    this.posterCity,
+    required this.sharerName,
+    required this.message,
+    required this.onView,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 2,
+      color: Colors.orange.shade50,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: Colors.orange.shade200, width: 1),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.shade100,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    Icons.campaign,
+                    size: 28,
+                    color: Colors.orange.shade700,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        posterTitle,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      if (posterCity != null)
+                        Row(
+                          children: [
+                            Icon(Icons.location_on,
+                                size: 12, color: Colors.grey.shade600),
+                            const SizedBox(width: 3),
+                            Text(
+                              posterCity!,
+                              style: TextStyle(
+                                color: Colors.grey.shade600,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              message,
+              style: TextStyle(
+                color: Colors.grey.shade700,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: onView,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orange.shade700,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    icon: const Icon(Icons.visibility, size: 20),
+                    label: const Text('Pogledaj oglas'),
                   ),
                 ),
               ],

@@ -122,7 +122,7 @@ class _OglasiScreenState extends State<OglasiScreen> {
           itemCount: posters.length,
           itemBuilder: (context, index) {
             return FutureBuilder<bool>(
-              future: PosterService.posterMatchesUserHobbies(posters[index], _currentUser!.uid),
+              future: PosterService.posterMatchesUserHobbies(posters[index], PosterService.currentUserId),
               builder: (context, matchSnapshot) {
                 final isMatching = matchSnapshot.data ?? false;
                 return _PosterCard(
@@ -292,7 +292,7 @@ class _PosterCard extends StatelessWidget {
                       radius: 20,
                       backgroundImage: poster.userProfilePic != null
                           ? NetworkImage(poster.userProfilePic!)
-                          : const NetworkImage('https://ui-avatars.com/api/?name=User&background=random') as ImageProvider,
+                          : NetworkImage('https://ui-avatars.com/api/?name=User&background=random'),
                     ),
                   ),
                   const SizedBox(width: 12),

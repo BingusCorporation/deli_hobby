@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import '../services/poster_service.dart';
+import '../models/poster.dart';
 import '../data/hobbies.dart';
 import '../data/city.dart';
 
 class CreateOglasScreen extends StatefulWidget {
-  const CreateOglasScreen({super.key});
+  final Poster? posterToEdit;
+
+  const CreateOglasScreen({super.key, this.posterToEdit});
 
   @override
   State<CreateOglasScreen> createState() => _CreateOglasScreenState();
@@ -23,6 +26,30 @@ class _CreateOglasScreenState extends State<CreateOglasScreen> {
   final List<String> _selectedHobbies = [];
   File? _selectedImage;
   bool _isSubmitting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeFields();
+  }
+
+  void _initializeFields() {
+    if (widget.posterToEdit != null) {
+      final poster = widget.posterToEdit!;
+      _titleController.text = poster.title;
+      _descriptionController.text = poster.description;
+      _selectedCity = poster.city;
+      _selectedHobbies.addAll(poster.requiredHobbies);
+      // Note: _selectedImage stays null because we use the existing image URL
+    }
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _descriptionController.dispose();
+    super.dispose();
+  }
 
   void _pickImage(ImageSource source) async {
     try {
@@ -111,15 +138,28 @@ class _CreateOglasScreenState extends State<CreateOglasScreen> {
     setState(() => _isSubmitting = true);
 
     try {
-      await PosterService.createPoster(
-        title: _titleController.text.trim(),
-        description: _descriptionController.text.trim(),
-        requiredHobbies: _selectedHobbies,
-        imageFile: _selectedImage,
-        city: _selectedCity,
-      );
-
-      _showSnackBar('Oglas uspešno objavljen!');
+      if (widget.posterToEdit != null) {
+        // Update existing poster
+        await PosterService.updatePoster(
+          posterId: widget.posterToEdit!.id,
+          title: _titleController.text.trim(),
+          description: _descriptionController.text.trim(),
+          requiredHobbies: _selectedHobbies,
+          imageFile: _selectedImage,
+          city: _selectedCity,
+        );
+        _showSnackBar('Oglas uspešno ažuriran!');
+      } else {
+        // Create new poster
+        await PosterService.createPoster(
+          title: _titleController.text.trim(),
+          description: _descriptionController.text.trim(),
+          requiredHobbies: _selectedHobbies,
+          imageFile: _selectedImage,
+          city: _selectedCity,
+        );
+        _showSnackBar('Oglas uspešno objavljen!');
+      }
       Navigator.pop(context);
     } catch (e) {
       _showSnackBar('Greška pri objavljivanju: $e');
@@ -135,17 +175,11 @@ class _CreateOglasScreenState extends State<CreateOglasScreen> {
   }
 
   @override
-  void dispose() {
-    _titleController.dispose();
-    _descriptionController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
+    final isEditing = widget.posterToEdit != null;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Novi oglas'),
+        title: Text(isEditing ? 'Izmeni oglas' : 'Novi oglas'),
         actions: [
           IconButton(
             icon: _isSubmitting
