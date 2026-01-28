@@ -52,7 +52,7 @@ class _OglasiScreenState extends State<OglasiScreen> {
                   },
                   selected: _selectedCityFilter == city,
                 );
-              }).toList(),
+              }),
             ],
           ),
         ),

@@ -29,7 +29,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
   bool _showInfoPanel = false;
   bool _isLoadingMembers = true;
   
-  Map<String, String> _userNames = {};
+  final Map<String, String> _userNames = {};
   List<Map<String, dynamic>> _groupMembers = [];
   Map<String, dynamic>? _groupInfo;
   bool _isAdmin = false;
@@ -733,7 +733,7 @@ Future<void> _addMember() async {
                             ],
                           ),
                         );
-                      }).toList(),
+                      }),
                     
                     const SizedBox(height: 20),
                     

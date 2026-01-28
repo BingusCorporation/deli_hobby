@@ -162,7 +162,7 @@ class _OglasScreenState extends State<OglasScreen> {
                 onPressed: () => _navigateToShare(poster),
                 tooltip: 'Podeli sa prijateljem',
               ),
-              if (_currentUser != null && _currentUser!.uid == poster.userId) ...[
+              if (_currentUser != null && _currentUser.uid == poster.userId) ...[
                 IconButton(
                   icon: const Icon(Icons.edit),
                   onPressed: () => _editPoster(poster),
@@ -413,7 +413,7 @@ class _OglasScreenState extends State<OglasScreen> {
                 const SizedBox(height: 24),
 
                 // Action buttons
-                if (_currentUser != null && _currentUser!.uid != poster.userId)
+                if (_currentUser != null && _currentUser.uid != poster.userId)
                   Column(
                     children: [
                       ElevatedButton.icon(
@@ -531,7 +531,9 @@ class _SharePosterScreenState extends State<SharePosterScreen> {
       for (int i = 0; i < friendIds.length; i += 10) {
         final batchIds = friendIds.sublist(i, i + 10 < friendIds.length ? i + 10 : friendIds.length);
         final usersSnapshot = await _firestore.collection('users').where(FieldPath.documentId, whereIn: batchIds).get();
-        for (final doc in usersSnapshot.docs) friends.add({'id': doc.id, ...doc.data()});
+        for (final doc in usersSnapshot.docs) {
+          friends.add({'id': doc.id, ...doc.data()});
+        }
       }
 
       setState(() {

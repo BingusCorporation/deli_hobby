@@ -4,7 +4,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/friends_service.dart';
 import 'chat_screen.dart';
-import 'friends_list_screen.dart';
 
 class OtherUserProfileScreen extends StatefulWidget {
   final String userId;
@@ -30,35 +29,28 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
   String? _friendRequestId;
   int _friendCount = 0;
   
-  // Flag to prevent multiple simultaneous friend count queries
   bool _isCountingFriends = false;
 
   @override
   void initState() {
     super.initState();
     _loadUserDataAndStatus();
-    // Load friend count after a short delay to prioritize UI
     Future.delayed(const Duration(milliseconds: 500), _loadFriendCount);
   }
 
-  // Combined loading function to reduce Firestore calls
   Future<void> _loadUserDataAndStatus() async {
     try {
       setState(() => _isLoading = true);
       
-      // Load user data using FriendsService cache
       if (widget.userId.isNotEmpty) {
-        // Precache this user for future use
         await FriendsService.precacheUsers([widget.userId]);
         
-        // Get user data from cache or Firestore
         final userData = await _getUserData(widget.userId);
         if (userData != null) {
           setState(() => _userData = userData);
         }
       }
       
-      // Load friendship status in parallel with user data
       await _loadFriendshipStatus();
     } catch (e) {
       print('Error loading user data: $e');
@@ -69,10 +61,8 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
     }
   }
 
-  // Helper to get user data with caching
   Future<Map<String, dynamic>?> _getUserData(String userId) async {
     try {
-      // First check if we need to fetch user data
       final doc = await _firestore.collection('users').doc(userId).get();
       if (doc.exists) {
         return doc.data() as Map<String, dynamic>;
@@ -83,15 +73,12 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
     return null;
   }
 
-  // Optimized friendship status loading using FriendsService
   Future<void> _loadFriendshipStatus() async {
     try {
       if (_currentUser == null || widget.userId.isEmpty) return;
       
-      // Use the optimized FriendsService method
       final status = await FriendsService.getFriendshipStatus(widget.userId);
       
-      // Get request ID if there's a pending request
       if (status == FriendshipStatus.pendingIncoming || 
           status == FriendshipStatus.pendingOutgoing) {
         await _loadFriendRequestId();
@@ -105,23 +92,21 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
     }
   }
 
-  // Load friend request ID only when needed
   Future<void> _loadFriendRequestId() async {
     try {
       if (_currentUser == null) return;
       
-      // Query for pending request
       final querySnapshot = await _firestore
           .collection('friend_requests')
           .where('status', isEqualTo: 'pending')
           .where(Filter.or(
             Filter.and(
-              Filter('senderId', isEqualTo: _currentUser.uid),
+              Filter('senderId', isEqualTo: _currentUser!.uid),
               Filter('receiverId', isEqualTo: widget.userId),
             ),
             Filter.and(
               Filter('senderId', isEqualTo: widget.userId),
-              Filter('receiverId', isEqualTo: _currentUser.uid),
+              Filter('receiverId', isEqualTo: _currentUser!.uid),
             ),
           ))
           .limit(1)
@@ -135,14 +120,12 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
     }
   }
 
-  // Optimized friend count with caching
   Future<void> _loadFriendCount() async {
     if (_isCountingFriends || widget.userId.isEmpty) return;
     
     try {
       _isCountingFriends = true;
       
-      // Use count query for efficiency
       final snapshot = await _firestore
           .collection('friendships')
           .where('userId', isEqualTo: widget.userId)
@@ -159,7 +142,6 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
     }
   }
 
-  // Friend request actions
   Future<void> _sendFriendRequest() async {
     try {
       await FriendsService.sendFriendRequest(widget.userId);
@@ -183,7 +165,7 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
 
       await FriendsService.acceptFriendRequest(_friendRequestId!);
       await _loadFriendshipStatus();
-      await _loadFriendCount(); // Refresh friend count
+      await _loadFriendCount();
       _showSnackBar('Sada ste prijatelji!');
     } catch (e) {
       _showSnackBar('Greška: $e');
@@ -251,7 +233,7 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
       try {
         await FriendsService.removeFriend(widget.userId);
         await _loadFriendshipStatus();
-        await _loadFriendCount(); // Refresh friend count
+        await _loadFriendCount();
         _showSnackBar('Prijatelj uklonjen');
       } catch (e) {
         _showSnackBar('Greška: $e');
@@ -440,7 +422,7 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
       case FriendshipStatus.none:
         return const SizedBox();
       case FriendshipStatus.self:
-        return const SizedBox(); // Should not happen in OtherUserProfileScreen
+        return const SizedBox();
     }
   }
 
@@ -467,47 +449,37 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
   }
 
   Widget _buildFriendsCount() {
-    return GestureDetector(
-      onTap: _friendCount > 0
-          ? () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => FriendsListScreen(userId: widget.userId),
-                ),
-              )
-          : null,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              Colors.orange.shade50,
-              Colors.amber.shade50,
-            ],
-          ),
-          border: Border.all(color: Colors.orange.shade200),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              '$_friendCount Prijatelji',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-                color: Colors.orange.shade900,
-              ),
-            ),
-            if (_friendCount > 0)
-              Icon(
-                Icons.arrow_forward_ios,
-                size: 16,
-                color: Colors.orange.shade700,
-              ),
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Colors.orange.shade50,
+            Colors.amber.shade50,
           ],
         ),
+        border: Border.all(color: Colors.orange.shade200),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(
+            Icons.people,
+            color: Colors.orange,
+            size: 20,
+          ),
+          const SizedBox(width: 10),
+          Text(
+            '$_friendCount Prijatelj${_friendCount != 1 ? 'a' : ''}',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+              color: Colors.orange.shade900,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -534,7 +506,7 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
               return Chip(
                 label: Text(hobby.toString()),
                 backgroundColor: Colors.orange[50],
-                side: BorderSide(color: Colors.orange[200] ?? Colors.orange),
+                side: BorderSide(color: Colors.orange[200]!),
               );
             }).toList(),
           ),
@@ -618,7 +590,7 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
             label: const Text('Otkaži zahtev'),
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 15),
-              side: BorderSide(color: Colors.grey[600] ?? Colors.grey),
+              side: const BorderSide(color: Colors.grey),
             ),
           ),
         );
@@ -636,12 +608,11 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen> {
           ),
         );
       case FriendshipStatus.self:
-        return const SizedBox(); // Should not happen
+        return const SizedBox();
     }
   }
 }
 
-/// REUSABLE STATUS CHIP WIDGET
 class _StatusChip extends StatelessWidget {
   final IconData icon;
   final String text;

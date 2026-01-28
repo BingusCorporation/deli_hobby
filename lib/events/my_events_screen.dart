@@ -22,7 +22,7 @@ class _MyEventsScreenState extends State<MyEventsScreen>
   late DateTime _focusedDay;
   late DateTime _selectedDay;
   final Map<DateTime, List<Event>> _allEventsByDate = {};
-  List<Event> _selectedDayEvents = [];
+  final List<Event> _selectedDayEvents = [];
 
   @override
   void initState() {
