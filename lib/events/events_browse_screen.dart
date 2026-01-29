@@ -99,59 +99,129 @@ class _EventsBrowseScreenState extends State<EventsBrowseScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: TextField(
-          controller: _searchController,
-          style: const TextStyle(color: Colors.white),
-          decoration: InputDecoration(
-            hintText: 'Pretrazi dogadjaje...',
-            hintStyle: TextStyle(color: Colors.white70),
-            border: InputBorder.none,
-            prefixIcon: Icon(Icons.search, color: Colors.white70),
-            suffixIcon: _searchController.text.isNotEmpty
-                ? IconButton(
-                    icon: const Icon(Icons.clear, color: Colors.white70),
-                    onPressed: () {
-                      _searchController.clear();
-                      setState(() {});
-                    },
-                  )
-                : null,
+        title: Container(
+          height: 40,
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.2),
+            borderRadius: BorderRadius.circular(12),
           ),
-          onChanged: (_) => setState(() {}),
+          child: TextField(
+            controller: _searchController,
+            style: const TextStyle(color: Colors.white),
+            decoration: InputDecoration(
+              hintText: 'Pretraži događaje...',
+              hintStyle: const TextStyle(color: Colors.white70),
+              border: InputBorder.none,
+              prefixIcon: const Icon(Icons.search, color: Colors.white70),
+              suffixIcon: _searchController.text.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear, color: Colors.white70),
+                      onPressed: () {
+                        _searchController.clear();
+                        setState(() {});
+                      },
+                    )
+                  : null,
+              contentPadding:
+                  const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+            ),
+            onChanged: (_) => setState(() {}),
+          ),
         ),
         backgroundColor: Colors.orange.shade700,
         foregroundColor: Colors.white,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.my_library_books),
-            tooltip: 'Moji dogadjaji',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const MyEventsScreen()),
-              );
-            },
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(
+            bottom: Radius.circular(20),
           ),
-          IconButton(
-            icon: const Icon(Icons.filter_list),
-            onPressed: _showFilterDialog,
+        ),
+        actions: [
+          Container(
+            margin: const EdgeInsets.only(right: 8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.my_library_books),
+              color: Colors.white,
+              tooltip: 'Moji događaji',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const MyEventsScreen()),
+                );
+              },
+            ),
+          ),
+          Container(
+            margin: const EdgeInsets.only(right: 12),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.filter_list),
+              color: Colors.white,
+              onPressed: _showFilterDialog,
+            ),
           ),
         ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _buildEventsList(),
-      floatingActionButton: FloatingActionButton(
-        heroTag: 'events_browse_fab',
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const EventCreateScreen(),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.orange.shade50,
+              Colors.white,
+            ],
+            stops: const [0.0, 0.3],
+          ),
+        ),
+        child: _isLoading
+            ? Center(
+                child: CircularProgressIndicator(
+                  color: Colors.orange.shade700,
+                ),
+              )
+            : _buildEventsList(),
+      ),
+      floatingActionButton: Container(
+        margin: const EdgeInsets.only(bottom: 16, right: 16),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Colors.orange.shade400,
+              Colors.orange.shade600,
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.orange.shade400.withOpacity(0.4),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
             ),
-          );
-        },
-        child: const Icon(Icons.add),
+          ],
+        ),
+        child: FloatingActionButton(
+          heroTag: 'events_browse_fab',
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const EventCreateScreen(),
+              ),
+            );
+          },
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          child: const Icon(Icons.add, color: Colors.white, size: 28),
+        ),
       ),
     );
   }
@@ -165,12 +235,31 @@ class _EventsBrowseScreenState extends State<EventsBrowseScreen> {
       ),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return Center(
+            child: CircularProgressIndicator(
+              color: Colors.orange.shade700,
+            ),
+          );
         }
 
         if (snapshot.hasError) {
           return Center(
-            child: Text('Greska: ${snapshot.error}'),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.error,
+                  color: Colors.orange.shade700,
+                  size: 60,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Greška: ${snapshot.error}',
+                  style: const TextStyle(color: Colors.grey),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
           );
         }
 
@@ -240,6 +329,7 @@ class _EventsBrowseScreenState extends State<EventsBrowseScreen> {
 
         return RefreshIndicator(
           onRefresh: _loadUserData,
+          color: Colors.orange.shade700,
           child: _EventsListWithFriendPriority(
             rankedEvents: rankedEvents,
             eventService: _eventService,
@@ -256,24 +346,30 @@ class _EventsBrowseScreenState extends State<EventsBrowseScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.event_busy, size: 60, color: Colors.grey[400]),
+          Icon(
+            Icons.event_busy,
+            size: 60,
+            color: Colors.orange.shade300,
+          ),
           const SizedBox(height: 16),
           Text(
-            'Nema dogadjaja',
+            'Nema događaja',
             style: TextStyle(
-              fontSize: 18,
-              color: Colors.grey[600],
+              fontSize: 16,
+              color: Colors.grey.shade700,
+              fontWeight: FontWeight.w500,
             ),
           ),
           const SizedBox(height: 8),
           Text(
             _selectedCity != null || _selectedCategory != null
-                ? 'Pokusaj sa drugim filterima'
-                : 'Budi prvi koji ce kreirati dogadjaj!',
+                ? 'Pokušaj sa drugim filterima'
+                : 'Budi prvi koji će kreirati događaj!',
             style: TextStyle(
               fontSize: 14,
-              color: Colors.grey[500],
+              color: Colors.grey.shade600,
             ),
+            textAlign: TextAlign.center,
           ),
           if (_selectedCity != null || _selectedCategory != null) ...[
             const SizedBox(height: 16),
@@ -282,6 +378,12 @@ class _EventsBrowseScreenState extends State<EventsBrowseScreen> {
                 setState(() {
                   _selectedCity = null;
                   _selectedCategory = null;
+                  _selectedSubcategory = null;
+                  _selectedSkillLevel = null;
+                  _wheelchairAccessible = null;
+                  _hearingAssistance = null;
+                  _visualAssistance = null;
+                  _onlyWithFriends = null;
                 });
               },
               child: const Text('Ukloni filtere'),
@@ -305,9 +407,7 @@ class _EventsBrowseScreenState extends State<EventsBrowseScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
+      backgroundColor: Colors.transparent,
       builder: (context) {
         String? tempCity = _selectedCity;
         String? tempCategory = _selectedCategory;
@@ -318,201 +418,260 @@ class _EventsBrowseScreenState extends State<EventsBrowseScreen> {
         bool? tempVisual = _visualAssistance;
         bool? tempOnlyWithFriends = _onlyWithFriends;
 
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            return SingleChildScrollView(
-              child: Padding(
-                padding: EdgeInsets.only(
-                  bottom: MediaQuery.of(context).viewInsets.bottom,
-                  left: 16,
-                  right: 16,
-                  top: 16,
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Filteri',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
+        return Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(25),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.orange.shade200.withOpacity(0.5),
+                blurRadius: 20,
+                spreadRadius: 2,
+              ),
+            ],
+          ),
+          child: StatefulBuilder(
+            builder: (context, setModalState) {
+              return SingleChildScrollView(
+                child: Padding(
+                  padding: EdgeInsets.only(
+                    bottom: MediaQuery.of(context).viewInsets.bottom,
+                    left: 16,
+                    right: 16,
+                    top: 16,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Center(
+                        child: Container(
+                          width: 40,
+                          height: 5,
+                          decoration: BoxDecoration(
+                            color: Colors.orange.shade300,
+                            borderRadius: BorderRadius.circular(3),
                           ),
                         ),
-                        Row(
-                          children: [
-                            TextButton(
-                              onPressed: () {
-                                setModalState(() {
-                                  tempCity = null;
-                                  tempCategory = null;
-                                  tempSubcategory = null;
-                                  tempSkillLevel = null;
-                                  tempWheelchair = null;
-                                  tempHearing = null;
-                                  tempVisual = null;
-                                  tempOnlyWithFriends = null;
-                                });
-                              },
-                              child: const Text('Obriši sve'),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.close),
-                              onPressed: () => Navigator.pop(context),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Location filter
-                    const Text(
-                      'Lokacija:',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 8),
-                    _buildDropdown(
-                      value: tempCity,
-                      hint: 'Svi gradovi',
-                      items: serbiaCities,
-                      onChanged: (value) {
-                        setModalState(() => tempCity = value);
-                      },
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Hobby category filter
-                    const Text(
-                      'Kategorija hobija:',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 8),
-                    _buildDropdown(
-                      value: tempCategory,
-                      hint: 'Sve kategorije',
-                      items: hobbyCategories.keys.toList(),
-                      onChanged: (value) {
-                        setModalState(() {
-                          tempCategory = value;
-                          tempSubcategory = null; // Reset subcategory
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Hobby subcategory filter
-                    if (tempCategory != null)
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      ),
+                      const SizedBox(height: 20),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
-                            'Podkategorija hobija:',
-                            style: TextStyle(fontWeight: FontWeight.bold),
+                          Text(
+                            'Filteri',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.orange.shade800,
+                            ),
                           ),
-                          const SizedBox(height: 8),
-                          _buildDropdown(
-                            value: tempSubcategory,
-                            hint: 'Sve podkategorije',
-                            items: hobbyCategories[tempCategory] ?? [],
-                            onChanged: (value) {
-                              setModalState(() => tempSubcategory = value);
-                            },
+                          Row(
+                            children: [
+                              TextButton(
+                                onPressed: () {
+                                  setModalState(() {
+                                    tempCity = null;
+                                    tempCategory = null;
+                                    tempSubcategory = null;
+                                    tempSkillLevel = null;
+                                    tempWheelchair = null;
+                                    tempHearing = null;
+                                    tempVisual = null;
+                                    tempOnlyWithFriends = null;
+                                  });
+                                },
+                                style: TextButton.styleFrom(
+                                  foregroundColor: Colors.orange.shade600,
+                                ),
+                                child: const Text('Obriši sve'),
+                              ),
+                              IconButton(
+                                icon: Icon(
+                                  Icons.close,
+                                  color: Colors.orange.shade600,
+                                ),
+                                onPressed: () => Navigator.pop(context),
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 16),
                         ],
                       ),
+                      const SizedBox(height: 20),
 
-                    // Skill level filter
-                    const Text(
-                      'Nivo veštine:',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 8),
-                    _buildDropdown(
-                      value: tempSkillLevel,
-                      hint: 'Svi nivoi',
-                      items: const ['beginner', 'intermediate', 'advanced', 'any'],
-                      onChanged: (value) {
-                        setModalState(() => tempSkillLevel = value);
-                      },
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Accessibility filters
-                    const Text(
-                      'Dostupnost:',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 8),
-                    _buildCheckbox(
-                      label: 'Dostupno za invalidska kolica',
-                      value: tempWheelchair,
-                      onChanged: (value) {
-                        setModalState(() => tempWheelchair = value);
-                      },
-                    ),
-                    _buildCheckbox(
-                      label: 'Pomoć za čujuće',
-                      value: tempHearing,
-                      onChanged: (value) {
-                        setModalState(() => tempHearing = value);
-                      },
-                    ),
-                    _buildCheckbox(
-                      label: 'Pomoć za vidne',
-                      value: tempVisual,
-                      onChanged: (value) {
-                        setModalState(() => tempVisual = value);
-                      },
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Friends filter
-                    _buildCheckbox(
-                      label: 'Samo dogadjaji sa prijateljima',
-                      value: tempOnlyWithFriends,
-                      onChanged: (value) {
-                        setModalState(() => tempOnlyWithFriends = value);
-                      },
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Apply button
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          setState(() {
-                            _selectedCity = tempCity;
-                            _selectedCategory = tempCategory;
-                            _selectedSubcategory = tempSubcategory;
-                            _selectedSkillLevel = tempSkillLevel;
-                            _wheelchairAccessible = tempWheelchair;
-                            _hearingAssistance = tempHearing;
-                            _visualAssistance = tempVisual;
-                            _onlyWithFriends = tempOnlyWithFriends;
-                          });
-                          Navigator.pop(context);
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.orange.shade700,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
+                      // Location filter
+                      Text(
+                        'Lokacija:',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: Colors.orange.shade800,
                         ),
-                        child: const Text('Primeni filtere'),
                       ),
-                    ),
+                      const SizedBox(height: 8),
+                      _buildDropdown(
+                        value: tempCity,
+                        hint: 'Svi gradovi',
+                        items: serbiaCities,
+                        onChanged: (value) {
+                          setModalState(() => tempCity = value);
+                        },
+                      ),
+                      const SizedBox(height: 16),
 
-                    const SizedBox(height: 16),
-                  ],
+                      // Hobby category filter
+                      Text(
+                        'Kategorija hobija:',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: Colors.orange.shade800,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      _buildDropdown(
+                        value: tempCategory,
+                        hint: 'Sve kategorije',
+                        items: hobbyCategories.keys.toList(),
+                        onChanged: (value) {
+                          setModalState(() {
+                            tempCategory = value;
+                            tempSubcategory = null; // Reset subcategory
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Hobby subcategory filter
+                      if (tempCategory != null)
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Podkategorija hobija:',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: Colors.orange.shade800,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            _buildDropdown(
+                              value: tempSubcategory,
+                              hint: 'Sve podkategorije',
+                              items: hobbyCategories[tempCategory] ?? [],
+                              onChanged: (value) {
+                                setModalState(() => tempSubcategory = value);
+                              },
+                            ),
+                            const SizedBox(height: 16),
+                          ],
+                        ),
+
+                      // Skill level filter
+                      Text(
+                        'Nivo veštine:',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: Colors.orange.shade800,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      _buildDropdown(
+                        value: tempSkillLevel,
+                        hint: 'Svi nivoi',
+                        items: const ['beginner', 'intermediate', 'advanced', 'any'],
+                        displayNames: const ['Početnik', 'Srednji', 'Napredni', 'Svi nivoi'],
+                        onChanged: (value) {
+                          setModalState(() => tempSkillLevel = value);
+                        },
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Accessibility filters
+                      Text(
+                        'Dostupnost:',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: Colors.orange.shade800,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      _buildCheckbox(
+                        label: 'Dostupno za invalidska kolica',
+                        value: tempWheelchair,
+                        onChanged: (value) {
+                          setModalState(() => tempWheelchair = value);
+                        },
+                      ),
+                      _buildCheckbox(
+                        label: 'Pomoć za ljude sa oštećenjem sluha',
+                        value: tempHearing,
+                        onChanged: (value) {
+                          setModalState(() => tempHearing = value);
+                        },
+                      ),
+                      _buildCheckbox(
+                        label: 'Pomoć za ljude sa oštećenjem vida',
+                        value: tempVisual,
+                        onChanged: (value) {
+                          setModalState(() => tempVisual = value);
+                        },
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Friends filter
+                      _buildCheckbox(
+                        label: 'Samo događaji sa prijateljima',
+                        value: tempOnlyWithFriends,
+                        onChanged: (value) {
+                          setModalState(() => tempOnlyWithFriends = value);
+                        },
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Apply button
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            setState(() {
+                              _selectedCity = tempCity;
+                              _selectedCategory = tempCategory;
+                              _selectedSubcategory = tempSubcategory;
+                              _selectedSkillLevel = tempSkillLevel;
+                              _wheelchairAccessible = tempWheelchair;
+                              _hearingAssistance = tempHearing;
+                              _visualAssistance = tempVisual;
+                              _onlyWithFriends = tempOnlyWithFriends;
+                            });
+                            Navigator.pop(context);
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.orange.shade700,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 3,
+                            shadowColor: Colors.orange.shade400,
+                          ),
+                          child: const Text(
+                            'Primeni filtere',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 20),
+                    ],
+                  ),
                 ),
-              ),
-            );
-          },
+              );
+            },
+          ),
         );
       },
     );
@@ -522,31 +681,59 @@ class _EventsBrowseScreenState extends State<EventsBrowseScreen> {
     required String? value,
     required String hint,
     required List<String> items,
+    List<String>? displayNames,
     required ValueChanged<String?> onChanged,
   }) {
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade400),
-        borderRadius: BorderRadius.circular(8),
+        color: Colors.orange.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.orange.shade200,
+          width: 2,
+        ),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           isExpanded: true,
           hint: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Text(hint),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Text(
+              hint,
+              style: TextStyle(color: Colors.orange.shade600),
+            ),
           ),
           value: value,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          dropdownColor: Colors.orange.shade50,
+          borderRadius: BorderRadius.circular(12),
+          icon: Icon(
+            Icons.arrow_drop_down,
+            color: Colors.orange.shade600,
+          ),
           items: [
             DropdownMenuItem<String>(
               value: null,
-              child: Text(hint),
+              child: Text(
+                hint,
+                style: TextStyle(color: Colors.orange.shade600),
+              ),
             ),
-            ...items.map((item) {
+            ...items.asMap().entries.map((entry) {
+              final index = entry.key;
+              final item = entry.value;
+              final displayName = displayNames != null && index < displayNames.length
+                  ? displayNames[index]
+                  : item;
+              
               return DropdownMenuItem(
                 value: item,
-                child: Text(item),
+                child: Text(
+                  displayName,
+                  style: TextStyle(
+                    color: Colors.orange.shade800,
+                  ),
+                ),
               );
             }),
           ],
@@ -576,30 +763,47 @@ class _EventsBrowseScreenState extends State<EventsBrowseScreen> {
           }
           onChanged(newValue);
         },
-        child: Row(
-          children: [
-            Container(
-              width: 24,
-              height: 24,
-              decoration: BoxDecoration(
-                border: Border.all(
-                  color: value == null ? Colors.grey : Colors.orange.shade700,
-                  width: 2,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: Colors.orange.shade200,
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: value == null 
+                        ? Colors.orange.shade300 
+                        : Colors.orange.shade700,
+                    width: 2,
+                  ),
+                  borderRadius: BorderRadius.circular(6),
+                  color: value == true ? Colors.orange.shade700 : null,
                 ),
-                borderRadius: BorderRadius.circular(4),
-                color: value == true ? Colors.orange.shade700 : null,
+                child: value == true
+                    ? const Icon(Icons.check, size: 16, color: Colors.white)
+                    : value == false
+                        ? Icon(Icons.close, size: 16, color: Colors.orange.shade700)
+                        : null,
               ),
-              child: value == true
-                  ? const Icon(Icons.check, size: 16, color: Colors.white)
-                  : value == false
-                      ? Icon(Icons.close, size: 16, color: Colors.orange.shade700)
-                      : null,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(label),
-            ),
-          ],
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    color: Colors.orange.shade800,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -678,21 +882,55 @@ class _EventsListWithFriendPriorityState
     return FutureBuilder<List<RankedEvent>>(
       future: _eventsFuture,
       builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(
+            child: CircularProgressIndicator(
+              color: Colors.orange.shade700,
+            ),
+          );
+        }
+
         final events = snapshot.data ?? widget.rankedEvents;
 
+        if (events.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.search_off,
+                  size: 60,
+                  color: Colors.orange.shade300,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Nema rezultata',
+                  style: TextStyle(
+                    color: Colors.grey.shade700,
+                    fontSize: 16,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
         return ListView.builder(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(16),
           itemCount: events.length,
           itemBuilder: (context, index) {
             final rankedEvent = events[index];
-            return EventCard(
-              event: rankedEvent.event,
-              matchScore: rankedEvent.scorePercent,
-              onTap: () => widget.onEventTap(rankedEvent.event),
-              friendsParticipating:
-                  rankedEvent.friendsParticipating > 0
-                      ? rankedEvent.friendsParticipating
-                      : null,
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: EventCard(
+                event: rankedEvent.event,
+                matchScore: rankedEvent.scorePercent,
+                onTap: () => widget.onEventTap(rankedEvent.event),
+                friendsParticipating:
+                    rankedEvent.friendsParticipating > 0
+                        ? rankedEvent.friendsParticipating
+                        : null,
+              ),
             );
           },
         );

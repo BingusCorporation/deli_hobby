@@ -47,15 +47,30 @@ class _OglasScreenState extends State<OglasScreen> {
   }
 
   void _viewUserProfile(String userId, String userName) {
-    Navigator.push(context, MaterialPageRoute(builder: (context) => OtherUserProfileScreen(userId: userId, userName: userName)));
+    Navigator.push(
+      context, 
+      MaterialPageRoute(
+        builder: (context) => OtherUserProfileScreen(userId: userId, userName: userName)
+      )
+    );
   }
 
   void _sendMessage(String receiverId, String receiverName) {
-    Navigator.push(context, MaterialPageRoute(builder: (context) => ChatScreen(otherUserId: receiverId, otherUserName: receiverName)));
+    Navigator.push(
+      context, 
+      MaterialPageRoute(
+        builder: (context) => ChatScreen(otherUserId: receiverId, otherUserName: receiverName)
+      )
+    );
   }
 
   void _editPoster(Poster poster) {
-    Navigator.push(context, MaterialPageRoute(builder: (context) => CreateOglasScreen(posterToEdit: poster)));
+    Navigator.push(
+      context, 
+      MaterialPageRoute(
+        builder: (context) => CreateOglasScreen(posterToEdit: poster)
+      )
+    );
   }
 
   void _showDeleteDialog(Poster poster) {
@@ -65,13 +80,19 @@ class _OglasScreenState extends State<OglasScreen> {
         title: const Text('Obriši oglas'),
         content: const Text('Da li si siguran da želiš da obrišeš ovaj oglas? Ova akcija se ne može poništiti.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Odustani')),
+          TextButton(
+            onPressed: () => Navigator.pop(context), 
+            child: const Text('Odustani')
+          ),
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(context);
               await _deletePoster(poster);
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
             child: const Text('Obriši'),
           ),
         ],
@@ -102,7 +123,12 @@ class _OglasScreenState extends State<OglasScreen> {
   }
 
   void _navigateToShare(Poster poster) {
-    Navigator.push(context, MaterialPageRoute(builder: (context) => SharePosterScreen(poster: poster)));
+    Navigator.push(
+      context, 
+      MaterialPageRoute(
+        builder: (context) => SharePosterScreen(poster: poster)
+      )
+    );
   }
 
   @override
@@ -117,9 +143,22 @@ class _OglasScreenState extends State<OglasScreen> {
               backgroundColor: Colors.orange.shade700,
               foregroundColor: Colors.white,
             ),
-            body: Center(
-              child: CircularProgressIndicator(
-                color: Colors.orange.shade700,
+            body: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Color(0xFFFFF8F0),  // Very light orange
+                    Color(0xFFFFF3E0),  // Light orange tint
+                    Colors.white,
+                  ],
+                ),
+              ),
+              child: Center(
+                child: CircularProgressIndicator(
+                  color: Colors.orange.shade700,
+                ),
               ),
             ),
           );
@@ -132,18 +171,34 @@ class _OglasScreenState extends State<OglasScreen> {
               backgroundColor: Colors.orange.shade700,
               foregroundColor: Colors.white,
             ),
-            body: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.error, color: Colors.orange.shade700, size: 60),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Greška: ${snapshot.error}',
-                    style: TextStyle(color: Colors.orange.shade700),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
+            body: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Color(0xFFFFF8F0),
+                    Color(0xFFFFF3E0),
+                    Colors.white,
+                  ],
+                ),
+              ),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.error, color: Colors.orange.shade700, size: 60),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Greška: ${snapshot.error}',
+                      style: TextStyle(
+                        color: Colors.grey.shade700,
+                        fontSize: 16,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
               ),
             ),
           );
@@ -176,279 +231,407 @@ class _OglasScreenState extends State<OglasScreen> {
               ],
             ],
           ),
-          body: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Image
-                if (poster.imageUrl != null)
-                  Container(
-                    height: 250,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      color: Colors.grey.shade200,
-                    ),
-                    clipBehavior: Clip.antiAlias,
-                    child: Image.network(
-                      poster.imageUrl!,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => Container(
-                        color: Colors.grey.shade300,
-                        child: Icon(
-                          Icons.broken_image,
-                          color: Colors.grey.shade600,
-                          size: 60,
-                        ),
-                      ),
-                    ),
-                  ),
-                const SizedBox(height: 16),
-
-                // Title
-                Text(
-                  poster.title,
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Description
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Opis',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          poster.description,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey[700],
-                            height: 1.5,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // City
-                if (poster.city != null)
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Row(
-                        children: [
-                          Icon(Icons.location_on, color: Colors.red.shade600),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Lokacija',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  poster.city!,
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
+          body: Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Color(0xFFFFF8F0),  // Very light orange at top
+                  Color(0xFFFFF3E0),  // Slightly stronger orange in middle
+                  Colors.white,      // White at bottom
+                ],
+                stops: [0.0, 0.3, 1.0],
+              ),
+            ),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Image
+                  if (poster.imageUrl != null)
+                    Container(
+                      height: 250,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        color: Colors.grey.shade100,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey.withOpacity(0.2),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
                           ),
                         ],
                       ),
+                      clipBehavior: Clip.antiAlias,
+                      child: Image.network(
+                        poster.imageUrl!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Container(
+                          color: Colors.grey.shade200,
+                          child: Icon(
+                            Icons.broken_image,
+                            color: Colors.grey.shade400,
+                            size: 60,
+                          ),
+                        ),
+                      ),
+                    ),
+                  const SizedBox(height: 20),
+
+                  // Title
+                  Text(
+                    poster.title,
+                    style: const TextStyle(
+                      fontSize: 26,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF333333),  // Dark gray for contrast
                     ),
                   ),
-                const SizedBox(height: 16),
+                  const SizedBox(height: 16),
 
-                // Required Hobbies
-                if (poster.requiredHobbies.isNotEmpty) ...[
+                  // Description
                   Card(
+                    elevation: 1,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: BorderSide(
+                        color: Colors.grey.shade200,
+                        width: 1,
+                      ),
+                    ),
                     child: Padding(
-                      padding: const EdgeInsets.all(12),
+                      padding: const EdgeInsets.all(16),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'Traženi hobiji',
+                          Text(
+                            'Opis',
                             style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                              color: Colors.grey.shade600,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                           const SizedBox(height: 12),
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: poster.requiredHobbies.map((h) {
-                              return Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.blue.shade50,
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Text(
-                                  h,
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    color: Colors.blue.shade700,
-                                  ),
-                                ),
-                              );
-                            }).toList(),
+                          Text(
+                            poster.description,
+                            style: TextStyle(
+                              fontSize: 15,
+                              color: Colors.grey.shade800,
+                              height: 1.5,
+                            ),
                           ),
                         ],
                       ),
                     ),
                   ),
                   const SizedBox(height: 16),
-                ],
 
-                // Creator info
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Row(
-                      children: [
-                        GestureDetector(
-                          onTap: () => _viewUserProfile(poster.userId, poster.userName),
-                          child: CircleAvatar(
-                            radius: 28,
-                            backgroundImage: poster.userProfilePic != null
-                                ? NetworkImage(poster.userProfilePic!)
-                                : null,
-                          ),
+                  // City
+                  if (poster.city != null)
+                    Card(
+                      elevation: 1,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: BorderSide(
+                          color: Colors.grey.shade200,
+                          width: 1,
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              GestureDetector(
-                                onTap: () =>
-                                    _viewUserProfile(poster.userId, poster.userName),
-                                child: Text(
-                                  poster.userName,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.location_on,
+                              color: Colors.orange.shade600,
+                              size: 24,
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Lokacija',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey.shade600,
+                                    ),
                                   ),
-                                ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    poster.city!,
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF333333),
+                                    ),
+                                  ),
+                                ],
                               ),
-                              const SizedBox(height: 4),
-                              Text(
-                                _formatDate(poster.createdAt),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  const SizedBox(height: 16),
+
+                  // Required Hobbies
+                  if (poster.requiredHobbies.isNotEmpty) ...[
+                    Card(
+                      elevation: 1,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: BorderSide(
+                          color: Colors.grey.shade200,
+                          width: 1,
+                        ),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Traženi hobiji',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF333333),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: poster.requiredHobbies.map((h) {
+                                return Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.blue.shade50,  // Blue for contrast
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                      color: Colors.blue.shade100,
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    h,
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: Colors.blue.shade700,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+
+                  // Creator info
+                  Card(
+  elevation: 1,
+  shape: RoundedRectangleBorder(
+    borderRadius: BorderRadius.circular(12),
+    side: BorderSide(
+      color: Colors.grey.shade200,
+      width: 1,
+    ),
+  ),
+  child: Padding(
+    padding: const EdgeInsets.all(16),
+    child: Row(
+      children: [
+        GestureDetector(
+          onTap: () => _viewUserProfile(poster.userId, poster.userName),
+          child: CircleAvatar(
+            radius: 28,
+            backgroundColor: Colors.orange.shade100,
+            backgroundImage: poster.userProfilePic != null && poster.userProfilePic!.isNotEmpty
+                ? NetworkImage(poster.userProfilePic!)
+                : null,
+            child: poster.userProfilePic == null || poster.userProfilePic!.isEmpty
+                ? Text(
+                    poster.userName.isNotEmpty ? poster.userName[0].toUpperCase() : '?',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.orange.shade700,
+                    ),
+                  )
+                : null,
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              GestureDetector(
+                onTap: () => _viewUserProfile(poster.userId, poster.userName),
+                child: Text(
+                  poster.userName,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 16,
+                    color: Color(0xFF333333),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  Icon(
+                    Icons.access_time,
+                    size: 14,
+                    color: Colors.grey.shade500,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    _formatDate(poster.createdAt),
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        FutureBuilder<bool>(
+          future: _isMatchingFuture,
+          builder: (context, matchSnapshot) {
+            if (matchSnapshot.data == true) {
+              return Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade50,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: Colors.orange.shade200,
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.star,
+                      size: 14,
+                      color: Colors.orange.shade700,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Za vas',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.orange.shade700,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
+            return const SizedBox.shrink();
+          },
+        ),
+      ],
+    ),
+  ),
+),
+const SizedBox(height: 32),
+                  // Action buttons - Clean and contrasting
+                  if (_currentUser != null && _currentUser.uid != poster.userId)
+                    Column(
+                      children: [
+                        // View Profile Button
+                        ElevatedButton(
+                          onPressed: () =>
+                              _viewUserProfile(poster.userId, poster.userName),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.blue.shade600,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 32,
+                              vertical: 14,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            elevation: 1,
+                            shadowColor: Colors.blue.shade200,
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.person, size: 20),
+                              const SizedBox(width: 10),
+                              const Text(
+                                'Pogledaj profil',
                                 style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey[600],
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ],
                           ),
                         ),
-                        FutureBuilder<bool>(
-                          future: _isMatchingFuture,
-                          builder: (context, matchSnapshot) {
-                            if (matchSnapshot.data == true) {
-                              return Container(
-                                padding:
-                                    const EdgeInsets.symmetric(
-                                      horizontal: 10,
-                                      vertical: 6,
-                                    ),
-                                decoration: BoxDecoration(
-                                  color: Colors.amber.shade100,
-                                  borderRadius: BorderRadius.circular(20),
+                        const SizedBox(height: 12),
+
+                        // Send Message Button
+                        ElevatedButton(
+                          onPressed: () =>
+                              _sendMessage(poster.userId, poster.userName),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green.shade600,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 32,
+                              vertical: 14,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            elevation: 1,
+                            shadowColor: Colors.green.shade200,
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.message, size: 20),
+                              const SizedBox(width: 10),
+                              const Text(
+                                'Pošalji poruku',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
                                 ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(Icons.star,
-                                        size: 14,
-                                        color: Colors.amber.shade700),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      'Za vas',
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        color: Colors.amber.shade800,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            }
-                            return const SizedBox.shrink();
-                          },
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-
-                // Action buttons
-                if (_currentUser != null && _currentUser.uid != poster.userId)
-                  Column(
-                    children: [
-                      ElevatedButton.icon(
-                        onPressed: () =>
-                            _viewUserProfile(poster.userId, poster.userName),
-                        icon: const Icon(Icons.person, size: 18),
-                        label: const Text('Pogledaj profil'),
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          backgroundColor: Colors.orange.shade700,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      ElevatedButton.icon(
-                        onPressed: () =>
-                            _sendMessage(poster.userId, poster.userName),
-                        icon: const Icon(Icons.message, size: 18),
-                        label: const Text('Pošalji poruku'),
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          backgroundColor: Colors.blue.shade600,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                const SizedBox(height: 24),
-              ],
+                  const SizedBox(height: 24),
+                ],
+              ),
             ),
           ),
         );
@@ -551,7 +734,6 @@ class _SharePosterScreenState extends State<SharePosterScreen> {
       final currentUserId = _auth.currentUser?.uid;
       if (currentUserId == null) return;
 
-      // Get shares that exist in the poster's shares collection
       final sharesSnapshot = await _firestore
           .collection('posters')
           .doc(widget.poster.id)
@@ -561,11 +743,9 @@ class _SharePosterScreenState extends State<SharePosterScreen> {
       
       final pendingSet = <String>{};
       
-      // For each pending share, check if it still exists in the recipient's poster_shares
       for (final doc in sharesSnapshot.docs) {
         final recipientId = doc['recipientId'] as String?;
         if (recipientId != null) {
-          // Check if the share still exists in user's collection
           final userShare = await _firestore
               .collection('users')
               .doc(recipientId)
@@ -573,11 +753,9 @@ class _SharePosterScreenState extends State<SharePosterScreen> {
               .doc(doc.id)
               .get();
           
-          // Only mark as pending if it still exists in the user's collection
           if (userShare.exists) {
             pendingSet.add(recipientId);
           } else {
-            // If user deleted it, mark status as 'deleted' in the poster shares
             await doc.reference.update({'status': 'deleted'});
           }
         }
@@ -653,8 +831,8 @@ class _SharePosterScreenState extends State<SharePosterScreen> {
       if (mounted) {
         if (failed.isEmpty) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Podeljeno sa ${_selectedFriendIds.length} prijatelja!'),
+            const SnackBar(
+              content: Text('Podeljeno sa prijateljima!'),
               backgroundColor: Colors.green,
             ),
           );
@@ -689,162 +867,224 @@ class _SharePosterScreenState extends State<SharePosterScreen> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          // Search bar
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'Pretraži prijatelje...',
-                prefixIcon: Icon(Icons.search, color: Colors.grey.shade500),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.grey.shade300),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.orange.shade700, width: 2),
-                ),
-                filled: true,
-                fillColor: Colors.grey.shade50,
-                contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
-              ),
-            ),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFFFFF8F0),
+              Color(0xFFFFF3E0),
+              Colors.white,
+            ],
+            stops: [0.0, 0.2, 1.0],
           ),
-
-          // Filter button
-          if (_selectedCategory != null || _selectedSubcategory != null)
+        ),
+        child: Column(
+          children: [
+            // Search bar
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      'Filter: ${_selectedSubcategory != null ? '$_selectedCategory > $_selectedSubcategory' : _selectedCategory}',
-                      style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-                    ),
+              padding: const EdgeInsets.all(16),
+              child: TextField(
+                controller: _searchController,
+                decoration: InputDecoration(
+                  hintText: 'Pretraži prijatelje...',
+                  prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
                   ),
-                  IconButton(
-                    onPressed: () {
-                      setState(() {
-                        _selectedCategory = null;
-                        _selectedSubcategory = null;
-                        _applyFilters();
-                      });
-                    },
-                    icon: Icon(Icons.close, size: 18, color: Colors.grey.shade600),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.orange.shade600, width: 2),
                   ),
-                ],
+                  filled: true,
+                  fillColor: Colors.white,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+                ),
               ),
             ),
 
-          // Friends list
-          Expanded(
-            child: _isLoadingFriends
-                ? Center(
-                    child: CircularProgressIndicator(
-                      color: Colors.orange.shade700,
+            // Filter indicator
+            if (_selectedCategory != null || _selectedSubcategory != null)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade50,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: Colors.blue.shade100),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.filter_alt,
+                            size: 16,
+                            color: Colors.blue.shade700,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            _selectedSubcategory != null 
+                                ? '$_selectedCategory > $_selectedSubcategory'
+                                : _selectedCategory!,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.blue.shade700,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _selectedCategory = null;
+                                _selectedSubcategory = null;
+                                _applyFilters();
+                              });
+                            },
+                            child: Icon(
+                              Icons.close,
+                              size: 16,
+                              color: Colors.blue.shade700,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  )
-                : _allFriends.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.people_outline,
-                              size: 60,
-                              color: Colors.grey.shade400,
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'Nemate prijatelja',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.grey.shade600,
+                  ],
+                ),
+              ),
+
+            // Friends list
+            Expanded(
+              child: _isLoadingFriends
+                  ? Center(
+                      child: CircularProgressIndicator(
+                        color: Colors.orange.shade700,
+                      ),
+                    )
+                  : _allFriends.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.people_outline,
+                                size: 60,
+                                color: Colors.grey.shade400,
                               ),
-                            ),
-                          ],
-                        ),
-                      )
-                    : _filteredFriends.isEmpty
-                        ? Center(
-                            child: Text(
-                              'Nema prijatelja koji odgovaraju',
-                              style: TextStyle(
-                                color: Colors.grey.shade600,
-                                fontSize: 14,
-                              ),
-                            ),
-                          )
-                        : ListView.builder(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                            itemCount: _filteredFriends.length,
-                            itemBuilder: (context, index) {
-                              final friend = _filteredFriends[index];
-                              final isSelected = _selectedFriendIds.contains(friend['id']);
-                              final isPending = _pendingShares.contains(friend['id']);
-                              
-                              return Container(
-                                margin: const EdgeInsets.only(bottom: 8),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(
-                                    color: isSelected
-                                        ? Colors.orange.shade400
-                                        : Colors.grey.shade200,
-                                    width: isSelected ? 2 : 1,
-                                  ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'Nemate prijatelja',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.grey.shade600,
                                 ),
-                                child: CheckboxListTile(
-                                  value: isSelected,
-                                  onChanged: isPending
-                                      ? null
-                                      : (v) {
-                                          setState(() {
-                                            if (v == true) {
-                                              _selectedFriendIds.add(friend['id']);
-                                            } else {
-                                              _selectedFriendIds.remove(friend['id']);
-                                            }
-                                          });
-                                        },
-                                  title: Text(
-                                    friend['name'] ?? 'Nepoznato',
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w500,
-                                      fontSize: 14,
+                              ),
+                            ],
+                          ),
+                        )
+                      : _filteredFriends.isEmpty
+                          ? Center(
+                              child: Text(
+                                'Nema prijatelja koji odgovaraju',
+                                style: TextStyle(
+                                  color: Colors.grey.shade600,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            )
+                          : ListView.builder(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              itemCount: _filteredFriends.length,
+                              itemBuilder: (context, index) {
+                                final friend = _filteredFriends[index];
+                                final isSelected = _selectedFriendIds.contains(friend['id']);
+                                final isPending = _pendingShares.contains(friend['id']);
+                                
+                                return Card(
+                                  margin: const EdgeInsets.only(bottom: 12),
+                                  elevation: 1,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    side: BorderSide(
+                                      color: isSelected 
+                                          ? Colors.orange.shade400
+                                          : Colors.grey.shade200,
+                                      width: isSelected ? 2 : 1,
                                     ),
                                   ),
-                                  subtitle: isPending
-                                      ? Text(
-                                          'Već preporučeno',
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            color: Colors.grey.shade600,
-                                            fontStyle: FontStyle.italic,
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                    child: Row(
+                                      children: [
+                                        CircleAvatar(
+                                          radius: 22,
+                                          backgroundColor: Colors.grey.shade100,
+                                          child: Text(
+                                            friend['name']?[0] ?? '?',
+                                            style: const TextStyle(
+                                              color: Colors.grey,
+                                              fontWeight: FontWeight.w600,
+                                            ),
                                           ),
-                                        )
-                                      : null,
-                                  secondary: isPending
-                                      ? Icon(
-                                          Icons.hourglass_top,
-                                          color: Colors.grey.shade500,
-                                          size: 20,
-                                        )
-                                      : null,
-                                  controlAffinity: ListTileControlAffinity.leading,
-                                  activeColor: Colors.orange.shade700,
-                                ),
-                              );
-                            },
-                          ),
-          ),
-        ],
+                                        ),
+                                        const SizedBox(width: 16),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                friend['name'] ?? 'Nepoznato',
+                                                style: const TextStyle(
+                                                  fontWeight: FontWeight.w600,
+                                                  fontSize: 15,
+                                                  color: Color(0xFF333333),
+                                                ),
+                                              ),
+                                              if (isPending)
+                                                Text(
+                                                  'Već preporučeno',
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    color: Colors.grey.shade600,
+                                                  ),
+                                                ),
+                                            ],
+                                          ),
+                                        ),
+                                        if (isPending)
+                                          Icon(
+                                            Icons.check_circle,
+                                            color: Colors.green.shade600,
+                                            size: 20,
+                                          )
+                                        else
+                                          Checkbox(
+                                            value: isSelected,
+                                            onChanged: (v) {
+                                              setState(() {
+                                                if (v == true) {
+                                                  _selectedFriendIds.add(friend['id']);
+                                                } else {
+                                                  _selectedFriendIds.remove(friend['id']);
+                                                }
+                                              });
+                                            },
+                                            activeColor: Colors.orange.shade700,
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+            ),
+          ],
+        ),
       ),
       bottomNavigationBar: _buildBottomBar(),
     );
@@ -856,12 +1096,19 @@ class _SharePosterScreenState extends State<SharePosterScreen> {
     }
 
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border(
           top: BorderSide(color: Colors.grey.shade200),
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, -5),
+          ),
+        ],
       ),
       child: ElevatedButton(
         onPressed: _isSendingShare ? null : _sendShareNotifications,
@@ -872,23 +1119,31 @@ class _SharePosterScreenState extends State<SharePosterScreen> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
           ),
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          elevation: 0,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          elevation: 1,
+          shadowColor: Colors.orange.shade200,
         ),
         child: _isSendingShare
             ? const SizedBox(
-                width: 16,
-                height: 16,
+                width: 20,
+                height: 20,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
                   valueColor: AlwaysStoppedAnimation(Colors.white),
                 ),
               )
-            : Text(
-                'Podeli sa ${_selectedFriendIds.length} ${_selectedFriendIds.length == 1 ? 'prijateljem' : 'prijatelja'}',
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                ),
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.send, size: 20),
+                  const SizedBox(width: 10),
+                  Text(
+                    'Podeli sa ${_selectedFriendIds.length} ${_selectedFriendIds.length == 1 ? 'prijateljem' : 'prijatelja'}',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
               ),
       ),
     );
@@ -919,7 +1174,8 @@ class _SharePosterScreenState extends State<SharePosterScreen> {
                         'Filtriraj po hobijima',
                         style: TextStyle(
                           fontSize: 18,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF333333),
                         ),
                       ),
                       IconButton(
@@ -930,14 +1186,18 @@ class _SharePosterScreenState extends State<SharePosterScreen> {
                   ),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<String>(
-                    initialValue: tempCategory,
+                    value: tempCategory,
                     decoration: InputDecoration(
                       labelText: 'Kategorija',
+                      labelStyle: const TextStyle(color: Colors.grey),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
                       ),
-                      filled: true,
-                      fillColor: Colors.grey.shade50,
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: Colors.orange.shade600),
+                      ),
                     ),
                     items: [
                       const DropdownMenuItem(
@@ -963,14 +1223,18 @@ class _SharePosterScreenState extends State<SharePosterScreen> {
                       hobbyCategories[tempCategory] != null &&
                       hobbyCategories[tempCategory]!.isNotEmpty)
                     DropdownButtonFormField<String>(
-                      initialValue: tempSubcategory,
+                      value: tempSubcategory,
                       decoration: InputDecoration(
                         labelText: 'Podkategorija (opciono)',
+                        labelStyle: const TextStyle(color: Colors.grey),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: Colors.grey.shade300),
                         ),
-                        filled: true,
-                        fillColor: Colors.grey.shade50,
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: Colors.orange.shade600),
+                        ),
                       ),
                       items: [
                         const DropdownMenuItem(
@@ -990,7 +1254,7 @@ class _SharePosterScreenState extends State<SharePosterScreen> {
                         });
                       },
                     ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 24),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -1001,7 +1265,10 @@ class _SharePosterScreenState extends State<SharePosterScreen> {
                             tempSubcategory = null;
                           });
                         },
-                        child: const Text('Obriši filter'),
+                        child: const Text(
+                          'Obriši filter',
+                          style: TextStyle(color: Colors.grey),
+                        ),
                       ),
                       ElevatedButton(
                         onPressed: () {
@@ -1020,6 +1287,7 @@ class _SharePosterScreenState extends State<SharePosterScreen> {
                       ),
                     ],
                   ),
+                  const SizedBox(height: 16),
                 ],
               ),
             );
