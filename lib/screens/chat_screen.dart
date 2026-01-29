@@ -85,7 +85,13 @@ class _ChatScreenState extends State<ChatScreen> {
       _scrollToBottom();
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Greška pri slanju poruke: $e')),
+        SnackBar(
+          content: Text('Greška pri slanju poruke: $e'),
+          backgroundColor: Colors.red.shade600,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
       );
     } finally {
       setState(() => _isSending = false);
@@ -116,7 +122,16 @@ class _ChatScreenState extends State<ChatScreen> {
             // Panel header
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-              color: Colors.blue,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.orange.shade600,
+                    Colors.orange.shade700,
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
               child: Row(
                 children: [
                   IconButton(
@@ -149,19 +164,39 @@ class _ChatScreenState extends State<ChatScreen> {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     // User avatar
-                    CircleAvatar(
-                      radius: 50,
-                      backgroundColor: Colors.blue.shade100,
-                      child: Text(
-                        widget.otherUserName[0].toUpperCase(),
-                        style: const TextStyle(
-                          fontSize: 40,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.blue,
+                    Container(
+                      width: 100,
+                      height: 100,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: LinearGradient(
+                          colors: [
+                            Colors.orange.shade300,
+                            Colors.orange.shade500,
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.orange.shade300.withOpacity(0.5),
+                            blurRadius: 10,
+                            spreadRadius: 2,
+                          ),
+                        ],
+                      ),
+                      child: Center(
+                        child: Text(
+                          widget.otherUserName[0].toUpperCase(),
+                          style: const TextStyle(
+                            fontSize: 40,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 20),
                     
                     // User name
                     Text(
@@ -169,6 +204,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
+                        color: Color(0xFF333333),
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -192,7 +228,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       title: 'Status',
                       content: _userInfo?['status'] ?? 'Aktivan',
                       icon: Icons.circle,
-                      iconColor: Colors.green,
+                      iconColor: Colors.green.shade600,
                     ),
                     
                     _buildInfoSection(
@@ -201,7 +237,7 @@ class _ChatScreenState extends State<ChatScreen> {
                           ? _formatDate((_userInfo!['createdAt'] as Timestamp).toDate())
                           : 'Nepoznato',
                       icon: Icons.calendar_today,
-                      iconColor: Colors.blue,
+                      iconColor: Colors.orange.shade600,
                     ),
                     
                     if (_userInfo?['phone'] != null)
@@ -209,33 +245,24 @@ class _ChatScreenState extends State<ChatScreen> {
                         title: 'Telefon',
                         content: _userInfo!['phone'],
                         icon: Icons.phone,
-                        iconColor: Colors.green,
+                        iconColor: Colors.green.shade600,
                       ),
                     
-                    if (_userInfo?['location'] != null)
+                    if (_userInfo?['city'] != null)
                       _buildInfoSection(
-                        title: 'Lokacija',
-                        content: _userInfo!['location'],
+                        title: 'Grad',
+                        content: _userInfo!['city'],
                         icon: Icons.location_on,
-                        iconColor: Colors.red,
+                        iconColor: Colors.red.shade600,
                       ),
                     
                     const SizedBox(height: 24),
                     
-                    // Actions
-                    _buildActionButton(
-                      icon: Icons.block,
-                      label: 'Blokiraj korisnika',
-                      color: Colors.red,
-                      onTap: () {
-                        _showBlockUserDialog();
-                      },
-                    ),
-                    const SizedBox(height: 12),
+                    // Report button only
                     _buildActionButton(
                       icon: Icons.report,
                       label: 'Prijavi korisnika',
-                      color: Colors.orange,
+                      color: Colors.orange.shade700,
                       onTap: () {
                         _showReportDialog();
                       },
@@ -257,19 +284,26 @@ class _ChatScreenState extends State<ChatScreen> {
     required Color iconColor,
   }) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
+        color: Colors.orange.shade50,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: Colors.orange.shade200),
       ),
       child: Row(
         children: [
-          Icon(
-            icon,
-            color: iconColor,
-            size: 24,
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: iconColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              icon,
+              color: iconColor,
+              size: 20,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -279,7 +313,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 Text(
                   title,
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: 12,
                     color: Colors.grey.shade600,
                     fontWeight: FontWeight.w500,
                   ),
@@ -287,9 +321,10 @@ class _ChatScreenState extends State<ChatScreen> {
                 const SizedBox(height: 4),
                 Text(
                   content,
-                  style: const TextStyle(
-                    fontSize: 16,
+                  style: TextStyle(
+                    fontSize: 14,
                     fontWeight: FontWeight.w500,
+                    color: Colors.grey.shade800,
                   ),
                 ),
               ],
@@ -310,12 +345,12 @@ class _ChatScreenState extends State<ChatScreen> {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(12),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
             color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(color: color.withOpacity(0.3)),
           ),
           child: Row(
@@ -332,6 +367,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 style: TextStyle(
                   color: color,
                   fontWeight: FontWeight.w600,
+                  fontSize: 14,
                 ),
               ),
             ],
@@ -341,63 +377,79 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  void _showBlockUserDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Blokiraj korisnika'),
-        content: Text('Da li ste sigurni da želite blokirati ${widget.otherUserName}?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Otkaži'),
-          ),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              // TODO: Implement block user functionality
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('${widget.otherUserName} je blokiran'),
-                  backgroundColor: Colors.red,
-                ),
-              );
-            },
-            child: const Text(
-              'Blokiraj',
-              style: TextStyle(color: Colors.red),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   void _showReportDialog() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Prijavi korisnika'),
-        content: const Text('Molimo vas da opišete problem sa ovim korisnikom.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Otkaži'),
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
           ),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              // TODO: Implement report user functionality
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Prijava je poslata administratorima'),
-                  backgroundColor: Colors.green,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Prijavi korisnika',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.orange.shade800,
                 ),
-              );
-            },
-            child: const Text('Prijavi'),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Molimo vas da opišete problem sa ovim korisnikom.',
+                style: TextStyle(
+                  fontSize: 15,
+                  color: Colors.grey,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.grey.shade600,
+                    ),
+                    child: const Text('Otkaži'),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: () async {
+                      Navigator.pop(context);
+                      // TODO: Implement report user functionality
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: const Text('Prijava je poslata administratorima'),
+                          backgroundColor: Colors.green.shade600,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orange.shade700,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    child: const Text('Prijavi'),
+                  ),
+                ],
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -406,10 +458,20 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.otherUserName),
+        title: Text(
+          widget.otherUserName,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         backgroundColor: Colors.orange.shade700,
         foregroundColor: Colors.white,
-        elevation: 2,
+        elevation: 0,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(
+            bottom: Radius.circular(20),
+          ),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.info_outline),
@@ -424,13 +486,14 @@ class _ChatScreenState extends State<ChatScreen> {
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
             colors: [
-              Colors.white,
               Colors.orange.shade50,
-              Colors.amber.shade50,
+              Colors.orange.shade100.withOpacity(0.8),
+              Colors.white,
             ],
+            stops: const [0.0, 0.1, 0.5],
           ),
         ),
         child: Stack(
@@ -443,11 +506,32 @@ class _ChatScreenState extends State<ChatScreen> {
                     stream: MessagingService.getConversationStream(widget.otherUserId),
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Center(child: CircularProgressIndicator());
+                        return Center(
+                          child: CircularProgressIndicator(
+                            color: Colors.orange.shade700,
+                          ),
+                        );
                       }
                       
                       if (snapshot.hasError) {
-                        return Center(child: Text('Error: ${snapshot.error}'));
+                        return Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.error,
+                                color: Colors.orange.shade700,
+                                size: 60,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'Greška: ${snapshot.error}',
+                                style: const TextStyle(color: Colors.grey),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
+                        );
                       }
                       
                       final messages = snapshot.data?.docs ?? [];
@@ -457,27 +541,33 @@ class _ChatScreenState extends State<ChatScreen> {
                       });
                       
                       if (messages.isEmpty) {
-                        return SingleChildScrollView(
-                          child: SizedBox(
-                            height: MediaQuery.of(context).size.height * 0.8,
-                            child: Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.chat_bubble_outline, size: 60, color: Colors.grey.shade400),
-                                  const SizedBox(height: 16),
-                                  const Text(
-                                    'Nema poruka',
-                                    style: TextStyle(color: Colors.grey),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  const Text(
-                                    'Pošaljite prvu poruku!',
-                                    style: TextStyle(color: Colors.grey, fontSize: 12),
-                                  ),
-                                ],
+                        return Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.chat_bubble_outline,
+                                size: 80,
+                                color: Colors.orange.shade300,
                               ),
-                            ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'Nema poruka',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.grey.shade700,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Pošaljite prvu poruku!',
+                                style: TextStyle(
+                                  color: Colors.grey.shade600,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
                           ),
                         );
                       }
@@ -508,42 +598,68 @@ class _ChatScreenState extends State<ChatScreen> {
                                       Container(
                                         padding: const EdgeInsets.symmetric(
                                           horizontal: 16,
-                                          vertical: 10,
+                                          vertical: 12,
                                         ),
                                         decoration: BoxDecoration(
-                                          color: isMe ? Colors.blue : Colors.grey[200],
+                                          gradient: isMe
+                                              ? LinearGradient(
+                                                  colors: [
+                                                    Colors.orange.shade400,
+                                                    Colors.orange.shade600,
+                                                  ],
+                                                  begin: Alignment.topLeft,
+                                                  end: Alignment.bottomRight,
+                                                )
+                                              : LinearGradient(
+                                                  colors: [
+                                                    Colors.grey.shade100,
+                                                    Colors.grey.shade200,
+                                                  ],
+                                                  begin: Alignment.topLeft,
+                                                  end: Alignment.bottomRight,
+                                                ),
                                           borderRadius: BorderRadius.circular(18),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.grey.withOpacity(0.2),
+                                              blurRadius: 4,
+                                              offset: const Offset(0, 2),
+                                            ),
+                                          ],
                                         ),
                                         child: Text(
                                           messageText,
                                           style: TextStyle(
-                                            color: isMe ? Colors.white : Colors.black,
+                                            color: isMe ? Colors.white : Colors.grey.shade800,
                                             fontSize: 16,
                                           ),
                                         ),
                                       ),
                                       const SizedBox(height: 4),
-                                      Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          if (timestamp != null)
-                                            Text(
-                                              _formatTime(timestamp.toDate()),
-                                              style: TextStyle(
-                                                color: Colors.grey[600],
-                                                fontSize: 12,
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            if (timestamp != null)
+                                              Text(
+                                                _formatTime(timestamp.toDate()),
+                                                style: TextStyle(
+                                                  color: Colors.grey.shade600,
+                                                  fontSize: 11,
+                                                ),
                                               ),
-                                            ),
-                                          if (isMe && read)
-                                            Padding(
-                                              padding: const EdgeInsets.only(left: 4),
-                                              child: Icon(
-                                                Icons.check_circle,
-                                                size: 14,
-                                                color: Colors.blue,
+                                            if (isMe && read)
+                                              Padding(
+                                                padding: const EdgeInsets.only(left: 6),
+                                                child: Icon(
+                                                  Icons.check_circle,
+                                                  size: 12,
+                                                  color: Colors.orange.shade700,
+                                                ),
                                               ),
-                                            ),
-                                        ],
+                                          ],
+                                        ),
                                       ),
                                     ],
                                   ),
@@ -571,7 +687,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   });
                 },
                 child: Container(
-                  color: Colors.black54,
+                  color: Colors.black.withOpacity(0.5),
                 ),
               ),
             
@@ -587,47 +703,88 @@ class _ChatScreenState extends State<ChatScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: 16,
-        vertical: 8,
+        vertical: 12,
       ),
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border(top: BorderSide(color: Colors.grey.shade300)),
+        border: Border(
+          top: BorderSide(color: Colors.orange.shade200, width: 1),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.orange.shade100.withOpacity(0.3),
+            blurRadius: 10,
+            offset: const Offset(0, -5),
+          ),
+        ],
       ),
       child: Row(
         children: [
           Expanded(
-            child: TextField(
-              controller: _messageController,
-              focusNode: _focusNode,
-              maxLines: null,
-              decoration: InputDecoration(
-                hintText: 'Unesite poruku...',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(24),
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-                suffixIcon: IconButton(
-                  icon: const Icon(Icons.attach_file),
-                  onPressed: () {
-                    // TODO: Add file attachment
-                  },
-                ),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.orange.shade50,
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: Colors.orange.shade200),
               ),
-              onSubmitted: (_) => _sendMessage(),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _messageController,
+                      focusNode: _focusNode,
+                      maxLines: null,
+                      style: TextStyle(
+                        color: Colors.grey.shade800,
+                        fontSize: 16,
+                      ),
+                      decoration: const InputDecoration(
+                        hintText: 'Unesite poruku...',
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                      ),
+                      onSubmitted: (_) => _sendMessage(),
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(
+                      Icons.attach_file,
+                      color: Colors.orange.shade600,
+                    ),
+                    onPressed: () {
+                      // TODO: Add file attachment
+                    },
+                  ),
+                ],
+              ),
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 12),
           Container(
             decoration: BoxDecoration(
-              color: Colors.blue,
+              gradient: LinearGradient(
+                colors: [
+                  Colors.orange.shade400,
+                  Colors.orange.shade600,
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
               shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.orange.shade400.withOpacity(0.4),
+                  blurRadius: 6,
+                  offset: const Offset(0, 3),
+                ),
+              ],
             ),
             child: IconButton(
               icon: _isSending
-                  ? const SizedBox(
+                  ? SizedBox(
                       width: 20,
                       height: 20,
                       child: CircularProgressIndicator(

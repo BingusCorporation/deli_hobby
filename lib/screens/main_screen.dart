@@ -74,65 +74,85 @@ class _MainScreenState extends State<MainScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Deli Hobby'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.orange.shade700,
-        elevation: 1,
+        backgroundColor: Colors.orange.shade700,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(
+            bottom: Radius.circular(20),
+          ),
+        ),
         actions: [
           // Events icon button with invites count
           StreamBuilder<int>(
             stream: EventService().getMyPendingInvitesCountStream(),
             builder: (context, snapshot) {
               final inviteCount = snapshot.data ?? 0;
-              return Stack(
-                children: [
-                  IconButton(
-                    icon: Icon(Icons.event, color: Colors.orange.shade700),
-                    tooltip: 'Događaji',
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const EventsBrowseScreen()),
-                      );
-                    },
-                  ),
-                  if (inviteCount > 0)
-                    Positioned(
-                      right: 8,
-                      top: 8,
-                      child: Container(
-                        padding: const EdgeInsets.all(2),
-                        decoration: BoxDecoration(
-                          color: Colors.red,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        constraints: const BoxConstraints(
-                          minWidth: 16,
-                          minHeight: 16,
-                        ),
-                        child: Text(
-                          inviteCount > 9 ? '9+' : inviteCount.toString(),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
+              return Container(
+                margin: const EdgeInsets.only(right: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Stack(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.event),
+                      tooltip: 'Događaji',
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const EventsBrowseScreen()),
+                        );
+                      },
+                    ),
+                    if (inviteCount > 0)
+                      Positioned(
+                        right: 8,
+                        top: 8,
+                        child: Container(
+                          padding: const EdgeInsets.all(2),
+                          decoration: BoxDecoration(
+                            color: Colors.red,
+                            borderRadius: BorderRadius.circular(10),
                           ),
-                          textAlign: TextAlign.center,
+                          constraints: const BoxConstraints(
+                            minWidth: 16,
+                            minHeight: 16,
+                          ),
+                          child: Text(
+                            inviteCount > 9 ? '9+' : inviteCount.toString(),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
                         ),
                       ),
-                    ),
-                ],
+                  ],
+                ),
               );
             },
           ),
-          IconButton(
-            icon: Icon(Icons.list_alt, color: Colors.orange.shade700),
-            tooltip: 'Oglasi',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const OglasiScreen()),
-              );
-            },
+          // Oglasi icon button
+          Container(
+            margin: const EdgeInsets.only(right: 8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.list_alt),
+              tooltip: 'Oglasi',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const OglasiScreen()),
+                );
+              },
+            ),
           ),
           // Messages icon button with count (unread messages + friend requests + invites)
           StreamBuilder<int>(
@@ -149,43 +169,50 @@ class _MainScreenState extends State<MainScreen> {
                       final inviteCount = invitesSnapshot.data ?? 0;
                       final totalCount = unreadCount + friendRequestCount + inviteCount;
                       
-                      return Stack(
-                        children: [
-                          IconButton(
-                            icon: Icon(Icons.message, color: Colors.orange.shade700),
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (_) => const MessagesScreen()),
-                              );
-                            },
-                          ),
-                          if (totalCount > 0)
-                            Positioned(
-                              right: 8,
-                              top: 8,
-                              child: Container(
-                                padding: const EdgeInsets.all(2),
-                                decoration: BoxDecoration(
-                                  color: Colors.red,
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                constraints: const BoxConstraints(
-                                  minWidth: 16,
-                                  minHeight: 16,
-                                ),
-                                child: Text(
-                                  totalCount > 9 ? '9+' : totalCount.toString(),
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
+                      return Container(
+                        margin: const EdgeInsets.only(right: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Stack(
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.message),
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (_) => const MessagesScreen()),
+                                );
+                              },
+                            ),
+                            if (totalCount > 0)
+                              Positioned(
+                                right: 8,
+                                top: 8,
+                                child: Container(
+                                  padding: const EdgeInsets.all(2),
+                                  decoration: BoxDecoration(
+                                    color: Colors.red,
+                                    borderRadius: BorderRadius.circular(10),
                                   ),
-                                  textAlign: TextAlign.center,
+                                  constraints: const BoxConstraints(
+                                    minWidth: 16,
+                                    minHeight: 16,
+                                  ),
+                                  child: Text(
+                                    totalCount > 9 ? '9+' : totalCount.toString(),
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
                                 ),
                               ),
-                            ),
-                        ],
+                          ],
+                        ),
                       );
                     },
                   );
@@ -193,337 +220,536 @@ class _MainScreenState extends State<MainScreen> {
               );
             },
           ),
-          IconButton(
-            icon: Icon(Icons.person, color: Colors.orange.shade700),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const ProfileScreen(),
-                ),
-              );
-            },
+          // Profile icon button
+          Container(
+            margin: const EdgeInsets.only(right: 12),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.person),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ProfileScreen(),
+                  ),
+                );
+              },
+            ),
           ),
         ],
       ),
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
             colors: [
-              Colors.white,
               Colors.orange.shade50,
-              Colors.amber.shade50,
+              Colors.white,
             ],
+            stops: const [0.0, 0.3],
           ),
         ),
-        child: Column(
-          children: [
-            // COMPACT SEARCH SECTION
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.9),
-                border: Border(
-                  bottom: BorderSide(
-                    color: Colors.orange.shade100,
-                    width: 1,
+        child: SafeArea(
+          bottom: false,
+          child: CustomScrollView(
+            slivers: [
+              // Search Section - FIXED: Now properly scrollable
+              SliverToBoxAdapter(
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    border: Border(
+                      bottom: BorderSide(
+                        color: Colors.orange.shade100,
+                        width: 1,
+                      ),
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      // Name search field
+                      TextField(
+                        controller: _nameSearchController,
+                        decoration: InputDecoration(
+                          hintText: 'Pretraži po imenu...',
+                          prefixIcon: Icon(Icons.search, color: Colors.orange.shade700),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.grey.shade300),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.orange.shade600, width: 2),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                          filled: true,
+                          fillColor: Colors.grey.shade50,
+                        ),
+                        onChanged: (value) => setState(() {}),
+                        maxLines: 1,
+                      ),
+                      
+                      const SizedBox(height: 16),
+                      
+                      // Hobby and City in one row
+                      Row(
+                        children: [
+                          // Hobby dropdown
+                          Expanded(
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: Colors.grey.shade300),
+                              ),
+                              child: DropdownButtonHideUnderline(
+                                child: DropdownButton<String>(
+                                  isExpanded: true,
+                                  hint: Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                                    child: Text(
+                                      'Hobi',
+                                      style: TextStyle(color: Colors.grey.shade600),
+                                    ),
+                                  ),
+                                  value: _selectedCategory,
+                                  items: [
+                                    DropdownMenuItem(
+                                      value: null,
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                                        child: Text(
+                                          'Svi hobiji',
+                                          style: TextStyle(color: Colors.grey.shade600),
+                                        ),
+                                      ),
+                                    ),
+                                    ...hobbyCategories.keys.map((category) {
+                                      return DropdownMenuItem(
+                                        value: category,
+                                        child: Padding(
+                                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                                          child: Text(
+                                            category,
+                                            style: TextStyle(color: Colors.grey.shade800),
+                                          ),
+                                        ),
+                                      );
+                                    }),
+                                  ],
+                                  onChanged: (value) {
+                                    setState(() {
+                                      _selectedCategory = value;
+                                      _selectedSubcategory = null;
+                                    });
+                                  },
+                                ),
+                              ),
+                            ),
+                          ),
+                          
+                          const SizedBox(width: 12),
+                          
+                          // City dropdown
+                          Expanded(
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: Colors.grey.shade300),
+                              ),
+                              child: DropdownButtonHideUnderline(
+                                child: DropdownButton<String>(
+                                  isExpanded: true,
+                                  hint: Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                                    child: Text(
+                                      'Grad',
+                                      style: TextStyle(color: Colors.grey.shade600),
+                                    ),
+                                  ),
+                                  value: _selectedCity,
+                                  items: [
+                                    DropdownMenuItem(
+                                      value: null,
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                                        child: Text(
+                                          'Svi gradovi',
+                                          style: TextStyle(color: Colors.grey.shade600),
+                                        ),
+                                      ),
+                                    ),
+                                    ...serbiaCities.map((city) {
+                                      return DropdownMenuItem(
+                                        value: city,
+                                        child: Padding(
+                                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                                          child: Text(
+                                            city,
+                                            style: TextStyle(color: Colors.grey.shade800),
+                                          ),
+                                        ),
+                                      );
+                                    }),
+                                  ],
+                                  onChanged: (value) => setState(() => _selectedCity = value),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      
+                      // Subcategory dropdown (only shows when category is selected)
+                      if (_selectedCategory != null && hobbyCategories[_selectedCategory]!.isNotEmpty) ...[
+                        const SizedBox(height: 12),
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.grey.shade300),
+                          ),
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton<String>(
+                              isExpanded: true,
+                              hint: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 16),
+                                child: Text(
+                                  'Podkategorija (opciono)',
+                                  style: TextStyle(color: Colors.grey.shade600),
+                                ),
+                              ),
+                              value: _selectedSubcategory,
+                              items: [
+                                DropdownMenuItem(
+                                  value: null,
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                                    child: Text(
+                                      'Sve podkategorije',
+                                      style: TextStyle(color: Colors.grey.shade600),
+                                    ),
+                                  ),
+                                ),
+                                ...hobbyCategories[_selectedCategory]!.map((sub) {
+                                  return DropdownMenuItem(
+                                    value: sub,
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                                      child: Text(
+                                        sub,
+                                        style: TextStyle(color: Colors.grey.shade800),
+                                      ),
+                                    ),
+                                  );
+                                }),
+                              ],
+                              onChanged: (value) => setState(() => _selectedSubcategory = value),
+                            ),
+                          ),
+                        ),
+                      ],
+                      
+                      // Search button
+                      const SizedBox(height: 20),
+                      SizedBox(
+                        width: double.infinity,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                Colors.orange.shade400,
+                                Colors.orange.shade600,
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.orange.shade400.withOpacity(0.4),
+                                blurRadius: 8,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: ElevatedButton.icon(
+                            onPressed: _searchForMatches,
+                            icon: const Icon(Icons.search),
+                            label: const Text('Pronađi ljude'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.transparent,
+                              foregroundColor: Colors.white,
+                              shadowColor: Colors.transparent,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              elevation: 0,
+                            ),
+                          ),
+                        ),
+                      ),
+                      
+                      // Selected filters chips
+                      if (_selectedCategory != null || _selectedCity != null) ...[
+                        const SizedBox(height: 16),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          alignment: WrapAlignment.start,
+                          children: [
+                            if (_selectedCategory != null)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: Colors.orange.shade600,
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      _selectedSubcategory != null 
+                                          ? '$_selectedCategory > $_selectedSubcategory'
+                                          : _selectedCategory!,
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w500,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    GestureDetector(
+                                      onTap: () => setState(() {
+                                        _selectedCategory = null;
+                                        _selectedSubcategory = null;
+                                      }),
+                                      child: Icon(
+                                        Icons.close,
+                                        size: 16,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            if (_selectedCity != null)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue.shade600,
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      _selectedCity!,
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w500,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    GestureDetector(
+                                      onTap: () => setState(() => _selectedCity = null),
+                                      child: Icon(
+                                        Icons.close,
+                                        size: 16,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                          ],
+                        ),
+                      ],
+                    ],
                   ),
                 ),
               ),
-              child: Column(
-              children: [
-                // Name search field
-                TextField(
-                  controller: _nameSearchController,
-                  decoration: InputDecoration(
-                    hintText: 'Pretraži po imenu...',
-                    prefixIcon: const Icon(Icons.search),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
-                  ),
-                  onChanged: (value) => setState(() {}),
-                ),
-                
-                const SizedBox(height: 12),
-                
-                // Hobby and City in one row
-                Row(
-                  children: [
-                    // Hobby dropdown
-                    Expanded(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.grey.shade300),
-                        ),
-                        child: DropdownButtonHideUnderline(
-                          child: DropdownButton<String>(
-                            isExpanded: true,
-                            hint: const Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 12),
-                              child: Text('Hobi'),
-                            ),
-                            value: _selectedCategory,
-                            items: [
-                              const DropdownMenuItem(
-                                value: null,
-                                child: Padding(
-                                  padding: EdgeInsets.symmetric(horizontal: 12),
-                                  child: Text('Svi hobiji'),
-                                ),
-                              ),
-                              ...hobbyCategories.keys.map((category) {
-                                return DropdownMenuItem(
-                                  value: category,
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                                    child: Text(category),
-                                  ),
-                                );
-                              }),
-                            ],
-                            onChanged: (value) {
-                              setState(() {
-                                _selectedCategory = value;
-                                _selectedSubcategory = null;
-                              });
-                            },
-                          ),
-                        ),
-                      ),
-                    ),
-                    
-                    const SizedBox(width: 12),
-                    
-                    // City dropdown
-                    Expanded(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.grey.shade300),
-                        ),
-                        child: DropdownButtonHideUnderline(
-                          child: DropdownButton<String>(
-                            isExpanded: true,
-                            hint: const Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 12),
-                              child: Text('Grad'),
-                            ),
-                            value: _selectedCity,
-                            items: [
-                              const DropdownMenuItem(
-                                value: null,
-                                child: Padding(
-                                  padding: EdgeInsets.symmetric(horizontal: 12),
-                                  child: Text('Svi gradovi'),
-                                ),
-                              ),
-                              ...serbiaCities.map((city) {
-                                return DropdownMenuItem(
-                                  value: city,
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                                    child: Text(city),
-                                  ),
-                                );
-                              }),
-                            ],
-                            onChanged: (value) => setState(() => _selectedCity = value),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                
-                // Subcategory dropdown (only shows when category is selected)
-                if (_selectedCategory != null && hobbyCategories[_selectedCategory]!.isNotEmpty) ...[
-                  const SizedBox(height: 12),
-                  Container(
+              
+              // Search Status
+              if (_searchStatus.isNotEmpty)
+                SliverToBoxAdapter(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.grey.shade300),
-                    ),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        isExpanded: true,
-                        hint: const Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 12),
-                          child: Text('Podkategorija (opciono)'),
+                      border: Border(
+                        bottom: BorderSide(
+                          color: Colors.orange.shade100,
+                          width: 1,
                         ),
-                        value: _selectedSubcategory,
-                        items: [
-                          const DropdownMenuItem(
-                            value: null,
-                            child: Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 12),
-                              child: Text('Sve podkategorije'),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          _searchResults.isEmpty ? Icons.info_outline : Icons.check_circle,
+                          color: _searchResults.isEmpty ? Colors.orange.shade600 : Colors.green.shade600,
+                          size: 16,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            _searchStatus,
+                            style: TextStyle(
+                              color: _searchResults.isEmpty ? Colors.orange.shade700 : Colors.green.shade700,
+                              fontSize: 13,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (_searchResults.isNotEmpty && _selectedCategory != null)
+                          TextButton(
+                            onPressed: () {
+                              setState(() {
+                                _selectedCategory = null;
+                                _selectedSubcategory = null;
+                                _selectedCity = null;
+                                _searchResults = [];
+                                _searchStatus = '';
+                              });
+                            },
+                            style: TextButton.styleFrom(
+                              minimumSize: Size.zero,
+                              padding: EdgeInsets.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                            child: const Text(
+                              'Obriši filtere',
+                              style: TextStyle(fontSize: 13),
                             ),
                           ),
-                          ...hobbyCategories[_selectedCategory]!.map((sub) {
-                            return DropdownMenuItem(
-                              value: sub,
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 12),
-                                child: Text(sub),
-                              ),
-                            );
-                          }),
-                        ],
-                        onChanged: (value) => setState(() => _selectedSubcategory = value),
-                      ),
+                      ],
                     ),
                   ),
-                ],
-                
-                // Search button
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          Colors.orange.shade700,
-                          Colors.orange.shade600,
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(8),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.orange.withValues(alpha: 0.3),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
+                ),
+              
+              // Search Results or Empty State
+              if (_isSearching)
+                SliverFillRemaining(
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CircularProgressIndicator(
+                          color: Colors.orange.shade700,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Tražim ljude sa sličnim hobijima...',
+                          style: TextStyle(
+                            color: Colors.grey.shade700,
+                          ),
                         ),
                       ],
                     ),
-                    child: ElevatedButton.icon(
-                      onPressed: _searchForMatches,
-                      icon: const Icon(Icons.search),
-                      label: const Text('Pronađi ljude'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.transparent,
-                        foregroundColor: Colors.white,
-                        shadowColor: Colors.transparent,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                      ),
-                    ),
                   ),
-                ),
-                
-                // Selected filters chips
-                if (_selectedCategory != null || _selectedCity != null) ...[
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 4,
-                    alignment: WrapAlignment.start,
-                    children: [
-                      if (_selectedCategory != null)
-                        Chip(
-                          label: Text(
-                            _selectedSubcategory != null 
-                                ? '$_selectedCategory > $_selectedSubcategory'
-                                : _selectedCategory!,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w500,
-                              color: Colors.white,
+                )
+              else if (_searchResults.isEmpty && _searchStatus.isEmpty)
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.people_outline,
+                          size: 80,
+                          color: Colors.orange.shade300,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Izaberite hobi i grad\nza pretragu',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.grey.shade700,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 40),
+                          child: Text(
+                            'Pronađite ljude sa sličnim interesovanjima',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Colors.grey.shade600,
+                              fontSize: 14,
                             ),
                           ),
-                          deleteIcon: const Icon(Icons.close, size: 16, color: Colors.white),
-                          onDeleted: () => setState(() {
-                            _selectedCategory = null;
-                            _selectedSubcategory = null;
-                          }),
-                          backgroundColor: Colors.orange.shade600,
                         ),
-                      if (_selectedCity != null)
-                        Chip(
-                          label: Text(
-                            _selectedCity!,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w500,
-                              color: Colors.white,
+                      ],
+                    ),
+                  ),
+                )
+              else if (_searchResults.isEmpty && _searchStatus.isNotEmpty)
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.search_off,
+                          size: 80,
+                          color: Colors.orange.shade300,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Nema rezultata',
+                          style: TextStyle(
+                            color: Colors.grey.shade700,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 40),
+                          child: Text(
+                            'Promenite filtere i pokušajte ponovo',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Colors.grey.shade600,
+                              fontSize: 14,
                             ),
                           ),
-                          deleteIcon: const Icon(Icons.close, size: 16, color: Colors.white),
-                          onDeleted: () => setState(() => _selectedCity = null),
-                          backgroundColor: Colors.blue.shade600,
                         ),
-                    ],
+                      ],
+                    ),
                   ),
-                ],
-              ],
-            ),
-          ),
-          
-          // SEARCH STATUS
-          if (_searchStatus.isNotEmpty)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.8),
-                border: Border(
-                  bottom: BorderSide(
-                    color: Colors.orange.shade100,
-                    width: 1,
+                )
+              else
+                SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final user = _searchResults[index];
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        child: _buildUserCard(user),
+                      );
+                    },
+                    childCount: _searchResults.length,
                   ),
                 ),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    _searchResults.isEmpty ? Icons.info_outline : Icons.check_circle,
-                    color: _searchResults.isEmpty ? Colors.orange : Colors.green,
-                    size: 16,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      _searchStatus,
-                      style: TextStyle(
-                        color: _searchResults.isEmpty ? Colors.orange.shade700 : Colors.green.shade700,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ),
-                  if (_searchResults.isNotEmpty && _selectedCategory != null)
-                    TextButton(
-                      onPressed: () {
-                        setState(() {
-                          _selectedCategory = null;
-                          _selectedSubcategory = null;
-                          _selectedCity = null;
-                          _searchResults = [];
-                          _searchStatus = '';
-                        });
-                      },
-                      child: const Text(
-                        'Obriši filtere',
-                        style: TextStyle(fontSize: 13),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          
-          // SEARCH RESULTS
-          Expanded(
-            child: _buildSearchResults(),
-          ),
             ],
           ),
         ),
+      ),
     );
   }
 
@@ -544,102 +770,6 @@ class _MainScreenState extends State<MainScreen> {
         });
   }
 
-  /// Build search results
-  Widget _buildSearchResults() {
-    if (_isSearching) {
-      return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircularProgressIndicator(
-              color: Colors.orange,
-            ),
-            SizedBox(height: 16),
-            Text('Tražim ljude sa sličnim hobijima...'),
-          ],
-        ),
-      );
-    }
-
-    if (_searchResults.isEmpty && _searchStatus.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.people_outline,
-              size: 80,
-              color: Colors.grey.shade300,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Izaberite hobi i grad\nza pretragu',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.grey,
-                fontSize: 15,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Pronađite ljude sa sličnim interesovanjima',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.grey.shade400,
-                fontSize: 13,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    if (_searchResults.isEmpty && _searchStatus.isNotEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.search_off,
-              size: 80,
-              color: Colors.grey.shade300,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Nema rezultata',
-              style: TextStyle(
-                color: Colors.grey.shade600,
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 40),
-              child: Text(
-                'Promenite filtere i pokušajte ponovo',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.grey.shade400,
-                  fontSize: 14,
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.all(12),
-      itemCount: _searchResults.length,
-      itemBuilder: (context, index) {
-        final user = _searchResults[index];
-        return _buildUserCard(user);
-      },
-    );
-  }
-
   /// Build user card
   Widget _buildUserCard(Map<String, dynamic> user) {
     final String? profilePic = user['profilePic'] as String?;
@@ -658,36 +788,53 @@ class _MainScreenState extends State<MainScreen> {
         );
       },
       child: Card(
-        margin: const EdgeInsets.only(bottom: 12),
         elevation: 2,
-        shadowColor: Colors.orange.withValues(alpha: 0.2),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
         child: Container(
           decoration: BoxDecoration(
+            color: Colors.white,
             borderRadius: BorderRadius.circular(12),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Colors.white,
-                Colors.orange.shade50.withValues(alpha: 0.3),
-              ],
-            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.orange.shade100.withOpacity(0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           child: Padding(
             padding: const EdgeInsets.all(12),
             child: Row(
               children: [
                 // Profile picture
-                CircleAvatar(
-                  radius: 22,
-                  backgroundColor: Colors.orange.shade100,
-                  backgroundImage: profilePic != null && profilePic.isNotEmpty
-                      ? NetworkImage(profilePic)
-                      : const AssetImage('assets/default_avatar.png')
-                          as ImageProvider,
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Colors.orange.shade300,
+                      width: 1.5,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.orange.shade100.withOpacity(0.5),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: ClipOval(
+                    child: profilePic != null && profilePic.isNotEmpty
+                        ? Image.network(
+                            profilePic,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) => _buildDefaultAvatar(user['name'] as String?),
+                          )
+                        : _buildDefaultAvatar(user['name'] as String?),
+                  ),
                 ),
                 const SizedBox(width: 12),
                 
@@ -701,6 +848,7 @@ class _MainScreenState extends State<MainScreen> {
                         style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
+                          color: Color(0xFF333333),
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -710,10 +858,10 @@ class _MainScreenState extends State<MainScreen> {
                           children: [
                             Icon(
                               Icons.location_on,
-                              size: 13,
+                              size: 14,
                               color: Colors.orange.shade600,
                             ),
-                            const SizedBox(width: 3),
+                            const SizedBox(width: 4),
                             Text(
                               city,
                               style: TextStyle(
@@ -740,19 +888,57 @@ class _MainScreenState extends State<MainScreen> {
                           otherUserName: user['name'] as String? ?? 'Nepoznato',
                         ),
                       ),
-                  );
-                },
-                icon: Icon(
-                  Icons.message,
-                  color: Colors.orange.shade700,
-                  size: 18,
+                    );
+                  },
+                  icon: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.shade50,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.orange.shade200),
+                    ),
+                    child: Icon(
+                      Icons.message,
+                      color: Colors.orange.shade700,
+                      size: 18,
+                    ),
+                  ),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(
+                    minWidth: 44,
+                    minHeight: 44,
+                  ),
+                  tooltip: 'Pošalji poruku',
                 ),
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 30, minHeight: 30),
-                tooltip: 'Pošalji poruku',
-              ),
-            ],
+              ],
+            ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDefaultAvatar(String? userName) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.orange.shade200,
+            Colors.orange.shade400,
+          ],
+        ),
+      ),
+      child: Center(
+        child: Text(
+          userName != null && userName.isNotEmpty 
+              ? userName[0].toUpperCase() 
+              : '?',
+          style: const TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
           ),
         ),
       ),
@@ -775,7 +961,13 @@ class _MainScreenState extends State<MainScreen> {
 
     if (_selectedCategory == null && _selectedCity == null && _nameSearchController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Izaberite bar jedan filter za pretragu')),
+        SnackBar(
+          content: const Text('Izaberite bar jedan filter za pretragu'),
+          backgroundColor: Colors.orange.shade600,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
       );
       return;
     }
@@ -857,7 +1049,13 @@ class _MainScreenState extends State<MainScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Greška pri pretrazi: $e')),
+          SnackBar(
+            content: Text('Greška pri pretrazi: $e'),
+            backgroundColor: Colors.red.shade600,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
         );
       }
     } finally {
