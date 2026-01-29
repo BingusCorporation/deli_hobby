@@ -39,7 +39,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
           return Scaffold(
             appBar: AppBar(),
             body: const Center(
-              child: Text('Dogadjaj nije pronadjen'),
+              child: Text('Događaj nije pronađen'),
             ),
           );
         }
@@ -51,7 +51,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
 
         return Scaffold(
           appBar: AppBar(
-            title: const Text('Detalji dogadjaja'),
+            title: const Text('Detalji događaja'),
             backgroundColor: Colors.orange.shade700,
             foregroundColor: Colors.white,
             actions: [
@@ -78,11 +78,11 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                   itemBuilder: (context) => [
                     const PopupMenuItem(
                       value: 'cancel',
-                      child: Text('Otkazi dogadjaj'),
+                      child: Text('Otkaži događaj'),
                     ),
                     const PopupMenuItem(
                       value: 'delete',
-                      child: Text('Obrisi dogadjaj'),
+                      child: Text('Obriši događaj'),
                     ),
                   ],
                 ),
@@ -496,7 +496,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                 Icon(Icons.accessible, color: Colors.green),
                 SizedBox(width: 8),
                 Text(
-                  'Pristupacnost',
+                  'Pristupačnost',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -510,11 +510,11 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
               runSpacing: 8,
               children: [
                 if (event.accessibility.wheelchairAccessible)
-                  _buildAccessibilityChip('Pristup za kolica', Icons.accessible),
+                  _buildAccessibilityChip('Pristup za ljude sa invalidskim kolicima', Icons.accessible),
                 if (event.accessibility.hearingAssistance)
-                  _buildAccessibilityChip('Pomoc za sluh', Icons.hearing),
+                  _buildAccessibilityChip('Pomoć za ljude sa slabim sluhom', Icons.hearing),
                 if (event.accessibility.visualAssistance)
-                  _buildAccessibilityChip('Pomoc za vid', Icons.visibility),
+                  _buildAccessibilityChip('Pomoć za ljude sa slabim vidom', Icons.visibility),
               ],
             ),
             if (event.accessibility.notes != null &&
@@ -579,7 +579,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
-                          'Ucesnici',
+                          'Učesnici',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
@@ -829,8 +829,8 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Napusti dogadjaj'),
-        content: const Text('Da li si siguran da zelis da napustis ovaj dogadjaj?'),
+        title: const Text('Napusti događaj'),
+        content: const Text('Da li si siguran da želiš da napustiš ovaj događaj?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -843,7 +843,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                 await _eventService.leaveEvent(event.id!);
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Napustio si dogadjaj')),
+                    const SnackBar(content: Text('Napustio si događaj')),
                   );
                 }
               } catch (e) {
@@ -866,9 +866,9 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Otkazi dogadjaj'),
+        title: const Text('Otkaži događaj'),
         content: const Text(
-          'Da li si siguran da zelis da otkazis ovaj dogadjaj? Svi ucesnici ce biti obavesteni.',
+          'Da li si siguran da želis da otkažeš ovaj događaj? Svi učesnici će biti obavešteni.',
         ),
         actions: [
           TextButton(
@@ -882,7 +882,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                 await _eventService.cancelEvent(event.id!);
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Dogadjaj je otkazan')),
+                    const SnackBar(content: Text('Događaj je otkazan')),
                   );
                 }
               } catch (e) {
@@ -894,7 +894,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
               }
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
-            child: const Text('Otkazi'),
+            child: const Text('Otkaži'),
           ),
         ],
       ),
@@ -905,9 +905,9 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Obrisi dogadjaj'),
+        title: const Text('Obriši događaj'),
         content: const Text(
-          'Da li si siguran da zelis da obrises ovaj dogadjaj? Ova akcija se ne moze ponistiti.',
+          'Da li si siguran da želis da obrišes ovaj događaj? Ova akcija se ne moze poništiti.',
         ),
         actions: [
           TextButton(
@@ -922,7 +922,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                 if (mounted) {
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Dogadjaj je obrisan')),
+                    const SnackBar(content: Text('Događaj je obrisan')),
                   );
                 }
               } catch (e) {
@@ -934,7 +934,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
               }
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Obrisi'),
+            child: const Text('Obriši'),
           ),
         ],
       ),

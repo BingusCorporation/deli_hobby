@@ -129,7 +129,7 @@ class _EventCreateScreenState extends State<EventCreateScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(_isEditing ? 'Izmeni dogadjaj' : 'Kreiraj dogadjaj'),
+        title: Text(_isEditing ? 'Izmeni događaj' : 'Kreiraj događaj'),
         backgroundColor: Colors.orange.shade700,
         foregroundColor: Colors.white,
       ),
@@ -189,13 +189,13 @@ class _EventCreateScreenState extends State<EventCreateScreen> {
               const SizedBox(height: 24),
 
               // Accessibility Section
-              _buildSectionHeader('Pristupacnost'),
+              _buildSectionHeader('Pristupačnost'),
               _buildAccessibilityOptions(),
 
               const SizedBox(height: 24),
 
               // Schedule Section
-              _buildSectionHeader('Raspored aktivnosti (opciono)'),
+              _buildSectionHeader('Raspored aktivnosti (opcionalno)'),
               _buildScheduleBuilder(),
 
               const SizedBox(height: 32),
@@ -228,13 +228,13 @@ class _EventCreateScreenState extends State<EventCreateScreen> {
     return TextFormField(
       controller: _titleController,
       decoration: const InputDecoration(
-        labelText: 'Naziv dogadjaja',
+        labelText: 'Naziv događaja',
         border: OutlineInputBorder(),
         hintText: 'npr. Fudbal vikend trening',
       ),
       validator: (value) {
         if (value == null || value.isEmpty) {
-          return 'Unesi naziv dogadjaja';
+          return 'Unesi naziv događaja';
         }
         return null;
       },
@@ -247,12 +247,12 @@ class _EventCreateScreenState extends State<EventCreateScreen> {
       decoration: const InputDecoration(
         labelText: 'Opis',
         border: OutlineInputBorder(),
-        hintText: 'Opisi sta ce se desavati na dogadjaju...',
+        hintText: 'Opisi sta ce se dešavati na događaju...',
       ),
       maxLines: 4,
       validator: (value) {
         if (value == null || value.isEmpty) {
-          return 'Unesi opis dogadjaja';
+          return 'Unesi opis događaja';
         }
         return null;
       },
@@ -268,7 +268,7 @@ Widget _buildCategoryDropdowns() {
         children: [
           Expanded(
             child: DropdownButtonFormField<String>(
-              value: _tempSelectedCategory,
+              initialValue: _tempSelectedCategory,
               isExpanded: true, // FIX: Added this line
               decoration: const InputDecoration(
                 labelText: 'Kategorija',
@@ -297,7 +297,7 @@ Widget _buildCategoryDropdowns() {
           const SizedBox(width: 12),
           Expanded(
             child: DropdownButtonFormField<String>(
-              value: _tempSelectedSubcategory,
+              initialValue: _tempSelectedSubcategory,
               isExpanded: true, // FIX: Added this line
               decoration: const InputDecoration(
                 labelText: 'Podkategorija',
@@ -330,7 +330,7 @@ Widget _buildCategoryDropdowns() {
       const SizedBox(height: 12),
 
       // Add category button - FIXED: Changed SizedBox to Container
-      Container(
+      SizedBox(
         width: double.infinity, // FIX: Use Container with width: double.infinity
         child: OutlinedButton.icon(
           onPressed: _tempSelectedCategory != null && _tempSelectedSubcategory != null
@@ -404,7 +404,7 @@ Widget _buildCategoryDropdowns() {
         });
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Ova kategorija je vec dodata')),
+          const SnackBar(content: Text('Ova kategorija je već dodata')),
         );
       }
     }
@@ -434,15 +434,15 @@ Widget _buildCategoryDropdowns() {
 
   Widget _buildSkillLevelDropdown() {
     return DropdownButtonFormField<String>(
-      value: _selectedSkillLevel,
+      initialValue: _selectedSkillLevel,
       decoration: const InputDecoration(
-        labelText: 'Potreban nivo vestine',
+        labelText: 'Potreban nivo veštine',
         border: OutlineInputBorder(),
       ),
       items: [
         const DropdownMenuItem(
           value: 'any',
-          child: Text('Svi nivoi dobrodosli'),
+          child: Text('Svi nivoi dobrodošli'),
         ),
         ...skillLevels.entries.map((entry) {
           return DropdownMenuItem(
@@ -525,7 +525,7 @@ Widget _buildCategoryDropdowns() {
 
   Widget _buildDurationPicker() {
     return DropdownButtonFormField<int>(
-      value: _durationMinutes,
+      initialValue: _durationMinutes,
       decoration: const InputDecoration(
         labelText: 'Trajanje',
         border: OutlineInputBorder(),
@@ -552,8 +552,8 @@ Widget _buildCategoryDropdowns() {
     return Column(
       children: [
         SwitchListTile(
-          title: const Text('Ponavljajuci dogadjaj'),
-          subtitle: const Text('Dogadjaj se ponavlja'),
+          title: const Text('Ponavljajuci događaj'),
+          subtitle: const Text('Događaj se ponavlja'),
           value: _isRecurring,
           onChanged: (value) {
             setState(() {
@@ -565,7 +565,7 @@ Widget _buildCategoryDropdowns() {
           Padding(
             padding: const EdgeInsets.only(left: 16, right: 16, top: 8),
             child: DropdownButtonFormField<RecurrenceType>(
-              value: _recurrenceType,
+              initialValue: _recurrenceType,
               decoration: const InputDecoration(
                 labelText: 'Ponavljanje',
                 border: OutlineInputBorder(),
@@ -597,7 +597,7 @@ Widget _buildCategoryDropdowns() {
 
   Widget _buildCityDropdown() {
     return DropdownButtonFormField<String>(
-      value: _selectedCity,
+      initialValue: _selectedCity,
       decoration: const InputDecoration(
         labelText: 'Grad',
         border: OutlineInputBorder(),
@@ -628,7 +628,7 @@ Widget _buildCategoryDropdowns() {
       decoration: const InputDecoration(
         labelText: 'Adresa',
         border: OutlineInputBorder(),
-        hintText: 'npr. Sportski centar Tasmajdan',
+        hintText: 'npr. Hala Čair Niš',
       ),
       validator: (value) {
         if (value == null || value.isEmpty) {
@@ -643,9 +643,9 @@ Widget _buildCategoryDropdowns() {
     return TextFormField(
       controller: _locationDetailsController,
       decoration: const InputDecoration(
-        labelText: 'Dodatne informacije o lokaciji (opciono)',
+        labelText: 'Dodatne informacije o lokaciji (opcionalno)',
         border: OutlineInputBorder(),
-        hintText: 'npr. Teren 3, ulaz sa Ruzveltove',
+        hintText: 'npr. Teren 3, ulaz sa južne strane',
       ),
     );
   }
@@ -654,13 +654,13 @@ Widget _buildCategoryDropdowns() {
     return TextFormField(
       controller: _maxParticipantsController,
       decoration: const InputDecoration(
-        labelText: 'Maksimalan broj ucesnika',
+        labelText: 'Maksimalan broj učesnika',
         border: OutlineInputBorder(),
       ),
       keyboardType: TextInputType.number,
       validator: (value) {
         if (value == null || value.isEmpty) {
-          return 'Unesi broj ucesnika';
+          return 'Unesi broj učesnika';
         }
         final number = int.tryParse(value);
         if (number == null || number < 1) {
@@ -675,7 +675,7 @@ Widget _buildCategoryDropdowns() {
     return Column(
       children: [
         RadioListTile<String>(
-          title: const Text('Javni dogadjaj'),
+          title: const Text('Javni događaj'),
           subtitle: const Text('Svi mogu videti i prijaviti se'),
           value: 'public',
           groupValue: _visibility,
@@ -686,8 +686,8 @@ Widget _buildCategoryDropdowns() {
           },
         ),
         RadioListTile<String>(
-          title: const Text('Privatni dogadjaj'),
-          subtitle: const Text('Samo pozvani mogu ucestvovati'),
+          title: const Text('Privatni događaj'),
+          subtitle: const Text('Samo pozvani mogu učestvovati'),
           value: 'private',
           groupValue: _visibility,
           onChanged: (value) {
@@ -713,7 +713,7 @@ Widget _buildCategoryDropdowns() {
           },
         ),
         CheckboxListTile(
-          title: const Text('Pomoc za osobe ostecenog sluha'),
+          title: const Text('Pomoć za osobe oštecenog sluha'),
           value: _hearingAssistance,
           onChanged: (value) {
             setState(() {
@@ -722,7 +722,7 @@ Widget _buildCategoryDropdowns() {
           },
         ),
         CheckboxListTile(
-          title: const Text('Pomoc za osobe ostecenog vida'),
+          title: const Text('Pomoć za osobe oštecenog vida'),
           value: _visualAssistance,
           onChanged: (value) {
             setState(() {
@@ -840,7 +840,7 @@ Widget _buildCategoryDropdowns() {
         onPressed: _isLoading ? null : _submitForm,
         child: _isLoading
             ? const CircularProgressIndicator(color: Colors.white)
-            : Text(_isEditing ? 'Sacuvaj izmene' : 'Kreiraj dogadjaj'),
+            : Text(_isEditing ? 'Sačuvaj izmene' : 'Kreiraj događaj'),
       ),
     );
   }
@@ -921,7 +921,7 @@ Widget _buildCategoryDropdowns() {
         await _eventService.updateEvent(event.id!, event.toMap());
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Dogadjaj je azuriran!')),
+            const SnackBar(content: Text('Događaj je ažuriran!')),
           );
           Navigator.pop(context);
         }
@@ -929,7 +929,7 @@ Widget _buildCategoryDropdowns() {
         await _eventService.createEvent(event);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Dogadjaj je kreiran!')),
+            const SnackBar(content: Text('Događaj je kreiran!')),
           );
           Navigator.pop(context);
         }

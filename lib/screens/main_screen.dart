@@ -87,7 +87,7 @@ class _MainScreenState extends State<MainScreen> {
                 children: [
                   IconButton(
                     icon: Icon(Icons.event, color: Colors.orange.shade700),
-                    tooltip: 'Dogadjaji',
+                    tooltip: 'Događaji',
                     onPressed: () {
                       Navigator.push(
                         context,

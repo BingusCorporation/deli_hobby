@@ -220,7 +220,7 @@ class _EventInvitesScreenState extends State<EventInvitesScreen> {
                 TextField(
                   controller: _searchController,
                   decoration: InputDecoration(
-                    hintText: 'Pretrazi po imenu...',
+                    hintText: 'Pretraži po imenu...',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -290,7 +290,7 @@ class _EventInvitesScreenState extends State<EventInvitesScreen> {
                             ),
                             const SizedBox(height: 16),
                             Text(
-                              'Nemate prijatelja',
+                              'Nemate prijatelje',
                               style: TextStyle(
                                 fontSize: 16,
                                 color: Colors.grey[600],

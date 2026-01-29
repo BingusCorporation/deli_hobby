@@ -1136,7 +1136,7 @@ class _FriendRequestsListState extends State<_FriendRequestsList> with WidgetsBi
                       Padding(
                         padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                         child: Text(
-                          'Pozivnice za dogadjaje',
+                          'Pozivnice za događaje',
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
@@ -1785,7 +1785,7 @@ class _EventInviteTile extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              'Pozvani ste na dogadjaj',
+              'Pozvani ste na događaj',
               style: TextStyle(color: Colors.grey.shade700),
             ),
             const SizedBox(height: 16),

@@ -287,7 +287,7 @@ class _SignupScreenState extends State<SignupScreen> {
                           ],
                         ),
                         child: DropdownButtonFormField<String>(
-                          value: selectedCity,
+                          initialValue: selectedCity,
                           decoration: InputDecoration(
                             labelText: "Grad",
                             prefixIcon: const Icon(Icons.location_city, color: Colors.orange),

@@ -122,7 +122,7 @@ class EventCard extends StatelessWidget {
                           Padding(
                             padding: const EdgeInsets.only(top: 4),
                             child: Text(
-                              '+${event.hobbies.length - 3} jos',
+                              '+${event.hobbies.length - 3} još',
                               style: TextStyle(
                                 fontSize: 10,
                                 color: Colors.grey[600],
