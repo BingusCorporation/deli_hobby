@@ -1,4 +1,4 @@
-// services/messaging_service.dart
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:rxdart/rxdart.dart';
@@ -9,15 +9,13 @@ class MessagingService {
 
   static String get currentUserId => _auth.currentUser?.uid ?? '';
 
-  // ============ 1-ON-1 MESSAGES (EXISTING) ============
+  // ============ 1-ON-1  ============
   
-  /// Create or get conversation ID between two users
   static String getConversationId(String userId1, String userId2) {
     final sortedIds = [userId1, userId2]..sort();
     return '${sortedIds[0]}_${sortedIds[1]}';
   }
 
-  /// Send a message to another user - SIMPLIFIED VERSION
   static Future<void> sendMessage(String receiverId, String message) async {
     if (message.trim().isEmpty) return;
     
@@ -25,7 +23,6 @@ class MessagingService {
       final conversationId = getConversationId(currentUserId, receiverId);
       final now = FieldValue.serverTimestamp();
       
-      // Create message document
       await _firestore
           .collection('conversations')
           .doc(conversationId)
@@ -38,7 +35,6 @@ class MessagingService {
         'read': false,
       });
       
-      // Try to create/update conversation document
       try {
         await _firestore.collection('conversations').doc(conversationId).set({
           'participants': [currentUserId, receiverId],
@@ -61,7 +57,6 @@ class MessagingService {
     }
   }
 
-  /// Get conversation stream for 1-on-1 chat
   static Stream<QuerySnapshot> getConversationStream(String otherUserId) {
     final conversationId = getConversationId(currentUserId, otherUserId);
     
@@ -76,7 +71,6 @@ class MessagingService {
         });
   }
 
-  /// Get list of conversations for current user
   static Stream<QuerySnapshot> getConversationsStream() {
     return _firestore
         .collection('conversations')
@@ -88,10 +82,8 @@ class MessagingService {
         });
   }
 
-  /// Mark messages as read
   static Future<void> markAsRead(String conversationId, String otherUserId) async {
     try {
-      // Mark individual messages as read
       final messagesSnapshot = await _firestore
           .collection('conversations')
           .doc(conversationId)
@@ -104,8 +96,6 @@ class MessagingService {
       for (final doc in messagesSnapshot.docs) {
         batch.update(doc.reference, {'read': true});
       }
-      
-      // Reset unread count for current user to 0
       batch.update(_firestore.collection('conversations').doc(conversationId), {
         'unreadCount.$currentUserId': 0,
       });
@@ -118,9 +108,8 @@ class MessagingService {
     }
   }
 
-  // ============ GROUP CHAT FUNCTIONS ============
+  // ============ GROUP CHAT ============
 
-  /// Create a new group
   static Future<String> createGroup({
     required String name,
     String description = '',
@@ -143,8 +132,6 @@ class MessagingService {
         'updatedAt': FieldValue.serverTimestamp(),
         'messageCount': 0,
       });
-
-      // Create user_group entries for all participants
       final batch = _firestore.batch();
       for (final userId in [...participantIds, currentUserId]) {
         final userGroupRef = _firestore
@@ -169,7 +156,6 @@ class MessagingService {
     }
   }
 
-  /// Send message to group
   static Future<void> sendGroupMessage({
     required String groupId,
     required String message,
@@ -177,11 +163,10 @@ class MessagingService {
     if (message.trim().isEmpty) return;
 
     try {
-      // Get current user name for the message
+
       final userDoc = await _firestore.collection('users').doc(currentUserId).get();
       final userName = userDoc['name'] as String? ?? 'Korisnik';
       
-      // Add message to group_messages subcollection
       await _firestore
           .collection('groups')
           .doc(groupId)
@@ -195,7 +180,6 @@ class MessagingService {
         'readBy': [currentUserId],
       });
 
-      // Update group metadata
       await _firestore.collection('groups').doc(groupId).update({
         'lastMessage': message.trim(),
         'lastMessageTime': FieldValue.serverTimestamp(),
@@ -204,7 +188,6 @@ class MessagingService {
         'messageCount': FieldValue.increment(1),
       });
 
-      // Update unread counts and lastUpdated for all participants except sender
       final groupDoc = await _firestore.collection('groups').doc(groupId).get();
       final participants = List<String>.from(groupDoc['participants'] ?? []);
       
@@ -215,13 +198,11 @@ class MessagingService {
             .doc('${userId}_$groupId');
         
         if (userId != currentUserId) {
-          // Increment unread count for others
           batch.set(userGroupRef, {
             'unreadCount': FieldValue.increment(1),
             'lastUpdated': FieldValue.serverTimestamp(),
           }, SetOptions(merge: true));
         } else {
-          // Just update lastUpdated for sender
           batch.set(userGroupRef, {
             'lastUpdated': FieldValue.serverTimestamp(),
           }, SetOptions(merge: true));
@@ -235,7 +216,6 @@ class MessagingService {
     }
   }
 
-  /// Get group message stream
   static Stream<QuerySnapshot> getGroupMessagesStream(String groupId) {
     return _firestore
         .collection('groups')
@@ -247,8 +227,6 @@ class MessagingService {
           print('Error in group messages stream: $error');
         });
   }
-
-  /// Get groups for current user
   static Stream<QuerySnapshot> getUserGroupsStream() {
     return _firestore
         .collection('user_groups')
@@ -260,26 +238,24 @@ class MessagingService {
         });
   }
 
-  /// Get group details
   static Future<DocumentSnapshot> getGroupDetails(String groupId) {
     return _firestore.collection('groups').doc(groupId).get();
   }
 
-  /// Add participant to group
   static Future<void> addParticipantToGroup({
     required String groupId,
     required String userId,
   }) async {
     final batch = _firestore.batch();
     
-    // Add to group participants
+
     final groupRef = _firestore.collection('groups').doc(groupId);
     batch.update(groupRef, {
       'participants': FieldValue.arrayUnion([userId]),
       'updatedAt': FieldValue.serverTimestamp(),
     });
 
-    // Create user_group entry
+
     final userGroupRef = _firestore
         .collection('user_groups')
         .doc('${userId}_$groupId');
@@ -296,7 +272,7 @@ class MessagingService {
     await batch.commit();
   }
 
-  /// Mark group messages as read
+
   static Future<void> markGroupMessagesAsRead(String groupId) async {
     try {
       await _firestore
@@ -311,11 +287,9 @@ class MessagingService {
     }
   }
 
-  // ============ COMBINED STREAMS ============
+  // =========== Combo meal ============
 
-  /// Get combined conversations (private + groups) stream
   static Stream<List<Map<String, dynamic>>> getCombinedConversationsStream() {
-    // Get private conversations
     final privateStream = getConversationsStream().asyncMap((snapshot) async {
       final privateConversations = <Map<String, dynamic>>[];
       
@@ -330,7 +304,6 @@ class MessagingService {
           
           if (otherUserId.isEmpty) continue;
           
-          // Get user info with timeout to prevent hanging
           try {
             final userDoc = await _firestore
                 .collection('users')
@@ -351,7 +324,6 @@ class MessagingService {
             });
           } catch (e) {
             print('Error getting user info: $e');
-            // Add conversation without user info rather than skipping
             privateConversations.add({
               'type': 'private',
               'id': doc.id,
@@ -374,7 +346,6 @@ class MessagingService {
       return [];
     });
     
-    // Get group conversations
     final groupStream = _firestore
         .collection('user_groups')
         .where('userId', isEqualTo: currentUserId)
@@ -412,7 +383,6 @@ class MessagingService {
                 }
               } catch (e) {
                 print('Error getting group info: $e');
-                // Still add the group from user_groups data even if full data fails
                 groupConversations.add({
                   'type': 'group',
                   'id': groupId,
@@ -434,14 +404,12 @@ class MessagingService {
           return [];
         });
     
-    // Combine both streams more robustly
     return Rx.combineLatest2(
       privateStream,
       groupStream,
       (List<Map<String, dynamic>> privateList, List<Map<String, dynamic>> groupList) {
         final combined = [...privateList, ...groupList];
-        
-        // Sort by last message time (newest first)
+
         combined.sort((a, b) {
           final timeA = a['lastMessageTime'] as Timestamp?;
           final timeB = b['lastMessageTime'] as Timestamp?;
@@ -461,7 +429,6 @@ class MessagingService {
     });
   }
 
-  /// Get total unread count (both 1-on-1 and group)
   static Stream<int> getTotalUnreadCountStream() {
     return _firestore
         .collection('user_groups')
@@ -487,13 +454,11 @@ static Future<void> addMemberToGroup({
     final batch = _firestore.batch();
     final groupRef = _firestore.collection('groups').doc(groupId);
     
-    // Add user to participants array
     batch.update(groupRef, {
       'participants': FieldValue.arrayUnion([userId]),
       'updatedAt': FieldValue.serverTimestamp(),
     });
     
-    // Create user_groups document
     final userGroupRef = _firestore.collection('user_groups')
         .doc('${userId}_$groupId');
     
@@ -512,7 +477,7 @@ static Future<void> addMemberToGroup({
     rethrow;
   }
 }
-  /// Get unread message count for main screen
+
   static Stream<int> getUnreadCountStream() {
     return _firestore
         .collection('conversations')
@@ -522,7 +487,7 @@ static Future<void> addMemberToGroup({
           int total = 0;
           for (final doc in snapshot.docs) {
             final data = doc.data();
-            // Get unread count from the unreadCount map using currentUserId as key
+
             final unreadMap = data['unreadCount'] as Map<String, dynamic>?;
             if (unreadMap != null && unreadMap.containsKey(currentUserId)) {
               final unread = unreadMap[currentUserId] as int? ?? 0;
@@ -537,9 +502,9 @@ static Future<void> addMemberToGroup({
         });
   }
 
-  /// Get combined unread count (1-on-1 + groups) for main screen
+
   static Stream<int> getCombinedUnreadCountStream() {
-    // Combine 1-on-1 unread count with group unread count
+
     final privateStream = getUnreadCountStream();
     final groupStream = _firestore
         .collection('user_groups')
@@ -553,7 +518,6 @@ static Future<void> addMemberToGroup({
           return total;
         });
 
-    // Combine both streams
     return privateStream.asyncMap((privateCount) async {
       final groupCount = await groupStream.first;
       return privateCount + groupCount;

@@ -37,11 +37,11 @@ class _LoginScreenState extends State<LoginScreen> {
         password: passwordController.text,
       );
       
-      // Use pushAndRemoveUntil to clear navigation stack
+
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (_) => const MainScreen()),
-        (route) => false, // Remove all previous routes
+        (route) => false,
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -79,7 +79,6 @@ class _LoginScreenState extends State<LoginScreen> {
           child: SingleChildScrollView(
             child: Column(
               children: [
-                // Back Button
                 Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Align(
@@ -100,12 +99,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 
-                // Logo and Title Section
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
                   child: Column(
                     children: [
-                      // Logo
                       Container(
                         width: 100,
                         height: 100,
@@ -129,7 +126,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       
                       const SizedBox(height: 30),
                       
-                      // Title
                       const Text(
                         'Dobrodošli nazad',
                         style: TextStyle(
@@ -142,7 +138,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       
                       const SizedBox(height: 10),
                       
-                      // Subtitle
                       const Text(
                         'Prijavite se na svoj nalog',
                         style: TextStyle(
@@ -154,7 +149,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 
-                // Form Section
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 40),
                   decoration: BoxDecoration(
@@ -173,7 +167,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   child: Column(
                     children: [
-                      // Email Field
                       Container(
                         decoration: BoxDecoration(
                           color: Colors.white,
@@ -213,7 +206,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       
                       const SizedBox(height: 20),
                       
-                      // Password Field
                       Container(
                         decoration: BoxDecoration(
                           color: Colors.white,
@@ -252,7 +244,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       
                       const SizedBox(height: 30),
                       
-                      // Login Button
                       SizedBox(
                         width: double.infinity,
                         height: 56,
@@ -295,7 +286,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       
                       const SizedBox(height: 25),
                       
-                      // Divider
                       Row(
                         children: [
                           Expanded(
@@ -325,7 +315,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       
                       const SizedBox(height: 25),
                       
-                      // Sign Up Button
                       SizedBox(
                         width: double.infinity,
                         height: 56,
@@ -366,10 +355,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       
                       const SizedBox(height: 20),
                       
-                      // Forgot Password
                       TextButton(
                         onPressed: () {
-                          // TODO: Implement forgot password functionality
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text('Funkcija resetovanja lozinke će uskoro biti dostupna'),

@@ -1,4 +1,3 @@
-// screens/create_group_screen.dart
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -35,11 +34,8 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
       final currentUserId = FirebaseAuth.instance.currentUser?.uid;
       if (currentUserId == null) return;
 
-      // Get friends using the optimized FriendsService
-      // First, get the stream of friends
       final friendsStream = FriendsService.getFriendsStream();
       
-      // Take the first snapshot
       final friendsSnapshot = await friendsStream.first;
       
       setState(() {
@@ -49,7 +45,6 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
       
     } catch (e) {
       print('Error loading friends: $e');
-      // Fallback: try direct Firestore query
       _loadFriendsFallback();
     } finally {
       if (mounted) {
@@ -58,13 +53,11 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
     }
   }
 
-  // Fallback method if FriendsService fails
   Future<void> _loadFriendsFallback() async {
     try {
       final currentUserId = FirebaseAuth.instance.currentUser?.uid;
       if (currentUserId == null) return;
 
-      // Query friendships where current user is the userId
       final friendships = await FirebaseFirestore.instance
           .collection('friendships')
           .where('userId', isEqualTo: currentUserId)
@@ -73,7 +66,6 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
 
       if (friendships.docs.isEmpty) return;
 
-      // Get friend IDs
       final friendIds = friendships.docs
           .map((doc) => doc.data()['friendId'] as String)
           .where((id) => id.isNotEmpty)
@@ -81,10 +73,8 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
 
       if (friendIds.isEmpty) return;
 
-      // Get user data for friends (in batches of 10 for Firestore)
       final List<Map<String, dynamic>> friends = [];
       
-      // Process in batches of 10 due to Firestore's 'in' query limit
       for (int i = 0; i < friendIds.length; i += 10) {
         final batchIds = friendIds.sublist(
           i,
@@ -126,12 +116,11 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // Create group - always private since public option removed
       final groupId = await MessagingService.createGroup(
         name: _nameController.text.trim(),
         description: _descriptionController.text.trim(),
         participantIds: _selectedParticipants,
-        isPublic: false, // Always false - groups are now private/friends-only
+        isPublic: false, 
       );
 
       if (!mounted) return;
@@ -187,7 +176,6 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                     key: _formKey,
                     child: Column(
                       children: [
-                        // Group name field
                         TextFormField(
                           controller: _nameController,
                           decoration: const InputDecoration(
@@ -207,7 +195,6 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                         ),
                         const SizedBox(height: 16),
                         
-                        // Group description field
                         TextFormField(
                           controller: _descriptionController,
                           decoration: const InputDecoration(
@@ -220,7 +207,6 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                         
                         const SizedBox(height: 24),
                         
-                        // Friends selection header
                         Row(
                           children: [
                             const Text(
@@ -243,7 +229,6 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                         ),
                         const SizedBox(height: 8),
                         
-                        // Loading indicator for friends
                         if (_isLoadingFriends)
                           const Padding(
                             padding: EdgeInsets.all(20),
@@ -258,7 +243,6 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                             ),
                           ),
                         
-                        // No friends message
                         if (!_isLoadingFriends && _availableFriends.isEmpty)
                           Padding(
                             padding: const EdgeInsets.all(20),
@@ -292,7 +276,6 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                             ),
                           ),
                         
-                        // Friends list
                         if (!_isLoadingFriends && _availableFriends.isNotEmpty)
                           Column(
                             children: _availableFriends.map((friend) {
@@ -369,7 +352,6 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                             }).toList(),
                           ),
                         
-                        // Selected participants summary
                         if (_selectedParticipants.isNotEmpty)
                           Padding(
                             padding: const EdgeInsets.only(top: 16),
@@ -420,7 +402,7 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
                             ),
                           ),
                         
-                        // Create button at bottom
+
                         const SizedBox(height: 32),
                         SizedBox(
                           width: double.infinity,

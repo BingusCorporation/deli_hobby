@@ -75,19 +75,19 @@ class Event {
   final int maxParticipants;
   final int currentParticipants;
   final List<String> participants;
-  final String category; // Primary category (for backwards compatibility)
-  final String subcategory; // Primary subcategory (for backwards compatibility)
-  final String hobby; // Primary "Category > Subcategory" (for backwards compatibility)
-  final List<String> categories; // All categories
-  final List<String> subcategories; // All subcategories
-  final List<String> hobbies; // All "Category > Subcategory" combinations
-  final String requiredSkillLevel; // beginner, intermediate, advanced, any
-  final String visibility; // public, private
+  final String category; 
+  final String subcategory; 
+  final String hobby; 
+  final List<String> categories; 
+  final List<String> subcategories; 
+  final List<String> hobbies; 
+  final String requiredSkillLevel; 
+  final String visibility; 
   final EventAccessibility accessibility;
   final List<ScheduleItem> schedule;
   final DateTime? createdAt;
   final DateTime? updatedAt;
-  final String status; // active, cancelled, completed
+  final String status;
 
   Event({
     this.id,

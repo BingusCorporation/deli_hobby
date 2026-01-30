@@ -19,7 +19,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         backgroundColor: Colors.orange.shade700,
         foregroundColor: Colors.white,
         actions: [
-          // Mark all as read button
+
           IconButton(
             icon: const Icon(Icons.done_all),
             tooltip: 'Označi sve kao pročitano',
@@ -180,7 +180,6 @@ class _NotificationTile extends StatelessWidget {
           padding: const EdgeInsets.all(12),
           child: Row(
             children: [
-              // Notification type icon
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
@@ -194,7 +193,6 @@ class _NotificationTile extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              // Notification content
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -274,7 +272,6 @@ class _NotificationTile extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              // Delete button
               PopupMenuButton(
                 itemBuilder: (context) => [
                   PopupMenuItem(

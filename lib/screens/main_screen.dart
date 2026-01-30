@@ -25,13 +25,11 @@ class _MainScreenState extends State<MainScreen> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   
-  // Search state
   String? _selectedCity;
   String? _selectedCategory;
   String? _selectedSubcategory;
   final TextEditingController _nameSearchController = TextEditingController();
   
-  // Search results
   List<Map<String, dynamic>> _searchResults = [];
   bool _isSearching = false;
   String _searchStatus = '';
@@ -83,7 +81,6 @@ class _MainScreenState extends State<MainScreen> {
           ),
         ),
         actions: [
-          // Events icon button with invites count
           StreamBuilder<int>(
             stream: EventService().getMyPendingInvitesCountStream(),
             builder: (context, snapshot) {
@@ -136,7 +133,6 @@ class _MainScreenState extends State<MainScreen> {
               );
             },
           ),
-          // Oglasi icon button
           Container(
             margin: const EdgeInsets.only(right: 8),
             decoration: BoxDecoration(
@@ -154,7 +150,6 @@ class _MainScreenState extends State<MainScreen> {
               },
             ),
           ),
-          // Messages icon button with count (unread messages + friend requests + invites)
           StreamBuilder<int>(
             stream: _getUnreadCountStream(),
             builder: (context, unreadSnapshot) {
@@ -220,7 +215,6 @@ class _MainScreenState extends State<MainScreen> {
               );
             },
           ),
-          // Profile icon button
           Container(
             margin: const EdgeInsets.only(right: 12),
             decoration: BoxDecoration(
@@ -257,7 +251,6 @@ class _MainScreenState extends State<MainScreen> {
           bottom: false,
           child: CustomScrollView(
             slivers: [
-              // Search Section - FIXED: Now properly scrollable
               SliverToBoxAdapter(
                 child: Container(
                   padding: const EdgeInsets.all(16),
@@ -272,7 +265,6 @@ class _MainScreenState extends State<MainScreen> {
                   ),
                   child: Column(
                     children: [
-                      // Name search field
                       TextField(
                         controller: _nameSearchController,
                         decoration: InputDecoration(
@@ -296,10 +288,8 @@ class _MainScreenState extends State<MainScreen> {
                       
                       const SizedBox(height: 16),
                       
-                      // Hobby and City in one row
                       Row(
                         children: [
-                          // Hobby dropdown
                           Expanded(
                             child: Container(
                               decoration: BoxDecoration(
@@ -355,7 +345,6 @@ class _MainScreenState extends State<MainScreen> {
                           
                           const SizedBox(width: 12),
                           
-                          // City dropdown
                           Expanded(
                             child: Container(
                               decoration: BoxDecoration(
@@ -406,7 +395,6 @@ class _MainScreenState extends State<MainScreen> {
                         ],
                       ),
                       
-                      // Subcategory dropdown (only shows when category is selected)
                       if (_selectedCategory != null && hobbyCategories[_selectedCategory]!.isNotEmpty) ...[
                         const SizedBox(height: 12),
                         Container(
@@ -456,7 +444,6 @@ class _MainScreenState extends State<MainScreen> {
                         ),
                       ],
                       
-                      // Search button
                       const SizedBox(height: 20),
                       SizedBox(
                         width: double.infinity,
@@ -497,7 +484,6 @@ class _MainScreenState extends State<MainScreen> {
                         ),
                       ),
                       
-                      // Selected filters chips
                       if (_selectedCategory != null || _selectedCity != null) ...[
                         const SizedBox(height: 16),
                         Wrap(
@@ -578,7 +564,6 @@ class _MainScreenState extends State<MainScreen> {
                 ),
               ),
               
-              // Search Status
               if (_searchStatus.isNotEmpty)
                 SliverToBoxAdapter(
                   child: Container(
@@ -637,7 +622,6 @@ class _MainScreenState extends State<MainScreen> {
                   ),
                 ),
               
-              // Search Results or Empty State
               if (_isSearching)
                 SliverFillRemaining(
                   child: Center(
@@ -753,7 +737,6 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  /// Stream for unread messages count
   Stream<int> _getUnreadCountStream() {
     return _firestore
         .collection('conversations')
@@ -770,7 +753,6 @@ class _MainScreenState extends State<MainScreen> {
         });
   }
 
-  /// Build user card
   Widget _buildUserCard(Map<String, dynamic> user) {
     final String? profilePic = user['profilePic'] as String?;
     final String? city = user['city'] as String?;
@@ -808,7 +790,6 @@ class _MainScreenState extends State<MainScreen> {
             padding: const EdgeInsets.all(12),
             child: Row(
               children: [
-                // Profile picture
                 Container(
                   width: 56,
                   height: 56,
@@ -838,7 +819,6 @@ class _MainScreenState extends State<MainScreen> {
                 ),
                 const SizedBox(width: 12),
                 
-                // Name and city
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -877,7 +857,6 @@ class _MainScreenState extends State<MainScreen> {
                   ),
                 ),
                 
-                // Message button
                 IconButton(
                   onPressed: () {
                     Navigator.push(
@@ -945,7 +924,6 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  /// Main search algorithm
   Future<void> _searchForMatches() async {
     if (_auth.currentUser == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -979,7 +957,7 @@ class _MainScreenState extends State<MainScreen> {
     });
 
     try {
-      // Build query
+
       Query query = _firestore.collection('users');
       query = query.where(FieldPath.documentId, isNotEqualTo: _currentUserId);
       
@@ -987,10 +965,9 @@ class _MainScreenState extends State<MainScreen> {
         query = query.where('city', isEqualTo: _selectedCity);
       }
       
-      // Execute query
+
       final snapshot = await query.get();
-      
-      // Filter results
+
       final List<Map<String, dynamic>> results = [];
       final String nameFilter = _nameSearchController.text.trim().toLowerCase();
       
@@ -999,12 +976,12 @@ class _MainScreenState extends State<MainScreen> {
         final String userName = (userData['name'] as String? ?? '').toLowerCase();
         final List<dynamic> userHobbies = userData['hobbies'] as List<dynamic>? ?? [];
         
-        // Check name filter
+
         if (nameFilter.isNotEmpty && !userName.contains(nameFilter)) {
           continue;
         }
         
-        // Check if we have hobby filter
+ 
         bool hasMatchingHobby = false;
         List<String> matchingHobbies = [];
         
@@ -1012,13 +989,11 @@ class _MainScreenState extends State<MainScreen> {
           for (final hobby in userHobbies) {
             final hobbyStr = hobby.toString();
             if (_selectedSubcategory != null) {
-              // Looking for specific subcategory
               if (hobbyStr == '$_selectedCategory > $_selectedSubcategory') {
                 hasMatchingHobby = true;
                 matchingHobbies.add(hobbyStr);
               }
             } else {
-              // Looking for any subcategory in this category
               if (hobbyStr.startsWith('$_selectedCategory >')) {
                 hasMatchingHobby = true;
                 matchingHobbies.add(hobbyStr);
@@ -1026,11 +1001,9 @@ class _MainScreenState extends State<MainScreen> {
             }
           }
         } else {
-          // No hobby filter, show all users (only filtered by city/name if selected)
           hasMatchingHobby = true;
         }
         
-        // Add user if they match criteria
         if (hasMatchingHobby) {
           results.add({
             'id': doc.id,

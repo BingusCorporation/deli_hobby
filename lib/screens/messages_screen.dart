@@ -47,8 +47,6 @@ class _MessagesScreenState extends State<MessagesScreen> with TickerProviderStat
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Force rebuild of the tab view when screen comes back into focus
-    // This triggers a refresh of the streams
     setState(() {});
   }
 
@@ -108,7 +106,6 @@ class _MessagesScreenState extends State<MessagesScreen> with TickerProviderStat
   }
 }
 
-/// COMBINED CONVERSATIONS TAB (Private + Groups)
 class _CombinedConversationsTab extends StatefulWidget {
   const _CombinedConversationsTab();
 
@@ -131,7 +128,6 @@ class _CombinedConversationsTabState extends State<_CombinedConversationsTab> wi
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    // Trigger refresh when app comes to foreground
     if (state == AppLifecycleState.resumed) {
       setState(() {});
     }
@@ -238,7 +234,6 @@ class _CombinedConversationsTabState extends State<_CombinedConversationsTab> wi
   }
 }
 
-/// COMBINED CONTACTS AND REQUESTS TAB
 class _ContactsAndRequestsTab extends StatefulWidget {
   @override
   State<_ContactsAndRequestsTab> createState() => _ContactsAndRequestsTabState();
@@ -307,9 +302,7 @@ class _ContactsAndRequestsTabState extends State<_ContactsAndRequestsTab> with W
   }
 }
 
-/// CONTACTS LIST WITH SEARCH AND FILTERS
-/// CONTACTS LIST WITH SEARCH AND FILTERS
-/// CONTACTS LIST WITH SEARCH AND FILTERS
+
 class _ContactsListWithSearch extends StatefulWidget {
   @override
   State<_ContactsListWithSearch> createState() => _ContactsListWithSearchState();
@@ -359,7 +352,6 @@ class _ContactsListWithSearchState extends State<_ContactsListWithSearch> with W
         _isLoading = true;
       });
 
-      // First, get all friend IDs from friendships collection
       final friendshipsSnapshot = await FirebaseFirestore.instance
           .collection('friendships')
           .where('userId', isEqualTo: _currentUser!.uid)
@@ -378,7 +370,6 @@ class _ContactsListWithSearchState extends State<_ContactsListWithSearch> with W
         return;
       }
 
-      // Get user data for each friend
       final friendsWithData = <Map<String, dynamic>>[];
 
       for (final friendId in friendIds) {
@@ -420,10 +411,8 @@ class _ContactsListWithSearchState extends State<_ContactsListWithSearch> with W
   }
 
   void _applyFilters() {
-    // Start with all friends
     List<Map<String, dynamic>> result = List.from(_allFriendsWithData);
 
-    // Apply name search
     if (_searchQuery.isNotEmpty) {
       result = result.where((friend) {
         final name = friend['name']?.toString().toLowerCase() ?? '';
@@ -431,18 +420,15 @@ class _ContactsListWithSearchState extends State<_ContactsListWithSearch> with W
       }).toList();
     }
 
-    // Apply hobby filters (only if a category is selected)
     if (_selectedCategory != null) {
       result = result.where((friend) {
         final List<String> hobbies = List<String>.from(friend['hobbies'] ?? []);
         if (hobbies.isEmpty) return false;
 
         if (_selectedSubcategory != null) {
-          // Looking for exact subcategory
           final targetHobby = '$_selectedCategory > $_selectedSubcategory';
           return hobbies.contains(targetHobby);
         } else {
-          // Looking for any hobby in the category
           return hobbies.any((hobby) => hobby.startsWith('$_selectedCategory >'));
         }
       }).toList();
@@ -457,13 +443,11 @@ class _ContactsListWithSearchState extends State<_ContactsListWithSearch> with W
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // SEARCH AND FILTER BAR
         Container(
           padding: const EdgeInsets.all(12),
           color: Colors.white,
           child: Column(
             children: [
-              // Search bar
               Container(
                 decoration: BoxDecoration(
                   color: Colors.grey.shade50,
@@ -499,10 +483,8 @@ class _ContactsListWithSearchState extends State<_ContactsListWithSearch> with W
               
               const SizedBox(height: 12),
               
-              // Filter button and active filters
               Row(
                 children: [
-                  // Filter button
                   ElevatedButton.icon(
                     onPressed: () {
                       _showFilterDialog(context);
@@ -532,13 +514,11 @@ class _ContactsListWithSearchState extends State<_ContactsListWithSearch> with W
                   
                   const SizedBox(width: 8),
                   
-                  // Active filters chips with clear all
                   Expanded(
                     child: SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       child: Row(
                         children: [
-                          // Clear all button (only when there are filters)
                           if (_activeFilters.isNotEmpty)
                             InkWell(
                               onTap: _clearAllFilters,
@@ -568,7 +548,6 @@ class _ContactsListWithSearchState extends State<_ContactsListWithSearch> with W
                               ),
                             ),
                           
-                          // Active filter chips
                           ..._activeFilters.map((filter) {
                             return Container(
                               margin: const EdgeInsets.only(right: 6),
@@ -599,7 +578,6 @@ class _ContactsListWithSearchState extends State<_ContactsListWithSearch> with W
         
         const SizedBox(height: 8),
         
-        // Contacts list
         Expanded(
           child: _isLoading
               ? const Center(
@@ -681,7 +659,6 @@ class _ContactsListWithSearchState extends State<_ContactsListWithSearch> with W
           if (!hasFriends && !hasActiveFilters)
             ElevatedButton.icon(
               onPressed: () {
-                // You might want to navigate to search users screen
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text('Idite na pretragu da dodate prijatelje'),
@@ -719,7 +696,6 @@ class _ContactsListWithSearchState extends State<_ContactsListWithSearch> with W
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Clear filters button (only when there's a selection)
                       if (tempCategory != null || tempSubcategory != null)
                         Column(
                           children: [
@@ -743,7 +719,6 @@ class _ContactsListWithSearchState extends State<_ContactsListWithSearch> with W
                           ],
                         ),
                       
-                      // Category dropdown
                       DropdownButtonFormField<String>(
                         initialValue: tempCategory,
                         decoration: InputDecoration(
@@ -769,14 +744,14 @@ class _ContactsListWithSearchState extends State<_ContactsListWithSearch> with W
                         onChanged: (value) {
                           setState(() {
                             tempCategory = value;
-                            tempSubcategory = null; // Reset subcategory when category changes
+                            tempSubcategory = null;
                           });
                         },
                       ),
                       
                       const SizedBox(height: 16),
                       
-                      // Subcategory dropdown (only if category is selected and has subcategories)
+
                       if (tempCategory != null && 
                           hobbyCategories[tempCategory] != null && 
                           hobbyCategories[tempCategory]!.isNotEmpty)
@@ -811,7 +786,7 @@ class _ContactsListWithSearchState extends State<_ContactsListWithSearch> with W
                       
                       const SizedBox(height: 20),
                       
-                      // Current filter display
+
                       if (tempCategory != null)
                         Container(
                           padding: const EdgeInsets.all(12),
@@ -858,12 +833,12 @@ class _ContactsListWithSearchState extends State<_ContactsListWithSearch> with W
                 ),
                 ElevatedButton(
                   onPressed: () {
-                    // Update the state with new filter values
+
                     setState(() {
                       _selectedCategory = tempCategory;
                       _selectedSubcategory = tempSubcategory;
                       
-                      // Update active filters display
+
                       _activeFilters.clear();
                       if (_selectedCategory != null) {
                         if (_selectedSubcategory != null) {
@@ -874,7 +849,7 @@ class _ContactsListWithSearchState extends State<_ContactsListWithSearch> with W
                       }
                     });
                     
-                    // Apply the filters
+
                     _applyFilters();
                     
                     Navigator.pop(context);
@@ -908,16 +883,15 @@ class _ContactsListWithSearchState extends State<_ContactsListWithSearch> with W
     setState(() {
       _activeFilters.remove(filter);
       
-      // Update the underlying filter variables
+
       if (filter.contains(' > ')) {
-        // This was a category > subcategory filter
+
         final parts = filter.split(' > ');
         if (parts[0] == _selectedCategory && parts[1] == _selectedSubcategory) {
           _selectedCategory = null;
           _selectedSubcategory = null;
         }
       } else {
-        // This was just a category filter
         if (filter == _selectedCategory) {
           _selectedCategory = null;
           _selectedSubcategory = null;
@@ -928,7 +902,7 @@ class _ContactsListWithSearchState extends State<_ContactsListWithSearch> with W
     });
   }
 }
-/// FRIEND REQUESTS AND EVENT INVITES LIST
+
 class _FriendRequestsList extends StatefulWidget {
   const _FriendRequestsList();
 
@@ -969,7 +943,7 @@ class _FriendRequestsListState extends State<_FriendRequestsList> with WidgetsBi
             .get();
 
         if (eventSnap.exists) {
-          // Get inviter's name
+
           String inviterName = 'Nepoznato';
           try {
             final inviterSnap = await FirebaseFirestore.instance
@@ -1021,7 +995,7 @@ class _FriendRequestsListState extends State<_FriendRequestsList> with WidgetsBi
     try {
       await _eventService.respondToInvite(eventId, inviteId, true);
       _showSnackBar(context, 'Pozivnica prihvaćena!', Colors.green);
-      // Refresh the screen by rebuilding
+
       if (mounted) {
         setState(() {});
       }
@@ -1034,7 +1008,7 @@ class _FriendRequestsListState extends State<_FriendRequestsList> with WidgetsBi
     try {
       await _eventService.respondToInvite(eventId, inviteId, false);
       _showSnackBar(context, 'Pozivnica odbijena', Colors.orange);
-      // Refresh the screen by rebuilding
+
       if (mounted) {
         setState(() {});
       }
@@ -1057,7 +1031,7 @@ class _FriendRequestsListState extends State<_FriendRequestsList> with WidgetsBi
     return SingleChildScrollView(
       child: Column(
         children: [
-          // Friend Requests Section
+
           StreamBuilder<List<Map<String, dynamic>>>(
             stream: FriendsService.getFriendRequestsStream(),
             builder: (context, friendRequestsSnapshot) {
@@ -1101,7 +1075,7 @@ class _FriendRequestsListState extends State<_FriendRequestsList> with WidgetsBi
             },
           ),
 
-          // Event Invites Section
+
           FutureBuilder<List<EventInvite>>(
             future: _eventService.getMyPendingInvitesFallback(),
             builder: (context, snapshot) {
@@ -1186,7 +1160,7 @@ class _FriendRequestsListState extends State<_FriendRequestsList> with WidgetsBi
             },
           ),
 
-          // Poster Shares (Recommendations) Section
+
           StreamBuilder<QuerySnapshot>(
             stream: FirebaseFirestore.instance
                 .collection('users')
@@ -1251,7 +1225,7 @@ class _FriendRequestsListState extends State<_FriendRequestsList> with WidgetsBi
             },
           ),
 
-          // Empty state
+   
           FutureBuilder<List<EventInvite>>(
             future: _eventService.getMyPendingInvitesFallback(),
             builder: (context, invitesSnapshot) {
@@ -1308,7 +1282,7 @@ class _FriendRequestsListState extends State<_FriendRequestsList> with WidgetsBi
   }
 }
 
-/// CONVERSATION TILE WIDGET (Supports both private and group)
+
 class _ConversationTile extends StatelessWidget {
   final Map<String, dynamic> conversation;
 
@@ -1316,7 +1290,7 @@ class _ConversationTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final type = conversation['type']; // 'private' or 'group'
+    final type = conversation['type']; 
     final isGroup = type == 'group';
     final unreadCount = conversation['unreadCount'] ?? 0;
     final lastMessage = conversation['lastMessage'] ?? '';
@@ -1475,7 +1449,7 @@ class _ConversationTile extends StatelessWidget {
   }
 }
 
-/// CONTACT TILE WIDGET (Updated to show hobbies)
+
 class _ContactTile extends StatelessWidget {
   final Map<String, dynamic> friend;
 
@@ -1587,7 +1561,7 @@ class _ContactTile extends StatelessWidget {
   }
 }
 
-/// FRIEND REQUEST TILE WIDGET
+
 class _FriendRequestTile extends StatelessWidget {
   final Map<String, dynamic> request;
   final VoidCallback onAccept;
@@ -1697,7 +1671,7 @@ class _FriendRequestTile extends StatelessWidget {
               ],
             ),
           ),
-          // Red NEW badge
+
           Positioned(
             top: 8,
             right: 8,
@@ -1723,7 +1697,7 @@ class _FriendRequestTile extends StatelessWidget {
   }
 }
 
-/// EVENT INVITE TILE WIDGET
+
 class _EventInviteTile extends StatelessWidget {
   final Map<String, dynamic> invite;
   final VoidCallback onAccept;
@@ -1847,7 +1821,7 @@ class _EventInviteTile extends StatelessWidget {
     );
   }
 }
-/// POSTER SHARE TILE WIDGET
+
 class _PosterShareTile extends StatefulWidget {
   final String shareId;
   final String posterId;
@@ -2018,7 +1992,7 @@ class _PosterShareTileState extends State<_PosterShareTile> {
             ],
             ),
           ),
-          // NOVO badge
+
           Positioned(
             top: 8,
             left: 8,

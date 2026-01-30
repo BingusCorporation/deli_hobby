@@ -1,9 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
-/// Utility class for optimized image loading
 class ImageUtils {
-  /// Get a cached network image with sensible defaults
   static Widget getCachedNetworkImage({
     required String? imageUrl,
     required double width,
@@ -12,7 +10,7 @@ class ImageUtils {
     Widget? placeholder,
     Widget? errorWidget,
   }) {
-    // Return placeholder if no URL
+
     if (imageUrl == null || imageUrl.isEmpty) {
       return placeholder ?? _defaultPlaceholder(width, height);
     }
@@ -31,7 +29,6 @@ class ImageUtils {
     );
   }
 
-  /// Default placeholder widget
   static Widget _defaultPlaceholder(double width, double height) {
     return Container(
       width: width,
@@ -47,7 +44,7 @@ class ImageUtils {
     );
   }
 
-  /// Default error widget
+
   static Widget _defaultErrorWidget(double width, double height) {
     return Container(
       width: width,
@@ -60,7 +57,6 @@ class ImageUtils {
     );
   }
 
-  /// Get circle avatar with optimized image loading
   static Widget getCachedCircleAvatar({
     required String? imageUrl,
     required double radius,

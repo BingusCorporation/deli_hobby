@@ -119,7 +119,6 @@ class _ChatScreenState extends State<ChatScreen> {
         color: Colors.white,
         child: Column(
           children: [
-            // Panel header
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
               decoration: BoxDecoration(
@@ -163,7 +162,6 @@ class _ChatScreenState extends State<ChatScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    // User avatar
                     Container(
                       width: 100,
                       height: 100,
@@ -198,7 +196,6 @@ class _ChatScreenState extends State<ChatScreen> {
                     ),
                     const SizedBox(height: 20),
                     
-                    // User name
                     Text(
                       widget.otherUserName,
                       style: const TextStyle(
@@ -210,7 +207,6 @@ class _ChatScreenState extends State<ChatScreen> {
                     ),
                     const SizedBox(height: 8),
                     
-                    // User email
                     if (_userInfo?['email'] != null)
                       Text(
                         _userInfo!['email'],
@@ -223,7 +219,6 @@ class _ChatScreenState extends State<ChatScreen> {
                     
                     const SizedBox(height: 24),
                     
-                    // User info sections
                     _buildInfoSection(
                       title: 'Status',
                       content: _userInfo?['status'] ?? 'Aktivan',
@@ -258,7 +253,6 @@ class _ChatScreenState extends State<ChatScreen> {
                     
                     const SizedBox(height: 24),
                     
-                    // Report button only
                     _buildActionButton(
                       icon: Icons.report,
                       label: 'Prijavi korisnika',
@@ -425,7 +419,6 @@ class _ChatScreenState extends State<ChatScreen> {
                   ElevatedButton(
                     onPressed: () async {
                       Navigator.pop(context);
-                      // TODO: Implement report user functionality
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: const Text('Prijava je poslata administratorima'),
@@ -500,7 +493,6 @@ class _ChatScreenState extends State<ChatScreen> {
           children: [
             Column(
               children: [
-                // Messages list
                 Expanded(
                   child: StreamBuilder<QuerySnapshot>(
                     stream: MessagingService.getConversationStream(widget.otherUserId),
@@ -673,12 +665,10 @@ class _ChatScreenState extends State<ChatScreen> {
                   ),
                 ),
                 
-                // Message input
                 _buildMessageInput(),
               ],
             ),
             
-            // Overlay when panel is open
             if (_showInfoPanel)
               GestureDetector(
                 onTap: () {
@@ -691,7 +681,6 @@ class _ChatScreenState extends State<ChatScreen> {
                 ),
               ),
             
-            // Info panel
             _buildInfoPanel(),
           ],
         ),
@@ -755,7 +744,6 @@ class _ChatScreenState extends State<ChatScreen> {
                       color: Colors.orange.shade600,
                     ),
                     onPressed: () {
-                      // TODO: Add file attachment
                     },
                   ),
                 ],

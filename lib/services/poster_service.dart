@@ -11,7 +11,6 @@ class PosterService {
 
   static String get currentUserId => _auth.currentUser?.uid ?? '';
 
-  /// Get all posters stream
   static Stream<List<Poster>> getPostersStream() {
     return _firestore
         .collection('posters')
@@ -20,7 +19,6 @@ class PosterService {
         .map((snapshot) => snapshot.docs.map<Poster>(Poster.fromFirestore).toList());
   }
 
-  /// Get user's own posters
   static Stream<List<Poster>> getUserPostersStream(String userId) {
     return _firestore
         .collection('posters')
@@ -30,7 +28,7 @@ class PosterService {
         .map((snapshot) => snapshot.docs.map<Poster>(Poster.fromFirestore).toList());
   }
 
-  /// Create a new poster
+
   static Future<String> createPoster({
     required String title,
     required String description,
@@ -41,7 +39,7 @@ class PosterService {
     try {
       String? imageUrl;
       
-      // Upload image if provided
+
       if (imageFile != null) {
         final imageRef = _storage
             .ref()
@@ -51,11 +49,11 @@ class PosterService {
         imageUrl = await imageRef.getDownloadURL();
       }
       
-      // Get current user data
+
       final userDoc = await _firestore.collection('users').doc(currentUserId).get();
       final userData = userDoc.data() ?? <String, dynamic>{};
       
-      // Create poster document
+
       final posterRef = await _firestore.collection('posters').add({
         'userId': currentUserId,
         'userName': userData['name'] ?? 'Nepoznato',
@@ -76,7 +74,7 @@ class PosterService {
     }
   }
 
-  /// Update a poster
+
   static Future<void> updatePoster({
     required String posterId,
     String? title,
@@ -95,7 +93,7 @@ class PosterService {
       if (requiredHobbies != null) updates['requiredHobbies'] = requiredHobbies;
       if (city != null) updates['city'] = city;
       
-      // Upload new image if provided
+  
       if (imageFile != null) {
         final imageRef = _storage
             .ref()
@@ -112,7 +110,7 @@ class PosterService {
     }
   }
 
-  /// Delete a poster
+
   static Future<void> deletePoster(String posterId) async {
     try {
       // Optionally delete image from storage too
@@ -123,7 +121,6 @@ class PosterService {
     }
   }
 
-  /// Check if poster matches user's hobbies
   static Future<bool> posterMatchesUserHobbies(Poster poster, String userId) async {
     try {
       final userDoc = await _firestore.collection('users_private').doc(userId).get();
@@ -146,7 +143,6 @@ class PosterService {
     }
   }
 
-  /// Get matching posters stream (for current user)
   static Stream<List<Poster>> getMatchingPostersStream() {
     return _firestore
         .collection('posters')

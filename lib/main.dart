@@ -14,8 +14,6 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
   await initializeDateFormatting('sr_RS', null);
-  
-  // Initialize notification service
   final notificationService = NotificationService();
   await notificationService.initialize();
   
@@ -45,10 +43,8 @@ class AuthWrapper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<User?>(
-      // Use userChanges() which includes token refresh events
       stream: FirebaseAuth.instance.userChanges(),
       builder: (context, snapshot) {
-        // Show loading screen while checking initial auth state
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
             body: Center(
@@ -57,10 +53,8 @@ class AuthWrapper extends StatelessWidget {
           );
         }
 
-        // Get the current user
         final user = snapshot.data;
         
-        // Simple logic: if we have a user, go to MainScreen, else PrelogScreen
         if (user != null) {
           return const MainScreen();
         } else {

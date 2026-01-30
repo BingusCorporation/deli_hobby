@@ -198,7 +198,7 @@ class _OglasiScreenState extends State<OglasiScreen> {
         backgroundColor: Colors.orange.shade700,
         foregroundColor: Colors.white,
         actions: [
-          // City filter icon button
+
           Container(
             margin: const EdgeInsets.only(right: 8),
             decoration: BoxDecoration(
@@ -218,7 +218,6 @@ class _OglasiScreenState extends State<OglasiScreen> {
               tooltip: 'Filtriraj po gradu',
             ),
           ),
-          // Filter button
           Container(
             margin: const EdgeInsets.only(right: 12),
             decoration: BoxDecoration(
@@ -327,7 +326,6 @@ class _OglasiScreenState extends State<OglasiScreen> {
 
         var posters = snapshot.data ?? [];
 
-        // Filter by search query
         final searchQuery = _searchController.text.toLowerCase();
         if (searchQuery.isNotEmpty) {
           posters = posters.where((p) {
@@ -338,7 +336,6 @@ class _OglasiScreenState extends State<OglasiScreen> {
           }).toList();
         }
 
-        // Filter by city if selected
         if (_selectedCityFilter != null) {
           posters = posters.where((p) => p.city == _selectedCityFilter).toList();
         }
@@ -405,7 +402,6 @@ class _OglasiScreenState extends State<OglasiScreen> {
 
         var posters = snapshot.data ?? [];
 
-        // Filter by search query
         final searchQuery = _searchController.text.toLowerCase();
         if (searchQuery.isNotEmpty) {
           posters = posters.where((p) {
@@ -416,7 +412,6 @@ class _OglasiScreenState extends State<OglasiScreen> {
           }).toList();
         }
 
-        // Filter by city if selected
         if (_selectedCityFilter != null) {
           posters = posters.where((p) => p.city == _selectedCityFilter).toList();
         }
@@ -472,7 +467,7 @@ class _OglasiScreenState extends State<OglasiScreen> {
           itemBuilder: (context, index) {
             return _PosterCard(
               poster: posters[index],
-              isMatching: true, // All are matching in this view
+              isMatching: true,
               onTap: () => _viewPoster(posters[index]),
               onUserTap: () => _viewUserProfile(posters[index]),
             );
@@ -614,7 +609,7 @@ class _PosterCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // User info row
+                // User info 
                 Row(
                   children: [
                     GestureDetector(
@@ -742,7 +737,7 @@ class _PosterCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 8),
-                // Description (truncated)
+                // Description
                 Text(
                   poster.description,
                   style: TextStyle(
@@ -774,7 +769,7 @@ class _PosterCard extends StatelessWidget {
                     ],
                   ),
                 if (poster.city != null) const SizedBox(height: 12),
-                // Hobbies
+                // Hobbi
                 if (poster.requiredHobbies.isNotEmpty) ...[
                   Wrap(
                     spacing: 6,
@@ -806,7 +801,6 @@ class _PosterCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                 ],
-                // Image thumbnail (if exists)
                 if (poster.imageUrl != null)
                   ClipRRect(
                     borderRadius: BorderRadius.circular(10),

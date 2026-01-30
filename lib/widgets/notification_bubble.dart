@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-
-/// Red notification bubble badge for displaying unread counts
 class NotificationBubble extends StatelessWidget {
   final int count;
   final double size;
@@ -45,7 +43,6 @@ class NotificationBubble extends StatelessWidget {
   }
 }
 
-/// Red dot indicator for unread notifications
 class NotificationDot extends StatelessWidget {
   final bool hasNotification;
   final double size;

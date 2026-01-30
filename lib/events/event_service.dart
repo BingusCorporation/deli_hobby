@@ -6,24 +6,17 @@ import 'event_invite_model.dart';
 class EventService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
-
-  // Simple cache for frequently accessed events (5 minute TTL)
   static final Map<String, _CacheEntry> _eventCache = {};
   static final Map<String, _CacheEntry> _friendCountCache = {};
 
   String get _currentUserId => _auth.currentUser?.uid ?? '';
 
-  // Collection references
   CollectionReference get _eventsCollection => _firestore.collection('events');
-
-  // ============ CREATE ============
 
   Future<String> createEvent(Event event) async {
     final docRef = await _eventsCollection.add(event.toMap());
     return docRef.id;
   }
-
-  // ============ READ ============
 
   Stream<List<Event>> getPublicEvents({
     String? city,
@@ -31,8 +24,7 @@ class EventService {
     String? subcategory,
     DateTime? startAfter,
   }) {
-    // Simple query - only filter by visibility to avoid needing composite index
-    // Additional filtering and sorting done in memory
+
     Query query = _eventsCollection.where('visibility', isEqualTo: 'public');
 
     return query.snapshots().map((snapshot) {
@@ -41,27 +33,24 @@ class EventService {
           .where((event) => event.status == 'active')
           .toList();
 
-      // Filter by city if specified
+
       if (city != null && city.isNotEmpty) {
         events = events.where((e) => e.city == city).toList();
       }
 
-      // Filter by category if specified
+
       if (category != null && category.isNotEmpty) {
         events = events.where((e) => e.category == category).toList();
       }
 
-      // Filter by subcategory if specified
       if (subcategory != null && subcategory.isNotEmpty) {
         events = events.where((e) => e.subcategory == subcategory).toList();
       }
 
-      // Filter by start date if specified
       if (startAfter != null) {
         events = events.where((e) => e.startDateTime.isAfter(startAfter)).toList();
       }
 
-      // Sort by start date
       events.sort((a, b) => a.startDateTime.compareTo(b.startDateTime));
 
       return events;
@@ -79,10 +68,8 @@ class EventService {
         .where((e) => e.status == 'active' && e.startDateTime.isAfter(now))
         .toList();
 
-    // Sort by start date
     events.sort((a, b) => a.startDateTime.compareTo(b.startDateTime));
 
-    // Apply limit
     if (events.length > limit) {
       events = events.take(limit).toList();
     }
@@ -103,20 +90,17 @@ class EventService {
     return Event.fromFirestore(doc);
   }
 
-  // User's events (organized)
   Stream<List<Event>> getMyOrganizedEvents() {
     return _eventsCollection
         .where('organizerId', isEqualTo: _currentUserId)
         .snapshots()
         .map((snapshot) {
       final events = snapshot.docs.map((doc) => Event.fromFirestore(doc)).toList();
-      // Sort in memory instead of Firestore to avoid composite index
       events.sort((a, b) => b.startDateTime.compareTo(a.startDateTime));
       return events;
     });
   }
 
-  // User's events (participating)
   Stream<List<Event>> getMyParticipatingEvents() {
     return _eventsCollection
         .where('participants', arrayContains: _currentUserId)
@@ -126,13 +110,11 @@ class EventService {
           .map((doc) => Event.fromFirestore(doc))
           .where((e) => e.status == 'active')
           .toList();
-      // Sort in memory
       events.sort((a, b) => a.startDateTime.compareTo(b.startDateTime));
       return events;
     });
   }
 
-  // ============ UPDATE ============
 
   Future<void> updateEvent(String eventId, Map<String, dynamic> updates) async {
     updates['updatedAt'] = FieldValue.serverTimestamp();
@@ -193,20 +175,16 @@ class EventService {
     await updateEvent(eventId, {'status': 'cancelled'});
   }
 
-  // ============ DELETE ============
 
   Future<void> deleteEvent(String eventId) async {
-    // First delete all invites
     final invitesSnapshot =
         await _eventsCollection.doc(eventId).collection('invites').get();
     for (final doc in invitesSnapshot.docs) {
       await doc.reference.delete();
     }
-    // Then delete the event
     await _eventsCollection.doc(eventId).delete();
   }
 
-  // ============ INVITES ============
 
   Future<void> sendInvite(String eventId, String inviteeId,
       String inviteeName) async {
@@ -220,24 +198,20 @@ class EventService {
 
       final event = Event.fromFirestore(snapshot);
 
-      // Validation: Cannot invite the event organizer
       if (inviteeId == event.organizerId) {
         throw Exception('Ne možeš pozvati organizatora događaja');
       }
 
-      // Validation: Cannot invite someone already participating
       if (event.participants.contains(inviteeId)) {
         throw Exception('Taj korisnik je već prijavljen na događaj');
       }
 
-      // Get the invites subcollection to check for existing invites
       final invitesSnapshot = await eventDoc
           .collection('invites')
           .where('inviteeId', isEqualTo: inviteeId)
           .where('status', isEqualTo: 'pending')
           .get();
 
-      // Validation: Cannot invite the same person twice (duplicate pending invite)
       if (invitesSnapshot.docs.isNotEmpty) {
         throw Exception('Već je poslata pozivnica ovom korisniku');
       }
@@ -249,7 +223,6 @@ class EventService {
         inviterId: _currentUserId,
       );
 
-      // Add the invite within the transaction
       transaction.set(
         eventDoc.collection('invites').doc(),
         invite.toMap(),
@@ -287,7 +260,6 @@ class EventService {
         .snapshots()
         .handleError((error) {
           print('CollectionGroup query error: $error');
-          // If collectionGroup fails, return empty and log
           return Stream<QuerySnapshot>.error(error);
         })
         .map((snapshot) {
@@ -308,16 +280,13 @@ class EventService {
         .map((snapshot) => snapshot.docs.length);
   }
 
-  // Fallback method to query invites by iterating events (slower but works without indexes)
   Future<List<EventInvite>> getMyPendingInvitesFallback() async {
     try {
       final invites = <EventInvite>[];
       
-      // Get all events
       final eventsSnapshot = await _eventsCollection.get();
       
       for (final eventDoc in eventsSnapshot.docs) {
-        // Get invites for this event
         final invitesSnapshot = await eventDoc.reference
             .collection('invites')
             .where('inviteeId', isEqualTo: _currentUserId)
@@ -336,7 +305,6 @@ class EventService {
     }
   }
 
-  // ============ HELPERS ============
 
   bool isOrganizer(Event event) {
     return event.organizerId == _currentUserId;
@@ -353,11 +321,8 @@ class EventService {
         event.status == 'active';
   }
 
-  /// Get count of user's friends participating in an event
-  /// Returns 0 if query fails (graceful degradation)
-  /// Uses caching to avoid repeated queries
+
   Future<int> getMyFriendsParticipatingCount(String eventId) async {
-    // Check cache first
     final cacheKey = '${_currentUserId}_$eventId';
     if (_friendCountCache.containsKey(cacheKey)) {
       final cached = _friendCountCache[cacheKey]!;
@@ -373,11 +338,10 @@ class EventService {
         return 0;
       }
 
-      // Get user's friends
       final friendshipsSnapshot = await _firestore
           .collection('friendships')
           .where('userId', isEqualTo: _currentUserId)
-          .limit(500) // Reasonable limit
+          .limit(500)
           .get();
 
       final friendIds = friendshipsSnapshot.docs
@@ -389,7 +353,6 @@ class EventService {
         return 0;
       }
 
-      // Count how many friends are in the event's participants
       int count = 0;
       for (final friendId in friendIds) {
         if (event.participants.contains(friendId)) {
@@ -397,16 +360,14 @@ class EventService {
         }
       }
       
-      // Cache the result
       _friendCountCache[cacheKey] = _CacheEntry(count);
       return count;
     } catch (e) {
       print('Error getting friends participating count: $e');
-      return 0; // Graceful degradation
+      return 0; 
     }
   }
 
-  /// Stream version for real-time updates
   Stream<int> getMyFriendsParticipatingCountStream(String eventId) {
     return _eventsCollection.doc(eventId).snapshots().asyncMap((eventDoc) async {
       if (!eventDoc.exists) return 0;
@@ -439,19 +400,16 @@ class EventService {
     });
   }
 
-  /// Clear cache for a specific event
   static void clearFriendCountCache(String userId, String eventId) {
     _friendCountCache.remove('${userId}_$eventId');
   }
 
-  /// Clear all caches
   static void clearAllCaches() {
     _eventCache.clear();
     _friendCountCache.clear();
   }
 }
 
-/// Simple cache entry with timestamp
 class _CacheEntry {
   final dynamic value;
   final DateTime timestamp;

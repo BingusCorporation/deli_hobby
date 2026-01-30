@@ -149,8 +149,8 @@ class _OglasScreenState extends State<OglasScreen> {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Color(0xFFFFF8F0),  // Very light orange
-                    Color(0xFFFFF3E0),  // Light orange tint
+                    Color(0xFFFFF8F0),  
+                    Color(0xFFFFF3E0), 
                     Colors.white,
                   ],
                 ),
@@ -237,9 +237,9 @@ class _OglasScreenState extends State<OglasScreen> {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Color(0xFFFFF8F0),  // Very light orange at top
-                  Color(0xFFFFF3E0),  // Slightly stronger orange in middle
-                  Colors.white,      // White at bottom
+                  Color(0xFFFFF8F0),  
+                  Color(0xFFFFF3E0),  
+                  Colors.white,      
                 ],
                 stops: [0.0, 0.3, 1.0],
               ),
@@ -281,18 +281,17 @@ class _OglasScreenState extends State<OglasScreen> {
                     ),
                   const SizedBox(height: 20),
 
-                  // Title
                   Text(
                     poster.title,
                     style: const TextStyle(
                       fontSize: 26,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF333333),  // Dark gray for contrast
+                      color: Color(0xFF333333),  
                     ),
                   ),
                   const SizedBox(height: 16),
 
-                  // Description
+
                   Card(
                     elevation: 1,
                     shape: RoundedRectangleBorder(
@@ -330,7 +329,7 @@ class _OglasScreenState extends State<OglasScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // City
+            
                   if (poster.city != null)
                     Card(
                       elevation: 1,
@@ -380,7 +379,6 @@ class _OglasScreenState extends State<OglasScreen> {
                     ),
                   const SizedBox(height: 16),
 
-                  // Required Hobbies
                   if (poster.requiredHobbies.isNotEmpty) ...[
                     Card(
                       elevation: 1,
@@ -415,7 +413,7 @@ class _OglasScreenState extends State<OglasScreen> {
                                     vertical: 6,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: Colors.blue.shade50,  // Blue for contrast
+                                    color: Colors.blue.shade50,  
                                     borderRadius: BorderRadius.circular(20),
                                     border: Border.all(
                                       color: Colors.blue.shade100,
@@ -440,7 +438,6 @@ class _OglasScreenState extends State<OglasScreen> {
                     const SizedBox(height: 16),
                   ],
 
-                  // Creator info
                   Card(
   elevation: 1,
   shape: RoundedRectangleBorder(
@@ -557,11 +554,9 @@ class _OglasScreenState extends State<OglasScreen> {
   ),
 ),
 const SizedBox(height: 32),
-                  // Action buttons - Clean and contrasting
                   if (_currentUser != null && _currentUser.uid != poster.userId)
                     Column(
                       children: [
-                        // View Profile Button
                         ElevatedButton(
                           onPressed: () =>
                               _viewUserProfile(poster.userId, poster.userName),
@@ -595,7 +590,7 @@ const SizedBox(height: 32),
                         ),
                         const SizedBox(height: 12),
 
-                        // Send Message Button
+                        
                         ElevatedButton(
                           onPressed: () =>
                               _sendMessage(poster.userId, poster.userName),
@@ -882,7 +877,7 @@ class _SharePosterScreenState extends State<SharePosterScreen> {
         ),
         child: Column(
           children: [
-            // Search bar
+            // Search 
             Padding(
               padding: const EdgeInsets.all(16),
               child: TextField(
@@ -905,7 +900,7 @@ class _SharePosterScreenState extends State<SharePosterScreen> {
               ),
             ),
 
-            // Filter indicator
+
             if (_selectedCategory != null || _selectedSubcategory != null)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -957,7 +952,7 @@ class _SharePosterScreenState extends State<SharePosterScreen> {
                 ),
               ),
 
-            // Friends list
+
             Expanded(
               child: _isLoadingFriends
                   ? Center(

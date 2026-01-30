@@ -9,7 +9,6 @@ void initializeFirestoreStructure() async {
   
   print('Initializing Firestore structure...');
   
-  // 1. Create user document if it doesn't exist
   final userRef = firestore.collection('users').doc(user.uid);
   final userDoc = await userRef.get();
   
@@ -27,7 +26,6 @@ void initializeFirestoreStructure() async {
     print('✅ Created user document');
   }
   
-  // 2. Create users_private document if it doesn't exist
   final privateRef = firestore.collection('users_private').doc(user.uid);
   final privateDoc = await privateRef.get();
   

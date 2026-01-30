@@ -66,7 +66,7 @@ class Event {
   final String organizerName;
   final DateTime startDateTime;
   final DateTime endDateTime;
-  final int duration; // in minutes
+  final int duration; // minut
   final bool isRecurring;
   final RecurrenceRule? recurrenceRule;
   final String city;
@@ -75,19 +75,19 @@ class Event {
   final int maxParticipants;
   final int currentParticipants;
   final List<String> participants;
-  final String category; // Primary category (for backwards compatibility)
-  final String subcategory; // Primary subcategory (for backwards compatibility)
-  final String hobby; // Primary "Category > Subcategory" (for backwards compatibility)
+  final String category; // Primary category
+  final String subcategory; // Primary subcategory
+  final String hobby; // Primary "Category > Subcategory"
   final List<String> categories; // All categories
   final List<String> subcategories; // All subcategories
-  final List<String> hobbies; // All "Category > Subcategory" combinations
+  final List<String> hobbies; //  "Category > Subcategory"
   final String requiredSkillLevel; // beginner, intermediate, advanced, any
   final String visibility; // public, private
   final EventAccessibility accessibility;
   final List<ScheduleItem> schedule;
   final DateTime? createdAt;
   final DateTime? updatedAt;
-  final String status; // active, cancelled, completed
+  final String status;
 
   Event({
     this.id,

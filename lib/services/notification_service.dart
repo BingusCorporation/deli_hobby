@@ -63,7 +63,6 @@ class NotificationService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  // In-app notification callbacks
   static void Function(AppNotification)? onNotificationReceived;
 
   NotificationService._internal();
@@ -72,10 +71,8 @@ class NotificationService {
     return _instance;
   }
 
-  /// Initialize FCM and request permissions
   Future<void> initialize() async {
     try {
-      // Request permission (iOS)
       NotificationSettings settings =
           await _firebaseMessaging.requestPermission(
         alert: true,
@@ -96,19 +93,15 @@ class NotificationService {
         print('User declined or has not yet granted notification permission');
       }
 
-      // Get FCM token
       await updateFCMToken();
 
-      // Handle foreground notifications
       FirebaseMessaging.onMessage.listen((RemoteMessage message) {
         print('Foreground message received: ${message.notification?.title}');
         _handleForegroundMessage(message);
       });
 
-      // Handle background message
       FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
-      // Handle when app is opened from notification
       FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
         print('App opened from notification: ${message.data}');
         _handleNotificationTap(message);
@@ -118,7 +111,6 @@ class NotificationService {
     }
   }
 
-  /// Update FCM token in Firestore
   Future<void> updateFCMToken() async {
     try {
       final userId = _auth.currentUser?.uid;
@@ -137,7 +129,6 @@ class NotificationService {
     }
   }
 
-  /// Handle foreground message (show in-app notification)
   void _handleForegroundMessage(RemoteMessage message) {
     final notification = message.notification;
     if (notification != null) {
@@ -150,44 +141,39 @@ class NotificationService {
         createdAt: DateTime.now(),
       );
 
-      // Trigger in-app notification callback
       onNotificationReceived?.call(appNotification);
 
-      // Also save to Firestore for history
       _saveNotificationToFirestore(appNotification);
     }
   }
 
-  /// Handle background message tap
   static Future<void> _firebaseMessagingBackgroundHandler(
       RemoteMessage message) async {
     print('Handling background message: ${message.data}');
   }
 
-  /// Handle notification tap
   void _handleNotificationTap(RemoteMessage message) {
     final type = message.data['type'];
     final relatedId = message.data['relatedId'];
 
     switch (type) {
       case 'message':
-        // Navigate to chat with the sender
+
         break;
       case 'eventReminder':
-        // Navigate to event details
+
         break;
       case 'posterShare':
-        // Navigate to poster details
+
         break;
       case 'friendRequest':
-        // Navigate to friend requests
+
         break;
       default:
         break;
     }
   }
 
-  /// Save notification to Firestore for history
   Future<void> _saveNotificationToFirestore(AppNotification notification) async {
     try {
       final userId = _auth.currentUser?.uid;
@@ -203,7 +189,6 @@ class NotificationService {
     }
   }
 
-  /// Create and send a notification (for backend use or testing)
   Future<void> createNotification({
     required String title,
     required String body,
@@ -215,7 +200,7 @@ class NotificationService {
       if (userId == null) return;
 
       final notification = AppNotification(
-        id: '', // Firestore will generate
+        id: '', 
         title: title,
         body: body,
         type: type,
@@ -229,7 +214,6 @@ class NotificationService {
     }
   }
 
-  /// Get notifications stream
   Stream<List<AppNotification>> getNotificationsStream() {
     final userId = _auth.currentUser?.uid;
     if (userId == null) return Stream.value([]);
@@ -246,7 +230,7 @@ class NotificationService {
     });
   }
 
-  /// Mark notification as read
+
   Future<void> markNotificationAsRead(String notificationId) async {
     try {
       final userId = _auth.currentUser?.uid;
@@ -263,7 +247,6 @@ class NotificationService {
     }
   }
 
-  /// Mark all notifications as read
   Future<void> markAllNotificationsAsRead() async {
     try {
       final userId = _auth.currentUser?.uid;
@@ -284,7 +267,7 @@ class NotificationService {
     }
   }
 
-  /// Delete notification
+
   Future<void> deleteNotification(String notificationId) async {
     try {
       final userId = _auth.currentUser?.uid;
@@ -301,7 +284,7 @@ class NotificationService {
     }
   }
 
-  /// Get unread notification count
+
   Future<int> getUnreadCount() async {
     try {
       final userId = _auth.currentUser?.uid;
@@ -322,7 +305,6 @@ class NotificationService {
     }
   }
 
-  /// Parse notification type from string
   NotificationType _parseNotificationType(String? type) {
     switch (type) {
       case 'message':

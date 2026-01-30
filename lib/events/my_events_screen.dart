@@ -18,7 +18,7 @@ class _MyEventsScreenState extends State<MyEventsScreen>
   late TabController _tabController;
   final EventService _eventService = EventService();
   
-  // Calendar state
+
   late DateTime _focusedDay;
   late DateTime _selectedDay;
   final Map<DateTime, List<Event>> _allEventsByDate = {};
@@ -38,7 +38,7 @@ class _MyEventsScreenState extends State<MyEventsScreen>
     super.dispose();
   }
 
-  /// Check if an event is starting within 24 hours
+
   bool _isEventSoon(Event event) {
     final now = DateTime.now();
     final difference = event.startDateTime.difference(now);
@@ -262,7 +262,7 @@ class _MyEventsScreenState extends State<MyEventsScreen>
 
         final participatingEvents = participatingSnapshot.data ?? [];
 
-        // Also stream organizing events
+
         return StreamBuilder<List<Event>>(
           stream: _eventService.getMyOrganizedEvents(),
           builder: (context, organizingSnapshot) {
@@ -285,25 +285,25 @@ class _MyEventsScreenState extends State<MyEventsScreen>
               );
             }
 
-            // Build map of all events by date - FIXED: Use a clean date without time
+
             final eventsByDate = <DateTime, List<Event>>{};
 
             for (final event in allEvents) {
-              // Create a clean date without time for grouping
+
               final cleanDate = DateTime(
                 event.startDateTime.year,
                 event.startDateTime.month,
                 event.startDateTime.day,
               );
               
-              // Use the same DateTime object for key and lookup
+
               eventsByDate[cleanDate] = [
                 ...eventsByDate[cleanDate] ?? [],
                 event
               ];
             }
 
-            // Get events for selected day
+
             final selectedDateKey = DateTime(
               _selectedDay.year,
               _selectedDay.month,
@@ -314,7 +314,7 @@ class _MyEventsScreenState extends State<MyEventsScreen>
             return SingleChildScrollView(
               child: Column(
                 children: [
-                  // Calendar
+
                   Card(
                     margin: const EdgeInsets.all(16),
                     elevation: 2,
@@ -352,7 +352,7 @@ class _MyEventsScreenState extends State<MyEventsScreen>
                             });
                           },
                           eventLoader: (day) {
-                            // Create clean date for lookup
+
                             final cleanDay = DateTime(day.year, day.month, day.day);
                             return eventsByDate[cleanDay] ?? [];
                           },
@@ -365,7 +365,7 @@ class _MyEventsScreenState extends State<MyEventsScreen>
                               
                               if (dayEvents.isEmpty) return null;
 
-                              // Check if there are participating or organizing events
+   
                               final hasParticipating = dayEvents.any((event) =>
                                 participatingEvents.any((e) => e.id == event.id)
                               );
@@ -373,7 +373,7 @@ class _MyEventsScreenState extends State<MyEventsScreen>
                                 organizingEvents.any((e) => e.id == event.id)
                               );
                               
-                              // Check if any event is soon
+
                               final hasSoonEvent = dayEvents.any(_isEventSoon);
 
                               return Positioned(
@@ -474,7 +474,6 @@ class _MyEventsScreenState extends State<MyEventsScreen>
                     ),
                   ),
 
-                  // Legend
                   Container(
                     margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     padding: const EdgeInsets.all(12),
@@ -577,7 +576,6 @@ class _MyEventsScreenState extends State<MyEventsScreen>
                     ),
                   ),
 
-                  // Selected day info
                   if (selectedDayEvents.isNotEmpty)
                     Container(
                       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -610,7 +608,6 @@ class _MyEventsScreenState extends State<MyEventsScreen>
                       ),
                     ),
 
-                  // Events list for selected day
                   if (selectedDayEvents.isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -662,7 +659,7 @@ class _MyEventsScreenState extends State<MyEventsScreen>
                       ),
                     ),
                   
-                  const SizedBox(height: 32), // Extra padding at the bottom
+                  const SizedBox(height: 32),
                 ],
               ),
             );

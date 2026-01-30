@@ -25,7 +25,7 @@ class _EventsBrowseScreenState extends State<EventsBrowseScreen> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final TextEditingController _searchController = TextEditingController();
 
-  // Filter state
+
   String? _selectedCity;
   String? _selectedCategory;
   String? _selectedSubcategory;
@@ -35,7 +35,7 @@ class _EventsBrowseScreenState extends State<EventsBrowseScreen> {
   bool? _visualAssistance;
   bool? _onlyWithFriends;
 
-  // User data for ranking
+
   List<String> _userHobbies = [];
   String? _userCity;
   Set<String> _userFriends = {};
@@ -70,7 +70,6 @@ class _EventsBrowseScreenState extends State<EventsBrowseScreen> {
         });
       }
 
-      // Load user's friends
       final friendships = await _firestore
           .collection('friendships')
           .where('userId', isEqualTo: uid)
@@ -265,9 +264,9 @@ class _EventsBrowseScreenState extends State<EventsBrowseScreen> {
 
         final events = snapshot.data ?? [];
 
-        // Apply client-side filters
+
         final filteredEvents = events.where((event) {
-          // Search filter
+
           final searchQuery = _searchController.text.toLowerCase();
           if (searchQuery.isNotEmpty) {
             final matchesTitle = event.title.toLowerCase().contains(searchQuery);
@@ -277,7 +276,7 @@ class _EventsBrowseScreenState extends State<EventsBrowseScreen> {
             }
           }
 
-          // Subcategory filter
+
           if (_selectedSubcategory != null) {
             final selectedHobby = '$_selectedCategory > $_selectedSubcategory';
             if (!event.hobbies.contains(selectedHobby)) {
@@ -285,14 +284,14 @@ class _EventsBrowseScreenState extends State<EventsBrowseScreen> {
             }
           }
 
-          // Skill level filter
+
           if (_selectedSkillLevel != null && _selectedSkillLevel != 'any') {
             if (event.requiredSkillLevel != _selectedSkillLevel) {
               return false;
             }
           }
 
-          // Accessibility filters
+
           if (_wheelchairAccessible == true &&
               !event.accessibility.wheelchairAccessible) {
             return false;
@@ -304,7 +303,6 @@ class _EventsBrowseScreenState extends State<EventsBrowseScreen> {
             return false;
           }
 
-          // Friends filter
           if (_onlyWithFriends == true) {
             final hasFriends =
                 event.participants.any((p) => _userFriends.contains(p));
@@ -320,7 +318,6 @@ class _EventsBrowseScreenState extends State<EventsBrowseScreen> {
           return _buildEmptyState();
         }
 
-        // Rank events based on user profile
         final rankedEvents = _rankingService.rankEvents(
           events: filteredEvents,
           userHobbies: _userHobbies,
@@ -501,7 +498,6 @@ class _EventsBrowseScreenState extends State<EventsBrowseScreen> {
                       ),
                       const SizedBox(height: 20),
 
-                      // Location filter
                       Text(
                         'Lokacija:',
                         style: TextStyle(
@@ -520,7 +516,6 @@ class _EventsBrowseScreenState extends State<EventsBrowseScreen> {
                       ),
                       const SizedBox(height: 16),
 
-                      // Hobby category filter
                       Text(
                         'Kategorija hobija:',
                         style: TextStyle(
@@ -536,13 +531,12 @@ class _EventsBrowseScreenState extends State<EventsBrowseScreen> {
                         onChanged: (value) {
                           setModalState(() {
                             tempCategory = value;
-                            tempSubcategory = null; // Reset subcategory
+                            tempSubcategory = null;
                           });
                         },
                       ),
                       const SizedBox(height: 16),
 
-                      // Hobby subcategory filter
                       if (tempCategory != null)
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -567,7 +561,6 @@ class _EventsBrowseScreenState extends State<EventsBrowseScreen> {
                           ],
                         ),
 
-                      // Skill level filter
                       Text(
                         'Nivo veštine:',
                         style: TextStyle(
@@ -587,7 +580,6 @@ class _EventsBrowseScreenState extends State<EventsBrowseScreen> {
                       ),
                       const SizedBox(height: 16),
 
-                      // Accessibility filters
                       Text(
                         'Dostupnost:',
                         style: TextStyle(
@@ -619,7 +611,6 @@ class _EventsBrowseScreenState extends State<EventsBrowseScreen> {
                       ),
                       const SizedBox(height: 16),
 
-                      // Friends filter
                       _buildCheckbox(
                         label: 'Samo događaji sa prijateljima',
                         value: tempOnlyWithFriends,
@@ -629,7 +620,6 @@ class _EventsBrowseScreenState extends State<EventsBrowseScreen> {
                       ),
                       const SizedBox(height: 24),
 
-                      // Apply button
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
@@ -752,7 +742,6 @@ class _EventsBrowseScreenState extends State<EventsBrowseScreen> {
       padding: const EdgeInsets.only(bottom: 8),
       child: GestureDetector(
         onTap: () {
-          // Cycle through null -> true -> false -> null
           bool? newValue;
           if (value == null) {
             newValue = true;
@@ -810,7 +799,6 @@ class _EventsBrowseScreenState extends State<EventsBrowseScreen> {
   }
 }
 
-/// Widget that loads friend counts for all events and applies friend-based sorting
 class _EventsListWithFriendPriority extends StatefulWidget {
   final List<RankedEvent> rankedEvents;
   final EventService eventService;
@@ -844,7 +832,6 @@ class _EventsListWithFriendPriorityState
     try {
       final friendCounts = <String, int>{};
       
-      // Load friend counts in parallel for efficiency
       await Future.wait(
         widget.rankedEvents.map((rankedEvent) async {
           try {
@@ -858,12 +845,11 @@ class _EventsListWithFriendPriorityState
             friendCounts[rankedEvent.event.id!] = 0;
           }
         }),
-        eagerError: false, // Continue even if some fail
+        eagerError: false,
       );
 
       _friendCountCache.addAll(friendCounts);
 
-      // Apply friend-based sorting
       final rankingService = EventRankingService();
       final sorted = rankingService.rankEventsWithFriends(
         rankedEvents: widget.rankedEvents,

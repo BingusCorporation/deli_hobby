@@ -32,10 +32,8 @@ class _EventInvitesScreenState extends State<EventInvitesScreen> {
   String? _selectedCategory;
   String? _selectedSubcategory;
   
-  // Track selected friends across filter changes
   final Set<String> _selectedFriendIds = {};
   
-  // Cache for pending invites
   final Set<String> _pendingInvites = {};
 
   @override
@@ -59,7 +57,6 @@ class _EventInvitesScreenState extends State<EventInvitesScreen> {
       final currentUserId = _auth.currentUser?.uid;
       if (currentUserId == null) return;
 
-      // Get friends using FriendsService
       final friendsStream = FriendsService.getFriendsStream();
       final friendsSnapshot = await friendsStream.first;
       
@@ -158,17 +155,13 @@ class _EventInvitesScreenState extends State<EventInvitesScreen> {
         final name = (friend['name'] ?? '').toLowerCase();
         final hobbies = friend['hobbies'] ?? [];
         
-        // Filter by search query (name)
         final matchesName = query.isEmpty || name.contains(query);
         
-        // Filter by selected category/subcategory
         bool matchesCategory = true;
         if (_selectedCategory != null && _selectedSubcategory != null) {
-          // Both category and subcategory selected
           final selectedHobby = '$_selectedCategory > $_selectedSubcategory';
           matchesCategory = hobbies.contains(selectedHobby);
         } else if (_selectedCategory != null) {
-          // Only category selected - match any hobby that starts with this category
           matchesCategory = hobbies.any((hobby) {
             final parts = hobby.split('>');
             if (parts.length >= 2) {
@@ -200,7 +193,6 @@ class _EventInvitesScreenState extends State<EventInvitesScreen> {
       ),
       body: Column(
         children: [
-          // Search and filter section
           Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -216,7 +208,6 @@ class _EventInvitesScreenState extends State<EventInvitesScreen> {
                 ),
                 const SizedBox(height: 12),
                 
-                // Search by name
                 TextField(
                   controller: _searchController,
                   decoration: InputDecoration(
@@ -231,7 +222,6 @@ class _EventInvitesScreenState extends State<EventInvitesScreen> {
                 
                 const SizedBox(height: 12),
                 
-                // Filter display
                 if (_selectedCategory != null || _selectedSubcategory != null)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 12),
@@ -257,7 +247,6 @@ class _EventInvitesScreenState extends State<EventInvitesScreen> {
                     ),
                   ),
                 
-                // Show selection count
                 if (_selectedFriendIds.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(top: 12),
@@ -274,7 +263,6 @@ class _EventInvitesScreenState extends State<EventInvitesScreen> {
             ),
           ),
 
-          // Friends list
           Expanded(
             child: _isLoadingFriends
                 ? const Center(child: CircularProgressIndicator())

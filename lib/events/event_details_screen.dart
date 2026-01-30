@@ -55,7 +55,6 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
             backgroundColor: Colors.orange.shade700,
             foregroundColor: Colors.white,
             actions: [
-              // Share button - available for all users
               IconButton(
                 icon: const Icon(Icons.share),
                 onPressed: () => _navigateToInvites(event),
@@ -94,46 +93,39 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Title and status
                 _buildHeader(event),
                 const SizedBox(height: 16),
 
-                // Date and time
                 _buildDateTimeSection(event),
                 const SizedBox(height: 16),
 
-                // Location
                 _buildLocationSection(event),
                 const SizedBox(height: 16),
 
-                // Category and skill
                 _buildCategorySection(event),
                 const SizedBox(height: 16),
 
-                // Description
+
                 _buildDescriptionSection(event),
 
-                // Schedule
+
                 if (event.schedule.isNotEmpty) ...[
                   const SizedBox(height: 16),
                   _buildScheduleSection(event),
                 ],
 
-                // Accessibility
                 if (_hasAccessibilityInfo(event)) ...[
                   const SizedBox(height: 16),
                   _buildAccessibilitySection(event),
                 ],
 
-                // Participants
                 const SizedBox(height: 16),
                 _buildParticipantsSection(event),
 
-                // Organizer
                 const SizedBox(height: 16),
                 _buildOrganizerSection(event),
 
-                const SizedBox(height: 80), // Space for FAB
+                const SizedBox(height: 80), 
               ],
             ),
           ),

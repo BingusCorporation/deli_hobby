@@ -40,7 +40,6 @@ class _CreateOglasScreenState extends State<CreateOglasScreen> {
       _descriptionController.text = poster.description;
       _selectedCity = poster.city;
       _selectedHobbies.addAll(poster.requiredHobbies);
-      // Note: _selectedImage stays null because we use the existing image URL
     }
   }
 
@@ -139,7 +138,6 @@ class _CreateOglasScreenState extends State<CreateOglasScreen> {
 
     try {
       if (widget.posterToEdit != null) {
-        // Update existing poster
         await PosterService.updatePoster(
           posterId: widget.posterToEdit!.id,
           title: _titleController.text.trim(),
@@ -150,7 +148,6 @@ class _CreateOglasScreenState extends State<CreateOglasScreen> {
         );
         _showSnackBar('Oglas uspešno ažuriran!');
       } else {
-        // Create new poster
         await PosterService.createPoster(
           title: _titleController.text.trim(),
           description: _descriptionController.text.trim(),
@@ -209,7 +206,6 @@ class _CreateOglasScreenState extends State<CreateOglasScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Image picker
               GestureDetector(
                 onTap: _showImagePickerDialog,
                 child: Container(
@@ -248,7 +244,6 @@ class _CreateOglasScreenState extends State<CreateOglasScreen> {
               
               const SizedBox(height: 24),
               
-              // Title
               const Text(
                 'Naslov*',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
@@ -265,7 +260,6 @@ class _CreateOglasScreenState extends State<CreateOglasScreen> {
               
               const SizedBox(height: 20),
               
-              // Description
               const Text(
                 'Opis*',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
@@ -283,7 +277,6 @@ class _CreateOglasScreenState extends State<CreateOglasScreen> {
               
               const SizedBox(height: 20),
               
-              // City
               const Text(
                 'Grad*',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
@@ -306,14 +299,12 @@ class _CreateOglasScreenState extends State<CreateOglasScreen> {
               
               const SizedBox(height: 20),
               
-              // Hobbies selection
               const Text(
                 'Traženi hobiji*',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               ),
               const SizedBox(height: 8),
               
-              // Selected hobbies
               if (_selectedHobbies.isNotEmpty)
                 Wrap(
                   spacing: 8,
@@ -329,7 +320,6 @@ class _CreateOglasScreenState extends State<CreateOglasScreen> {
               
               if (_selectedHobbies.isNotEmpty) const SizedBox(height: 16),
               
-              // Hobby picker
               DropdownButton<String>(
                 hint: const Text("Izaberi kategoriju"),
                 value: _selectedCategory,
@@ -376,7 +366,6 @@ class _CreateOglasScreenState extends State<CreateOglasScreen> {
               
               const SizedBox(height: 32),
               
-              // Submit button
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -394,7 +383,7 @@ class _CreateOglasScreenState extends State<CreateOglasScreen> {
                 ),
               ),
               
-              const SizedBox(height: 40), // Extra padding for scrolling
+              const SizedBox(height: 40),
             ],
           ),
         ),

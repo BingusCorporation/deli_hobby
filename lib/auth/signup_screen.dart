@@ -26,7 +26,7 @@ class _SignupScreenState extends State<SignupScreen> {
     final email = emailController.text.trim();
     final password = passwordController.text.trim();
 
-    // ---- VALIDATION ----
+
     if (name.isEmpty) {
       showError("Molimo unesite vaše ime");
       return;
@@ -52,7 +52,7 @@ class _SignupScreenState extends State<SignupScreen> {
     });
 
     try {
-      // ---- CREATE AUTH USER ----
+
       final userCredential = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
@@ -60,42 +60,42 @@ class _SignupScreenState extends State<SignupScreen> {
 
       final uid = userCredential.user!.uid;
 
-      // ---- SAVE USER PROFILE IN BOTH COLLECTIONS ----
+  
       final userData = {
         'name': name,
         'city': selectedCity,
-        'bio': '', // Default empty bio
-        'hobbies': [], // Default empty hobbies
+        'bio': '', 
+        'hobbies': [], 
         'friends': [],
-        'profilePic': '', // Default empty profile pic
+        'profilePic': '', 
         'createdAt': FieldValue.serverTimestamp(),
       };
       final userDatapriv = {
         'name': name,
         'email': email,
         'city': selectedCity,
-        'bio': '', // Default empty bio
-        'hobbies': [], // Default empty hobbies
+        'bio': '', 
+        'hobbies': [], 
         'friends': [],
         'friendRequests': [],
         'sentFriendRequests': [],
-        'profilePic': '', // Default empty profile pic
+        'profilePic': '',
         'createdAt': FieldValue.serverTimestamp(),
       };
 
-      // Create in users_private (for secure data)
+
       await _firestore.collection('users_private').doc(uid).set(userDatapriv);
       
-      // Create in users (for public data)
+
       await _firestore.collection('users').doc(uid).set(userData);
 
       if (!mounted) return;
 
-      // ---- GO TO LOGGED IN SCREEN AND CLEAR STACK ----
+
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (_) => const MainScreen()),
-        (route) => false, // Clear all previous routes
+        (route) => false, 
       );
     } catch (e) {
       showError("Registracija nije uspela: ${e.toString().replaceFirst('Exception: ', '')}");
@@ -145,7 +145,6 @@ class _SignupScreenState extends State<SignupScreen> {
           child: SingleChildScrollView(
             child: Column(
               children: [
-                // Back Button
                 Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Align(
@@ -161,12 +160,10 @@ class _SignupScreenState extends State<SignupScreen> {
                   ),
                 ),
                 
-                // Logo and Title Section
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
                   child: Column(
                     children: [
-                      // Logo
                       Container(
                         width: 100,
                         height: 100,
@@ -190,7 +187,6 @@ class _SignupScreenState extends State<SignupScreen> {
                       
                       const SizedBox(height: 30),
                       
-                      // Title
                       const Text(
                         'Napravite nalog',
                         style: TextStyle(
@@ -203,7 +199,6 @@ class _SignupScreenState extends State<SignupScreen> {
                       
                       const SizedBox(height: 10),
                       
-                      // Subtitle
                       const Text(
                         'Pridružite se našoj zajednici',
                         style: TextStyle(
@@ -215,7 +210,6 @@ class _SignupScreenState extends State<SignupScreen> {
                   ),
                 ),
                 
-                // Form Section
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 40),
                   decoration: BoxDecoration(
@@ -234,7 +228,6 @@ class _SignupScreenState extends State<SignupScreen> {
                   ),
                   child: Column(
                     children: [
-                      // Name Field
                       Container(
                         decoration: BoxDecoration(
                           color: Colors.white,
@@ -273,7 +266,6 @@ class _SignupScreenState extends State<SignupScreen> {
                       
                       const SizedBox(height: 20),
                       
-                      // City Dropdown
                       Container(
                         decoration: BoxDecoration(
                           color: Colors.white,
@@ -325,7 +317,6 @@ class _SignupScreenState extends State<SignupScreen> {
                       
                       const SizedBox(height: 20),
                       
-                      // Email Field
                       Container(
                         decoration: BoxDecoration(
                           color: Colors.white,
@@ -365,7 +356,6 @@ class _SignupScreenState extends State<SignupScreen> {
                       
                       const SizedBox(height: 20),
                       
-                      // Password Field
                       Container(
                         decoration: BoxDecoration(
                           color: Colors.white,
@@ -405,7 +395,6 @@ class _SignupScreenState extends State<SignupScreen> {
                       
                       const SizedBox(height: 30),
                       
-                      // Create Account Button
                       SizedBox(
                         width: double.infinity,
                         height: 56,
@@ -448,7 +437,6 @@ class _SignupScreenState extends State<SignupScreen> {
                       
                       const SizedBox(height: 25),
                       
-                      // Divider
                       Row(
                         children: [
                           Expanded(
@@ -478,7 +466,6 @@ class _SignupScreenState extends State<SignupScreen> {
                       
                       const SizedBox(height: 25),
                       
-                      // Login Button
                       SizedBox(
                         width: double.infinity,
                         height: 56,
@@ -516,7 +503,6 @@ class _SignupScreenState extends State<SignupScreen> {
                       
                       const SizedBox(height: 20),
                       
-                      // Terms Text
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 20),
                         child: Text(

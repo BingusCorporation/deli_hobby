@@ -11,7 +11,6 @@ import '../services/friends_service.dart';
 import '../screens/other_user_profile.dart';
 import 'messages_screen.dart';
 
-
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 

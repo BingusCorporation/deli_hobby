@@ -26,19 +26,16 @@ class _EventCreateScreenState extends State<EventCreateScreen> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // Form controllers
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _addressController = TextEditingController();
   final _locationDetailsController = TextEditingController();
   final _maxParticipantsController = TextEditingController(text: '10');
 
-  // Form state
   String? _selectedCity;
   String? _tempSelectedCategory;
   String? _tempSelectedSubcategory;
 
-  // Multiple categories support
   final List<String> _selectedCategories = [];
   final List<String> _selectedSubcategories = [];
   final List<String> _selectedHobbies = [];
@@ -51,13 +48,11 @@ class _EventCreateScreenState extends State<EventCreateScreen> {
   bool _isRecurring = false;
   RecurrenceType _recurrenceType = RecurrenceType.weekly;
 
-  // Accessibility
   bool _wheelchairAccessible = false;
   bool _hearingAssistance = false;
   bool _visualAssistance = false;
   final _accessibilityNotesController = TextEditingController();
 
-  // Schedule items
   List<ScheduleItem> _scheduleItems = [];
 
   bool _isLoading = false;
@@ -94,7 +89,6 @@ class _EventCreateScreenState extends State<EventCreateScreen> {
     _locationDetailsController.text = event.locationDetails ?? '';
     _maxParticipantsController.text = event.maxParticipants.toString();
     _selectedCity = event.city;
-    // Populate multiple categories
     _selectedCategories.addAll(event.categories);
     _selectedSubcategories.addAll(event.subcategories);
     _selectedHobbies.addAll(event.hobbies);
@@ -140,7 +134,6 @@ class _EventCreateScreenState extends State<EventCreateScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Basic Info Section
               _buildSectionHeader('Osnovne informacije'),
               _buildTitleField(),
               const SizedBox(height: 16),
@@ -148,7 +141,6 @@ class _EventCreateScreenState extends State<EventCreateScreen> {
 
               const SizedBox(height: 24),
 
-              // Category Section
               _buildSectionHeader('Kategorija'),
               _buildCategoryDropdowns(),
               const SizedBox(height: 16),
@@ -156,7 +148,6 @@ class _EventCreateScreenState extends State<EventCreateScreen> {
 
               const SizedBox(height: 24),
 
-              // Date & Time Section
               _buildSectionHeader('Datum i vreme'),
               _buildDateTimePickers(),
               const SizedBox(height: 16),
@@ -166,7 +157,6 @@ class _EventCreateScreenState extends State<EventCreateScreen> {
 
               const SizedBox(height: 24),
 
-              // Location Section
               _buildSectionHeader('Lokacija'),
               _buildCityDropdown(),
               const SizedBox(height: 16),
@@ -176,31 +166,26 @@ class _EventCreateScreenState extends State<EventCreateScreen> {
 
               const SizedBox(height: 24),
 
-              // Capacity Section
               _buildSectionHeader('Kapacitet'),
               _buildMaxParticipantsField(),
 
               const SizedBox(height: 24),
 
-              // Visibility Section
               _buildSectionHeader('Vidljivost'),
               _buildVisibilitySelector(),
 
               const SizedBox(height: 24),
 
-              // Accessibility Section
               _buildSectionHeader('Pristupačnost'),
               _buildAccessibilityOptions(),
 
               const SizedBox(height: 24),
 
-              // Schedule Section
               _buildSectionHeader('Raspored aktivnosti (opcionalno)'),
               _buildScheduleBuilder(),
 
               const SizedBox(height: 32),
 
-              // Submit Button
               _buildSubmitButton(),
 
               const SizedBox(height: 32),
@@ -263,14 +248,13 @@ Widget _buildCategoryDropdowns() {
   return Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      // Category and Subcategory selectors
       Row(
         children: [
           Expanded(
             child: DropdownButtonFormField<String>(
               initialValue: _tempSelectedCategory,
-              isExpanded: true, // FIX: Added this line
-              decoration: const InputDecoration(
+              isExpanded: true, 
+                            decoration: const InputDecoration(
                 labelText: 'Kategorija',
                 border: OutlineInputBorder(),
                 isDense: true,
@@ -298,7 +282,7 @@ Widget _buildCategoryDropdowns() {
           Expanded(
             child: DropdownButtonFormField<String>(
               initialValue: _tempSelectedSubcategory,
-              isExpanded: true, // FIX: Added this line
+              isExpanded: true, 
               decoration: const InputDecoration(
                 labelText: 'Podkategorija',
                 border: OutlineInputBorder(),
@@ -329,9 +313,8 @@ Widget _buildCategoryDropdowns() {
 
       const SizedBox(height: 12),
 
-      // Add category button - FIXED: Changed SizedBox to Container
       SizedBox(
-        width: double.infinity, // FIX: Use Container with width: double.infinity
+        width: double.infinity, 
         child: OutlinedButton.icon(
           onPressed: _tempSelectedCategory != null && _tempSelectedSubcategory != null
               ? _addCategory
@@ -341,7 +324,6 @@ Widget _buildCategoryDropdowns() {
         ),
       ),
 
-      // Selected categories chips
       if (_selectedHobbies.isNotEmpty) ...[
         const SizedBox(height: 12),
         const Text(
@@ -371,7 +353,6 @@ Widget _buildCategoryDropdowns() {
         ),
       ],
 
-      // Validation message
       if (_selectedHobbies.isEmpty)
         Padding(
           padding: const EdgeInsets.only(top: 8),
@@ -413,17 +394,14 @@ Widget _buildCategoryDropdowns() {
   void _removeCategory(String hobby) {
     setState(() {
       _selectedHobbies.remove(hobby);
-      // Also remove from categories/subcategories if no longer used
       final parts = hobby.split(' > ');
       if (parts.length == 2) {
         final category = parts[0];
         final subcategory = parts[1];
-        // Check if category is still used by another hobby
         final categoryStillUsed = _selectedHobbies.any((h) => h.startsWith('$category >'));
         if (!categoryStillUsed) {
           _selectedCategories.remove(category);
         }
-        // Check if subcategory is still used
         final subcategoryStillUsed = _selectedHobbies.any((h) => h.endsWith('> $subcategory'));
         if (!subcategoryStillUsed) {
           _selectedSubcategories.remove(subcategory);
@@ -848,7 +826,6 @@ Widget _buildCategoryDropdowns() {
   Future<void> _submitForm() async {
     if (!_formKey.currentState!.validate()) return;
 
-    // Custom validation for categories
     if (_selectedHobbies.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Dodaj bar jednu kategoriju')),
@@ -871,7 +848,7 @@ Widget _buildCategoryDropdowns() {
 
       final endDateTime = startDateTime.add(Duration(minutes: _durationMinutes));
 
-      // Use first category as primary (for backwards compatibility)
+
       final primaryCategory = _selectedCategories.first;
       final primarySubcategory = _selectedSubcategories.first;
       final primaryHobby = _selectedHobbies.first;

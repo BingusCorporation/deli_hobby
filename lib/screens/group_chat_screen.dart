@@ -1,4 +1,3 @@
-// screens/group_chat_screen.dart
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -42,12 +41,10 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
     _markGroupMessagesAsRead();
   }
 
-  // Load group info and members in one go
   Future<void> _loadGroupInfoAndMembers() async {
     try {
       setState(() => _isLoadingMembers = true);
       
-      // Load group information
       final groupDoc = await _firestore
           .collection('groups')
           .doc(widget.groupId)
@@ -66,15 +63,12 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
       final groupData = groupDoc.data()!;
       setState(() => _groupInfo = groupData);
       
-      // Check if current user is admin
       final currentUserId = _auth.currentUser!.uid;
       final adminId = groupData['adminId'] as String?;
       _isAdmin = adminId == currentUserId;
       
-      // Load participants
       final participants = List<String>.from(groupData['participants'] ?? []);
       
-      // Verify current user is in the group
       if (!participants.contains(currentUserId)) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -101,11 +95,9 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
     }
   }
 
-  // Load group members with their details
   Future<void> _loadGroupMembers(List<String> participantIds, String? adminId) async {
     final members = <Map<String, dynamic>>[];
-    
-    // Process in batches of 10 due to Firestore limits
+
     for (int i = 0; i < participantIds.length; i += 10) {
       final batchIds = participantIds.sublist(
         i,
@@ -122,7 +114,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
         final userData = doc.data();
         final isAdmin = userId == adminId;
         
-        // Get user's role from user_groups
+
         final userGroupDoc = await _firestore
             .collection('user_groups')
             .doc('${userId}_${widget.groupId}')
@@ -204,7 +196,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
     }
   }
 
-  // Leave group functionality
+
   Future<void> _leaveGroup() async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -236,10 +228,10 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
     try {
       final currentUserId = _auth.currentUser!.uid;
       
-      // Start a batch write
+
       final batch = _firestore.batch();
       
-      // Get group document reference
+
       final groupDocRef = _firestore.collection('groups').doc(widget.groupId);
       final groupDoc = await groupDocRef.get();
       
@@ -250,36 +242,36 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
       final groupData = groupDoc.data()!;
       final participants = List<String>.from(groupData['participants'] ?? []);
       
-      // Remove current user from participants
+  
       participants.remove(currentUserId);
       
-      // If user is admin and there are other participants, transfer admin
+
       if (_isAdmin && participants.isNotEmpty) {
-        // Transfer admin to the first other participant
+
         batch.update(groupDocRef, {
           'adminId': participants[0],
           'participants': participants,
           'updatedAt': FieldValue.serverTimestamp(),
         });
       } else {
-        // Just update participants
+
         batch.update(groupDocRef, {
           'participants': participants,
           'updatedAt': FieldValue.serverTimestamp(),
         });
       }
       
-      // Delete user_groups document for current user
+
       final userGroupDocRef = _firestore
           .collection('user_groups')
           .doc('${currentUserId}_${widget.groupId}');
       batch.delete(userGroupDocRef);
       
-      // If group is now empty, delete it
+
       if (participants.isEmpty) {
         batch.delete(groupDocRef);
         
-        // Also delete all user_groups documents (cleanup)
+
         final userGroupsQuery = await _firestore
             .collection('user_groups')
             .where('groupId', isEqualTo: widget.groupId)
@@ -307,7 +299,6 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
     }
   }
 
-  // Kick member functionality (admin only)
   Future<void> _kickMember(String targetUserId, String targetUserName) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -335,7 +326,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
     try {
       final batch = _firestore.batch();
       
-      // Get group document reference
+
       final groupDocRef = _firestore.collection('groups').doc(widget.groupId);
       final groupDoc = await groupDocRef.get();
       
@@ -345,11 +336,9 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
       
       final groupData = groupDoc.data()!;
       final participants = List<String>.from(groupData['participants'] ?? []);
-      
-      // Remove target user from participants
+
       participants.remove(targetUserId);
       
-      // If kicked user is admin, assign new admin
       if (targetUserId == groupData['adminId']) {
         if (participants.isNotEmpty) {
           batch.update(groupDocRef, {
@@ -358,10 +347,10 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
             'updatedAt': FieldValue.serverTimestamp(),
           });
         } else {
-          // No participants left, delete group
+
           batch.delete(groupDocRef);
           
-          // Delete all user_groups documents
+
           final userGroupsQuery = await _firestore
               .collection('user_groups')
               .where('groupId', isEqualTo: widget.groupId)
@@ -372,22 +361,19 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
           }
         }
       } else {
-        // Just update participants
         batch.update(groupDocRef, {
           'participants': participants,
           'updatedAt': FieldValue.serverTimestamp(),
         });
       }
       
-      // Delete user_groups document for target user
       final targetUserGroupDocRef = _firestore
           .collection('user_groups')
           .doc('${targetUserId}_${widget.groupId}');
       batch.delete(targetUserGroupDocRef);
       
       await batch.commit();
-      
-      // Update local state
+
       setState(() {
         _groupMembers.removeWhere((member) => member['id'] == targetUserId);
       });
@@ -406,7 +392,6 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
     }
   }
 
-  // Add member functionality (admin only)
 Future<void> _addMember() async {
   final List<Map<String, dynamic>> friends = [];
 
@@ -436,8 +421,8 @@ Future<void> _addMember() async {
 
   await showDialog(
     context: context,
-    builder: (context) => StatefulBuilder( // DODATO: StatefulBuilder
-      builder: (context, setDialogState) { // DODATO: setDialogState
+    builder: (context) => StatefulBuilder( 
+      builder: (context, setDialogState) { 
         return AlertDialog(
           title: const Text('Dodaj prijatelje'),
           content: SizedBox(
@@ -457,7 +442,7 @@ Future<void> _addMember() async {
                         title: Text(friend['name']),
                         value: isSelected,
                         onChanged: (value) {
-                          // IZMENJENO: setDialogState umesto setState
+
                           setDialogState(() {
                             if (value == true) {
                               selectedFriends.add(friend['id']);
@@ -540,7 +525,7 @@ Future<void> _addMember() async {
         color: Colors.white,
         child: Column(
           children: [
-            // Panel header
+
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
               color: Colors.orange.shade700,
@@ -575,7 +560,7 @@ Future<void> _addMember() async {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Group name
+
                     Text(
                       'Naziv grupe',
                       style: TextStyle(
@@ -594,7 +579,6 @@ Future<void> _addMember() async {
                     ),
                     const SizedBox(height: 20),
                     
-                    // Created info
                     if (_groupInfo?['createdAt'] != null)
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -616,7 +600,6 @@ Future<void> _addMember() async {
                         ],
                       ),
                     
-                    // Members count with working count
                     Text(
                       'Članovi grupe (${_groupMembers.length})',
                       style: TextStyle(
@@ -627,7 +610,6 @@ Future<void> _addMember() async {
                     ),
                     const SizedBox(height: 12),
                     
-                    // Members list
                     if (_isLoadingMembers)
                       const Center(child: CircularProgressIndicator())
                     else
@@ -645,7 +627,6 @@ Future<void> _addMember() async {
                           ),
                           child: Row(
                             children: [
-                              // Avatar
                               CircleAvatar(
                                 backgroundColor: isCurrentUser 
                                     ? Colors.orange.shade100 
@@ -662,7 +643,6 @@ Future<void> _addMember() async {
                               ),
                               const SizedBox(width: 12),
                               
-                              // User info
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -723,7 +703,6 @@ Future<void> _addMember() async {
                                 ),
                               ),
                               
-                              // Kick button (admin only, not self)
                               if (_isAdmin && !isCurrentUser)
                                 IconButton(
                                   icon: const Icon(Icons.remove_circle, color: Colors.red),
@@ -737,7 +716,6 @@ Future<void> _addMember() async {
                     
                     const SizedBox(height: 20),
                     
-                    // Group actions
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -753,7 +731,6 @@ Future<void> _addMember() async {
                         ),
                         const SizedBox(height: 12),
                         
-                        // Add member button (admin only)
                         if (_isAdmin)
                           _buildActionButton(
                             icon: Icons.person_add,
@@ -761,7 +738,6 @@ Future<void> _addMember() async {
                             onTap: _addMember,
                           ),
                         
-                        // Leave group button for everyone
                         _buildActionButton(
                           icon: Icons.exit_to_app,
                           label: 'Napusti grupu',
@@ -859,7 +835,6 @@ Future<void> _addMember() async {
           children: [
             Column(
               children: [
-                // Messages list
                 Expanded(
                   child: StreamBuilder<QuerySnapshot>(
                     stream: _firestore
@@ -1015,12 +990,10 @@ Future<void> _addMember() async {
                   ),
                 ),
                 
-                // Message input
                 _buildMessageInput(),
               ],
             ),
             
-            // Overlay when panel is open
             if (_showInfoPanel)
               GestureDetector(
                 onTap: () {
@@ -1033,7 +1006,6 @@ Future<void> _addMember() async {
                 ),
               ),
             
-            // Info panel
             _buildInfoPanel(),
           ],
         ),

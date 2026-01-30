@@ -24,14 +24,12 @@ class PrelogScreen extends StatelessWidget {
         child: SafeArea(
           child: Column(
             children: [
-              // Header with Sun
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.all(40.0),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // Sun with icon
                       Container(
                         width: 140,
                         height: 140,
@@ -60,7 +58,6 @@ class PrelogScreen extends StatelessWidget {
                       
                       const SizedBox(height: 40),
                       
-                      // App Name
                       const Text(
                         'Deli Hobby',
                         style: TextStyle(
@@ -79,7 +76,6 @@ class PrelogScreen extends StatelessWidget {
                       
                       const SizedBox(height: 16),
                     
-                      // Tagline
                       const Text(
                         'Upalite svoju strast i pronađite\nistomišljenike',
                         textAlign: TextAlign.center,
@@ -93,7 +89,6 @@ class PrelogScreen extends StatelessWidget {
                       
                       const SizedBox(height: 40),
                       
-                      // Decorative floating icons
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
@@ -108,7 +103,6 @@ class PrelogScreen extends StatelessWidget {
                 ),
               ),
               
-              // Buttons Section
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(
@@ -131,7 +125,6 @@ class PrelogScreen extends StatelessWidget {
                 ),
                 child: Column(
                   children: [
-                    // Gradient Login Button
                     Container(
                       width: double.infinity,
                       height: 56,
@@ -190,7 +183,6 @@ class PrelogScreen extends StatelessWidget {
                     
                     const SizedBox(height: 20),
                     
-                    // Colorful Sign Up Button
                     SizedBox(
                       width: double.infinity,
                       height: 56,
@@ -235,7 +227,6 @@ class PrelogScreen extends StatelessWidget {
                     
                     const SizedBox(height: 30),
                     
-                    // Terms Text
                     const Text(
                       'Kreiranjem naloga prihvatate\nuslove korišćenja i politiku privatnosti',
                       textAlign: TextAlign.center,
